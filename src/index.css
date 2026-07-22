@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+    --color-industrial-dark: #121212;
+    --color-copper: #b87333;
+    --color-copper-light: #da8a47;
+    --color-gold-aged: #c5b358;
+}
