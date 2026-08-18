@@ -27,6 +27,10 @@ import CurrencyInput from '../components/CurrencyInput';
 import ServiceProductModal from '../components/ServiceProductModal';
 import BarberModal from '../components/BarberModal';
 import QuickAppointmentModal from '../components/QuickAppointmentModal';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import Input from '../components/ui/Input';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -200,12 +204,12 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#121212] text-white flex tracking-tight">
+        <div className="min-h-screen bg-surface-0 text-warm-white flex tracking-tight">
             {/* Sidebar Gerencial */}
-            <aside className="w-64 border-r border-gray-800/50 bg-[#161616] flex flex-col pt-8">
+            <aside className="w-64 border-r border-line bg-surface-1 flex flex-col pt-8">
                 <div className="px-6 mb-10">
-                    <h2 className="text-3xl font-black text-copper tracking-tighter uppercase italic">GARAGEM</h2>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">SISTEMA DE GESTÃO</p>
+                    <h2 className="text-display text-copper uppercase">GARAGEM</h2>
+                    <p className="text-label text-steel mt-1">SISTEMA DE GESTÃO</p>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2">
@@ -213,7 +217,7 @@ const AdminDashboard = () => {
                         href="/reception/board"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-4 mb-6 rounded-2xl font-black text-xs bg-copper/10 text-copper border border-copper/30 hover:bg-copper hover:text-white transition-all shadow-[0_4px_15px_rgba(184,115,51,0.1)]"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-4 mb-6 rounded-sm font-sans font-semibold text-label bg-copper/10 text-copper border border-copper/30 hover:bg-copper hover:text-warm-white transition duration-100 ease-brand shadow-[0_4px_15px_rgba(184,115,51,0.1)]"
                     >
                         <Monitor size={18} />
                         <span>📺 ABRIR AGENDA GERAL</span>
@@ -229,7 +233,7 @@ const AdminDashboard = () => {
                         <button
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === item.id ? 'bg-copper text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-sm font-sans font-semibold text-sm transition duration-100 ease-brand ${activeTab === item.id ? 'bg-copper text-surface-0 shadow-lg' : 'text-steel hover:text-warm-white hover:bg-surface-2'
                                 }`}
                         >
                             {item.icon}
@@ -243,14 +247,14 @@ const AdminDashboard = () => {
             <main className="flex-1 p-10 overflow-y-auto">
                 <header className="flex justify-between items-center mb-10">
                     <div>
-                        <h1 className="text-3xl font-black uppercase tracking-tighter">
+                        <h1 className="text-h1 text-warm-white uppercase">
                             {activeTab === 'settings' ? 'Configurações da Unidade' :
                                 activeTab === 'services' ? 'Gestão de Serviços' :
                                     activeTab === 'team' ? 'Gestão de Equipe' :
                                         activeTab === 'inventory' ? 'Controle de Estoque' :
                                             'Dashboard Financeiro'}
                         </h1>
-                        <p className="text-gray-500 text-sm mt-1">
+                        <p className="text-body-sm text-steel mt-1">
                             {activeTab === 'settings' ? 'Organize o horário de funcionamento e padrões da loja.' :
                                 activeTab === 'services' ? 'Cadastre os cortes, barbas e tratamentos oferecidos.' :
                                     activeTab === 'team' ? 'Gerencie seus profissionais parceiros e comissões.' :
@@ -260,21 +264,25 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="flex space-x-4">
-                        <button
+                        <Button
+                            variant="secondary"
+                            size="lg"
                             onClick={() => setIsExtraHoursModalOpen(true)}
-                            className="bg-transparent border-2 border-copper text-copper hover:bg-copper hover:text-white font-bold py-3 px-6 rounded-2xl transition-all flex items-center space-x-2"
+                            className="gap-2"
                         >
                             <Clock size={20} />
                             <span>LIBERAR HORÁRIO EXTRA</span>
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            className="gap-2 shadow-xl"
                             onClick={() => {
                                 if (activeTab === 'services') handleOpenServiceModal();
                                 if (activeTab === 'team') handleOpenBarberModal();
                                 if (activeTab === 'inventory') handleOpenProductModal();
                                 if (activeTab === 'overview' || activeTab === 'settings') setIsAppointmentModalOpen(true);
                             }}
-                            className="bg-copper hover:bg-copper-light text-white font-black py-3 px-8 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center space-x-2"
                         >
                             <Plus size={20} strokeWidth={3} />
                             <span>
@@ -283,7 +291,7 @@ const AdminDashboard = () => {
                                         activeTab === 'team' ? 'NOVO BARBEIRO' :
                                             'NOVO CORTE'}
                             </span>
-                        </button>
+                        </Button>
                     </div>
                 </header>
 
@@ -292,118 +300,120 @@ const AdminDashboard = () => {
                     <div className="space-y-10">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {stats.map((stat, i) => (
-                                <div key={i} className="bg-[#1a1a1a] border border-gray-800 p-6 rounded-3xl shadow-xl hover:border-gray-700 transition-colors">
+                                <Card key={i} className="shadow-xl hover:border-line-strong transition-colors duration-100 ease-brand">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className="p-3 bg-gray-800/50 rounded-2xl text-copper">
+                                        <div className="p-3 bg-surface-2 rounded-sm text-copper">
                                             {stat.icon}
                                         </div>
-                                        <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-full">{stat.trend}</span>
+                                        <Badge variant="success">{stat.trend}</Badge>
                                     </div>
-                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">{stat.label}</div>
-                                    <div className="text-3xl font-black text-white tracking-tighter">{stat.value}</div>
-                                </div>
+                                    <div className="text-label text-steel mb-1">{stat.label}</div>
+                                    <div className="text-data-lg text-warm-white">{stat.value}</div>
+                                </Card>
                             ))}
                         </div>
 
-                        <div className="bg-[#1a1a1a] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-                            <div className="p-8 border-b border-gray-800 flex justify-between items-center">
-                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Fechamento Semanal da Equipe</h3>
-                                <span className="text-xs font-bold text-gray-500 bg-gray-800 px-3 py-1 rounded-full uppercase tracking-widest">Período: 15/02 - 21/02</span>
+                        <Card className="p-0 overflow-hidden shadow-2xl">
+                            <div className="px-8 py-8 border-b border-line flex justify-between items-center">
+                                <h3 className="text-h2 text-warm-white uppercase">Fechamento Semanal da Equipe</h3>
+                                <Badge variant="neutral">Período: 15/02 - 21/02</Badge>
                             </div>
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-800/50">
-                                        <th className="px-8 py-4 font-black italic">Profissional</th>
-                                        <th className="px-8 py-4 font-black text-right">Valor a Pagar</th>
-                                        <th className="px-8 py-4 font-black text-right">Ação</th>
+                                    <tr className="text-steel text-label border-b border-line">
+                                        <th className="px-8 py-4">Profissional</th>
+                                        <th className="px-8 py-4 text-right">Valor a Pagar</th>
+                                        <th className="px-8 py-4 text-right">Ação</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-800/30">
+                                <tbody className="divide-y divide-line">
                                     {teamPayouts.map((pro, i) => {
                                         const payout = (pro.services * 0.5) + (pro.products * 0.1);
                                         return (
-                                            <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                                            <tr key={i} className="hover:bg-warm-white/5 transition-colors duration-100 ease-brand">
                                                 <td className="px-8 py-6">
-                                                    <span className="font-bold">{pro.name}</span>
+                                                    <span className="font-semibold text-warm-white">{pro.name}</span>
                                                 </td>
-                                                <td className="px-8 py-6 text-white font-black text-lg tracking-tighter text-right">R$ {payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-8 py-6 text-data-lg text-warm-white text-right">R$ {payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                                 <td className="px-8 py-6 text-right">
-                                                    <button className="text-[10px] font-black uppercase text-copper border border-copper px-4 py-2 rounded-full hover:bg-copper hover:text-white transition-all">Pagar</button>
+                                                    <Button variant="secondary" size="sm">Pagar</Button>
                                                 </td>
                                             </tr>
                                         );
                                     })}
                                 </tbody>
                             </table>
-                        </div>
+                        </Card>
                     </div>
                 )}
 
                 {/* Team Tab */}
                 {activeTab === 'team' && (
                     <div className="space-y-6">
-                        <div className="bg-[#1a1a1a] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-                            <div className="p-8 border-b border-gray-800 flex justify-between items-center">
-                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Profissionais Parceiros</h3>
-                                <button
+                        <Card className="p-0 overflow-hidden shadow-2xl">
+                            <div className="px-8 py-8 border-b border-line flex justify-between items-center">
+                                <h3 className="text-h2 text-warm-white uppercase">Profissionais Parceiros</h3>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="gap-2"
                                     onClick={() => handleOpenBarberModal()}
-                                    className="bg-copper/10 text-copper border border-copper/30 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-copper hover:text-white transition-all flex items-center space-x-2"
                                 >
                                     <UserPlus size={16} />
                                     <span>Adicionar Barbeiro</span>
-                                </button>
+                                </Button>
                             </div>
                             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {professionals.map(pro => (
-                                    <div key={pro.id} className="bg-[#121212] border border-gray-800 p-8 rounded-[2rem] flex flex-col justify-between group hover:border-copper transition-all relative overflow-hidden">
+                                    <div key={pro.id} className="bg-surface-0 border border-line p-8 rounded-md flex flex-col justify-between group hover:border-copper transition-colors duration-100 ease-brand relative overflow-hidden">
                                         <div className="flex items-start justify-between mb-8">
                                             <div className="flex items-center space-x-6">
-                                                <div className="w-16 h-16 rounded-3xl bg-copper/20 flex items-center justify-center text-copper font-black text-2xl shadow-xl group-hover:rotate-6 transition-transform">
+                                                <div className="w-16 h-16 rounded-md bg-copper/20 flex items-center justify-center text-copper font-black text-2xl">
                                                     {pro.apelido.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-black text-white uppercase text-lg tracking-tighter">{pro.nome}</div>
-                                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center space-x-1">
-                                                        <CheckCircle size={10} className="text-emerald-500" />
+                                                    <div className="font-semibold text-warm-white uppercase text-lg">{pro.nome}</div>
+                                                    <div className="text-label text-steel flex items-center space-x-1">
+                                                        <CheckCircle size={10} className="text-success" />
                                                         <span>Disponível no sistema</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex space-x-2">
-                                                <button onClick={() => handleOpenBarberModal(pro)} className="p-3 bg-gray-900 border border-gray-800 rounded-2xl text-gray-500 hover:text-copper transition-all"><Pencil size={18} /></button>
-                                                <button onClick={() => { if (window.confirm('Remover?')) setProfessionals(professionals.filter(p => p.id !== pro.id)) }} className="p-3 bg-gray-900 border border-gray-800 rounded-2xl text-gray-500 hover:text-red-500 transition-all"><Trash2 size={18} /></button>
+                                                <button onClick={() => handleOpenBarberModal(pro)} className="p-3 bg-surface-1 border border-line rounded-sm text-steel hover:text-copper transition-colors duration-100 ease-brand"><Pencil size={18} /></button>
+                                                <button onClick={() => { if (window.confirm('Remover?')) setProfessionals(professionals.filter(p => p.id !== pro.id)) }} className="p-3 bg-surface-1 border border-line rounded-sm text-steel hover:text-danger transition-colors duration-100 ease-brand"><Trash2 size={18} /></button>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4 mb-8">
-                                            <div className="bg-gray-900/50 p-4 rounded-2xl border border-gray-800/50">
-                                                <span className="text-[9px] font-black text-gray-600 uppercase block mb-1">WhatsApp</span>
-                                                <span className="text-xs font-bold text-gray-300">{pro.telefone}</span>
+                                            <div className="bg-surface-1 p-4 rounded-sm border border-line">
+                                                <span className="text-label text-steel block mb-1">WhatsApp</span>
+                                                <span className="text-body-sm font-semibold text-warm-white">{pro.telefone}</span>
                                             </div>
-                                            <div className="bg-gray-900/50 p-4 rounded-2xl border border-gray-800/50">
-                                                <span className="text-[9px] font-black text-gray-600 uppercase block mb-1">Apelido</span>
-                                                <span className="text-xs font-bold text-copper">{pro.apelido}</span>
+                                            <div className="bg-surface-1 p-4 rounded-sm border border-line">
+                                                <span className="text-label text-steel block mb-1">Apelido</span>
+                                                <span className="text-body-sm font-semibold text-copper">{pro.apelido}</span>
                                             </div>
                                         </div>
-                                        <button onClick={() => navigate('/barber/dashboard')} className="w-full flex items-center justify-center space-x-2 bg-copper/5 hover:bg-copper text-copper hover:text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                        <Button variant="secondary" size="md" className="w-full gap-2" onClick={() => navigate('/barber/dashboard')}>
                                             <Eye size={16} />
                                             <span>Espiar Agenda</span>
-                                        </button>
+                                        </Button>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </Card>
                     </div>
                 )}
 
                 {/* Inventory Tab - TABLE UI */}
                 {activeTab === 'inventory' && (
-                    <div className="bg-[#1a1a1a] border border-gray-800 rounded-[3rem] overflow-hidden shadow-2xl">
+                    <div className="bg-surface-1 border border-line rounded-md overflow-hidden shadow-2xl">
                         {/* Tabela de Produtos */}
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="bg-[#161616] text-gray-500 text-[10px] uppercase font-black tracking-[0.2em] border-b border-gray-800">
-                                        <th className="px-10 py-8 italic text-copper">Produto</th>
+                                    <tr className="bg-surface-0 text-steel text-label border-b border-line">
+                                        <th className="px-10 py-8 text-copper">Produto</th>
                                         <th className="px-6 py-8">Custo Unit.</th>
                                         <th className="px-6 py-8">Preço Venda</th>
                                         <th className="px-6 py-8">Markup / Lucro</th>
@@ -411,40 +421,38 @@ const AdminDashboard = () => {
                                         <th className="px-10 py-8 text-right">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-800/30">
+                                <tbody className="divide-y divide-line">
                                     {inventory.map((item) => {
                                         const profit = item.value - item.cost;
                                         const margin = ((profit / item.value) * 100).toFixed(0);
                                         return (
-                                            <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
+                                            <tr key={item.id} className="hover:bg-warm-white/5 transition-colors duration-100 ease-brand group">
                                                 <td className="px-10 py-6">
                                                     <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 bg-gray-800/50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-copper/20 group-hover:text-copper transition-all">
+                                                        <div className="w-12 h-12 bg-surface-2 rounded-sm flex items-center justify-center text-steel group-hover:bg-copper/20 group-hover:text-copper transition-colors duration-100 ease-brand">
                                                             <Package size={20} />
                                                         </div>
                                                         <div>
-                                                            <div className="font-black text-white uppercase text-base tracking-tighter">{item.name}</div>
-                                                            <div className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Ativo no PDV</div>
+                                                            <div className="font-semibold text-warm-white uppercase text-base">{item.name}</div>
+                                                            <div className="text-label text-steel">Ativo no PDV</div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-6 font-mono text-gray-400 text-sm">R$ {item.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-6 py-6 font-mono text-white text-base font-black">R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-6 text-data text-steel">R$ {item.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-6 text-data text-warm-white">R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                                 <td className="px-6 py-6">
                                                     <div className="flex flex-col">
-                                                        <span className="text-emerald-500 font-black text-sm tracking-tighter">R$ {profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                                        <span className="text-[9px] font-bold text-emerald-500/50 uppercase tracking-widest">{margin}% Margem</span>
+                                                        <span className="text-data text-success">R$ {profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                        <span className="text-label text-success/60">{margin}% Margem</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-6 text-center">
-                                                    <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${item.stock < 10 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-gray-800 text-gray-400'}`}>
-                                                        {item.stock} uni
-                                                    </span>
+                                                    <Badge variant={item.stock < 10 ? 'danger' : 'neutral'}>{item.stock} uni</Badge>
                                                 </td>
                                                 <td className="px-10 py-6 text-right">
                                                     <div className="flex justify-end space-x-2">
-                                                        <button onClick={() => handleOpenProductModal(item)} className="p-3 bg-gray-900 border border-gray-800 rounded-2xl text-gray-600 hover:text-copper transition-all"><Pencil size={18} /></button>
-                                                        <button onClick={() => deleteProduct(item.id)} className="p-3 bg-gray-900 border border-gray-800 rounded-2xl text-gray-600 hover:text-red-500 transition-all"><Trash2 size={18} /></button>
+                                                        <button onClick={() => handleOpenProductModal(item)} className="p-3 bg-surface-0 border border-line rounded-sm text-steel hover:text-copper transition-colors duration-100 ease-brand"><Pencil size={18} /></button>
+                                                        <button onClick={() => deleteProduct(item.id)} className="p-3 bg-surface-0 border border-line rounded-sm text-steel hover:text-danger transition-colors duration-100 ease-brand"><Trash2 size={18} /></button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -455,16 +463,16 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* Footer Informativo da Spreadsheet */}
-                        <div className="p-8 bg-copper/5 border-t border-gray-800 flex justify-between items-center">
+                        <div className="p-8 bg-copper/5 border-t border-line flex justify-between items-center">
                             <div className="flex items-center space-x-4">
-                                <div className="bg-copper/10 p-2 rounded-lg text-copper">
+                                <div className="bg-copper/10 p-2 rounded-sm text-copper">
                                     <AlertCircle size={20} />
                                 </div>
-                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">O preço sugerido de venda considera markup mínimo de 30%.</p>
+                                <p className="text-label text-steel">O preço sugerido de venda considera markup mínimo de 30%.</p>
                             </div>
                             <div className="text-right">
-                                <div className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Valor em Estoque</div>
-                                <div className="text-xl font-black text-white tracking-tighter">
+                                <div className="text-label text-steel mb-1">Valor em Estoque</div>
+                                <div className="text-data-lg text-warm-white">
                                     {inventory.reduce((acc, curr) => acc + (curr.cost * curr.stock), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </div>
                             </div>
@@ -476,25 +484,25 @@ const AdminDashboard = () => {
                 {activeTab === 'services' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {services.map((service) => (
-                            <div key={service.id} className="bg-[#1a1a1a] border border-gray-800 p-8 rounded-[2.5rem] shadow-xl hover:border-copper/50 transition-all group relative">
+                            <Card key={service.id} className="p-8 shadow-xl hover:border-copper/50 transition-colors duration-100 ease-brand group relative">
                                 <div className="flex justify-between items-start mb-6">
-                                    <div className="bg-copper/10 p-4 rounded-3xl text-copper group-hover:scale-110 transition-transform"><Scissors size={24} /></div>
+                                    <div className="bg-copper/10 p-4 rounded-md text-copper group-hover:scale-110 transition-transform duration-100 ease-brand"><Scissors size={24} /></div>
                                     <div className="flex space-x-3">
-                                        <button onClick={() => handleOpenServiceModal(service)} className="p-2 text-gray-800 hover:text-copper transition-colors"><Pencil size={18} /></button>
-                                        <button onClick={() => { if (window.confirm('Excluir?')) setServices(services.filter(s => s.id !== service.id)) }} className="p-2 text-gray-800 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                        <button onClick={() => handleOpenServiceModal(service)} className="p-2 text-steel hover:text-copper transition-colors duration-100 ease-brand"><Pencil size={18} /></button>
+                                        <button onClick={() => { if (window.confirm('Excluir?')) setServices(services.filter(s => s.id !== service.id)) }} className="p-2 text-steel hover:text-danger transition-colors duration-100 ease-brand"><Trash2 size={18} /></button>
                                     </div>
                                 </div>
-                                <h4 className="text-xl font-black uppercase tracking-tighter mb-1">{service.name}</h4>
+                                <h4 className="text-h2 text-warm-white uppercase mb-1">{service.name}</h4>
                                 <div className="flex items-center space-x-2 mb-4">
-                                    <Clock size={12} className="text-gray-600" />
-                                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{service.duration} Minutos</span>
+                                    <Clock size={12} className="text-steel" />
+                                    <span className="text-label text-steel">{service.duration} Minutos</span>
                                 </div>
-                                <p className="text-gray-500 text-xs mb-6 h-8 line-clamp-2">{service.description}</p>
-                                <div className="flex justify-between items-center border-t border-gray-800 pt-6">
-                                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Valor do Corte</span>
-                                    <span className="text-2xl font-black text-white tracking-tighter">R$ {service.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <p className="text-body-sm text-steel mb-6 h-8 line-clamp-2">{service.description}</p>
+                                <div className="flex justify-between items-center border-t border-line pt-6">
+                                    <span className="text-label text-steel">Valor do Corte</span>
+                                    <span className="text-data-lg text-warm-white">R$ {service.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                 </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 )}
@@ -502,50 +510,38 @@ const AdminDashboard = () => {
                 {/* Settings Tab */}
                 {activeTab === 'settings' && (
                     <div className="space-y-10">
-                        <div className="bg-[#1a1a1a] p-10 rounded-[3rem] border-2 border-copper/20 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-copper/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-copper/10"></div>
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 text-white">
+                        <div className="bg-surface-1 p-10 rounded-md border-2 border-copper/20 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-copper/5 rounded-full -mr-16 -mt-16 blur-3xl transition-colors duration-100 ease-brand group-hover:bg-copper/10"></div>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                                 <div>
-                                    <h3 className="text-2xl font-black uppercase tracking-tighter">Configuração Padrão (Template)</h3>
-                                    <p className="text-gray-500 text-sm">Defina o horário base que servirá de modelo para toda a semana.</p>
+                                    <h3 className="text-h2 text-warm-white uppercase">Configuração Padrão (Template)</h3>
+                                    <p className="text-body-sm text-steel">Defina o horário base que servirá de modelo para toda a semana.</p>
                                 </div>
-                                <button onClick={applyTemplateToAll} className="bg-copper text-white font-black py-4 px-8 rounded-2xl flex items-center space-x-3 text-sm transition-all active:scale-95"><RotateCcw size={18} /><span>APLICAR PADRÃO A TODOS OS DIAS</span></button>
+                                <Button variant="primary" size="lg" className="gap-3" onClick={applyTemplateToAll}><RotateCcw size={18} /><span>APLICAR PADRÃO A TODOS OS DIAS</span></Button>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                <section className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Abertura</label>
-                                    <input type="time" value={standardTemplate.open} onChange={(e) => setStandardTemplate({ ...standardTemplate, open: e.target.value })} className="w-full bg-industrial-dark border border-gray-800 rounded-2xl p-4 text-white font-black focus:border-copper outline-none transition-all" />
-                                </section>
-                                <section className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Fechamento</label>
-                                    <input type="time" value={standardTemplate.close} onChange={(e) => setStandardTemplate({ ...standardTemplate, close: e.target.value })} className="w-full bg-industrial-dark border border-gray-800 rounded-2xl p-4 text-white font-black focus:border-copper outline-none transition-all" />
-                                </section>
-                                <section className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Ini. Almoço</label>
-                                    <input type="time" value={standardTemplate.lunchStart} onChange={(e) => setStandardTemplate({ ...standardTemplate, lunchStart: e.target.value })} className="w-full bg-industrial-dark border border-gray-800 rounded-2xl p-4 text-white font-black focus:border-copper outline-none transition-all" />
-                                </section>
-                                <section className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Fim Almoço</label>
-                                    <input type="time" value={standardTemplate.lunchEnd} onChange={(e) => setStandardTemplate({ ...standardTemplate, lunchEnd: e.target.value })} className="w-full bg-industrial-dark border border-gray-800 rounded-2xl p-4 text-white font-black focus:border-copper outline-none transition-all" />
-                                </section>
+                                <Input label="Abertura" type="time" value={standardTemplate.open} onChange={(e) => setStandardTemplate({ ...standardTemplate, open: e.target.value })} />
+                                <Input label="Fechamento" type="time" value={standardTemplate.close} onChange={(e) => setStandardTemplate({ ...standardTemplate, close: e.target.value })} />
+                                <Input label="Ini. Almoço" type="time" value={standardTemplate.lunchStart} onChange={(e) => setStandardTemplate({ ...standardTemplate, lunchStart: e.target.value })} />
+                                <Input label="Fim Almoço" type="time" value={standardTemplate.lunchEnd} onChange={(e) => setStandardTemplate({ ...standardTemplate, lunchEnd: e.target.value })} />
                             </div>
                         </div>
 
                         {/* WEEKLY REPEATER */}
-                        <div className="bg-[#1a1a1a] rounded-[3rem] border border-gray-800 overflow-hidden shadow-2xl">
-                            <div className="p-10 border-b border-gray-800 flex justify-between items-center">
-                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Agenda Semanal</h3>
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Personalize cada dia</span>
+                        <Card className="p-0 overflow-hidden shadow-2xl">
+                            <div className="px-10 py-10 border-b border-line flex justify-between items-center">
+                                <h3 className="text-h2 text-warm-white uppercase">Agenda Semanal</h3>
+                                <span className="text-label text-steel">Personalize cada dia</span>
                             </div>
 
-                            <div className="divide-y divide-gray-800/50">
+                            <div className="divide-y divide-line">
                                 {Object.entries(weeklySchedule).map(([dayKey, dayData]) => (
-                                    <div key={dayKey} className="p-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 hover:bg-white/[0.01] transition-colors">
+                                    <div key={dayKey} className="p-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 hover:bg-warm-white/5 transition-colors duration-100 ease-brand">
                                         <div className="w-40 shrink-0">
-                                            <h4 className="text-lg font-black uppercase tracking-tighter italic text-copper">{dayKey}</h4>
+                                            <h4 className="text-h3 text-copper uppercase">{dayKey}</h4>
                                             <button
                                                 onClick={() => handleUpdateDay(dayKey, 'active', !dayData.active)}
-                                                className={`flex items-center space-x-2 mt-1 text-[10px] font-black uppercase tracking-widest ${dayData.active ? 'text-emerald-500' : 'text-red-500'}`}
+                                                className={`flex items-center space-x-2 mt-1 text-label ${dayData.active ? 'text-success' : 'text-danger'}`}
                                             >
                                                 <ToggleRight size={16} className={dayData.active ? '' : 'rotate-180'} />
                                                 <span>{dayData.active ? 'Aberto' : 'Fechado'}</span>
@@ -553,42 +549,30 @@ const AdminDashboard = () => {
                                         </div>
 
                                         <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 transition-all ${dayData.active ? 'opacity-100' : 'opacity-20 pointer-events-none grayscale'}`}>
-                                            <div className="space-y-1">
-                                                <label className="text-[9px] font-black text-gray-600 uppercase">Abertura</label>
-                                                <input
-                                                    type="time"
-                                                    value={dayData.open}
-                                                    onChange={(e) => handleUpdateDay(dayKey, 'open', e.target.value)}
-                                                    className="w-full bg-[#121212] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold"
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[9px] font-black text-gray-600 uppercase">Fechamento</label>
-                                                <input
-                                                    type="time"
-                                                    value={dayData.close}
-                                                    onChange={(e) => handleUpdateDay(dayKey, 'close', e.target.value)}
-                                                    className="w-full bg-[#121212] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold"
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[9px] font-black text-gray-600 uppercase">Ini. Almoço</label>
-                                                <input
-                                                    type="time"
-                                                    value={dayData.lunchStart}
-                                                    onChange={(e) => handleUpdateDay(dayKey, 'lunchStart', e.target.value)}
-                                                    className="w-full bg-[#121212] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold"
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[9px] font-black text-gray-600 uppercase">Fim Almoço</label>
-                                                <input
-                                                    type="time"
-                                                    value={dayData.lunchEnd}
-                                                    onChange={(e) => handleUpdateDay(dayKey, 'lunchEnd', e.target.value)}
-                                                    className="w-full bg-[#121212] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold"
-                                                />
-                                            </div>
+                                            <Input
+                                                label="Abertura"
+                                                type="time"
+                                                value={dayData.open}
+                                                onChange={(e) => handleUpdateDay(dayKey, 'open', e.target.value)}
+                                            />
+                                            <Input
+                                                label="Fechamento"
+                                                type="time"
+                                                value={dayData.close}
+                                                onChange={(e) => handleUpdateDay(dayKey, 'close', e.target.value)}
+                                            />
+                                            <Input
+                                                label="Ini. Almoço"
+                                                type="time"
+                                                value={dayData.lunchStart}
+                                                onChange={(e) => handleUpdateDay(dayKey, 'lunchStart', e.target.value)}
+                                            />
+                                            <Input
+                                                label="Fim Almoço"
+                                                type="time"
+                                                value={dayData.lunchEnd}
+                                                onChange={(e) => handleUpdateDay(dayKey, 'lunchEnd', e.target.value)}
+                                            />
                                         </div>
 
                                         <div className="shrink-0 xl:ml-6">
@@ -598,7 +582,7 @@ const AdminDashboard = () => {
                                                     updated[dayKey] = { ...standardTemplate };
                                                     setWeeklySchedule(updated);
                                                 }}
-                                                className="p-3 text-gray-700 hover:text-copper transition-colors"
+                                                className="p-3 text-steel hover:text-copper transition-colors duration-100 ease-brand"
                                                 title="Resetar para padrão"
                                             >
                                                 <RotateCcw size={18} />
@@ -607,11 +591,11 @@ const AdminDashboard = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </Card>
 
-                        <div className="p-8 bg-copper hover:bg-copper-light text-white font-black text-center rounded-[2.5rem] shadow-2xl transition-all active:scale-95 cursor-pointer uppercase tracking-widest text-lg">
+                        <Button variant="primary" size="lg" className="w-full py-8 text-lg shadow-2xl">
                             SALVAR TODAS AS CONFIGURAÇÕES
-                        </div>
+                        </Button>
                     </div>
                 )}
 
