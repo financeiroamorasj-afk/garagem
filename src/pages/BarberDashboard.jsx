@@ -22,11 +22,11 @@ const BarberDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-industrial-dark text-white pb-24 relative">
+        <div className="min-h-screen bg-surface-0 text-warm-white pb-24 relative">
             {/* Header */}
-            <header className="p-6 pt-12 border-b border-gray-800 bg-[#161616]">
-                <h1 className="text-2xl font-black tracking-tighter text-copper uppercase">Agenda de Hoje</h1>
-                <p className="text-gray-500 text-sm mt-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+            <header className="p-6 pt-12 border-b border-line bg-surface-1">
+                <h1 className="text-h1 text-copper uppercase">Agenda de Hoje</h1>
+                <p className="text-body-sm text-steel mt-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
             </header>
 
             {/* Timeline */}
@@ -34,17 +34,17 @@ const BarberDashboard = () => {
                 {appointments.map((app) => (
                     <div
                         key={app.id}
-                        className={`relative group bg-[#1a1a1a] border-l-4 rounded-xl p-5 shadow-xl transition-all active:scale-[0.99] ${app.status === 'in_progress' ? 'border-copper bg-[#1e1e1e]' : 'border-gray-800'
+                        className={`relative group bg-surface-1 border-l-4 rounded-sm p-5 shadow-xl transition-all active:scale-[0.99] ${app.status === 'in_progress' ? 'border-copper bg-surface-2' : 'border-line'
                             }`}
                     >
                         <div className="flex justify-between items-start">
                             <div className="flex items-center space-x-3">
-                                <div className={`p-2 rounded-lg ${app.status === 'in_progress' ? 'bg-copper text-white' : 'bg-gray-800 text-gray-400'}`}>
+                                <div className={`p-2 rounded-sm ${app.status === 'in_progress' ? 'bg-copper text-surface-0' : 'bg-surface-2 text-steel'}`}>
                                     <Clock size={18} />
                                 </div>
                                 <div>
-                                    <span className="text-xl font-black text-white">{app.time}</span>
-                                    <div className="flex items-center text-gray-500 text-xs mt-0.5 uppercase tracking-widest font-bold">
+                                    <span className="text-h2 text-warm-white">{app.time}</span>
+                                    <div className="flex items-center text-label text-steel mt-0.5">
                                         <User size={12} className="mr-1" /> {app.client}
                                     </div>
                                 </div>
@@ -53,14 +53,14 @@ const BarberDashboard = () => {
                             {app.status === 'pending' ? (
                                 <button
                                     onClick={() => updateStatus(app.id, 'in_progress')}
-                                    className="bg-gray-800 hover:bg-copper text-white p-3 rounded-xl transition-colors shadow-lg"
+                                    className="bg-surface-2 hover:bg-copper text-warm-white p-3 rounded-sm transition-colors duration-100 ease-brand shadow-lg"
                                 >
                                     <Play size={20} fill="currentColor" />
                                 </button>
                             ) : app.status === 'in_progress' ? (
                                 <button
                                     onClick={() => updateStatus(app.id, 'completed')}
-                                    className="bg-copper hover:bg-copper-light text-white p-3 rounded-xl transition-colors shadow-lg animate-pulse"
+                                    className="bg-copper hover:bg-copper-light text-surface-0 p-3 rounded-sm transition-colors duration-100 ease-brand shadow-lg animate-pulse"
                                 >
                                     <CheckCircle size={20} />
                                 </button>
@@ -71,12 +71,12 @@ const BarberDashboard = () => {
                             )}
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-gray-800/50 flex items-center justify-between text-gray-400">
+                        <div className="mt-4 pt-4 border-t border-line flex items-center justify-between text-steel">
                             <div className="flex items-center space-x-2">
                                 <Scissors size={14} className="text-copper" />
-                                <span className="text-sm font-medium">{app.service}</span>
+                                <span className="text-body-sm">{app.service}</span>
                             </div>
-                            {app.status === 'completed' && <span className="text-xs font-bold uppercase text-copper">Finalizado</span>}
+                            {app.status === 'completed' && <span className="text-label text-copper">Finalizado</span>}
                         </div>
                     </div>
                 ))}
@@ -85,7 +85,7 @@ const BarberDashboard = () => {
             {/* Floating Action Button (FAB) */}
             <button
                 onClick={() => setIsModalOpen(true)}
-                className="fixed bottom-8 right-6 w-16 h-16 bg-copper hover:bg-copper-light rounded-full shadow-[0_8px_30px_rgb(184,115,51,0.4)] flex items-center justify-center text-white transition-transform active:scale-90 z-40"
+                className="fixed bottom-8 right-6 w-16 h-16 bg-copper hover:bg-copper-light rounded-full shadow-[0_8px_30px_rgb(184,115,51,0.4)] flex items-center justify-center text-surface-0 transition-transform active:scale-90 z-40"
             >
                 <Plus size={32} strokeWidth={3} />
             </button>
