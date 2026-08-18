@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import Label from './ui/Label';
 
 /**
- * CurrencyInput Component - Follows the 'Rebip' pattern:
+ * CurrencyInput Component:
  * - Real-time currency masking (R$)
  * - Select all text on focus
  * - Mobile friendly (inputmode="decimal")
@@ -38,9 +39,7 @@ const CurrencyInput = ({ value, onChange, label, id }) => {
     return (
         <div className="flex flex-col space-y-1">
             {label && (
-                <label htmlFor={id} className="text-sm font-medium text-gray-400 ml-1">
-                    {label}
-                </label>
+                <Label htmlFor={id}>{label}</Label>
             )}
             <div className="relative">
                 <input
@@ -50,7 +49,7 @@ const CurrencyInput = ({ value, onChange, label, id }) => {
                     value={displayValue}
                     onChange={handleChange}
                     onFocus={handleFocus}
-                    className="w-full bg-industrial-dark border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-copper transition-colors text-lg font-semibold shadow-inner"
+                    className="w-full rounded-sm bg-surface-2 border border-line-strong px-4 py-3 text-data-lg text-warm-white focus:outline-none focus:border-copper transition-colors duration-100 ease-brand shadow-inner"
                     placeholder="R$ 0,00"
                 />
             </div>
