@@ -25,8 +25,8 @@ export default function ProtectedRoute() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-industrial-dark font-sans text-copper-light">
-                <div className="animate-pulse text-xl font-bold tracking-widest uppercase">
+            <div className="flex items-center justify-center min-h-screen bg-surface-0 font-sans">
+                <div className="animate-pulse text-h2 text-warm-white uppercase">
                     Carregando...
                 </div>
             </div>
