@@ -1,6 +1,7 @@
 # Design System — Garagem System
 
-> **Status:** aprovado · **Versão:** 1.0 · **Data:** 2026-08-10
+> **Status:** aprovado · **Versão:** 1.1 · **Data:** 2026-08-10
+> **Mudança na 1.1:** nomes de token de texto e de fundo semântico ajustados para evitar colisão de utilitário no Tailwind v4 (`text-primary`→`warm-white`, `text-secondary`→`steel`, `text-accent` removido em favor de `text-copper`, `-bg` removido em favor do modificador `/12`). Valores e usos não mudaram, só os nomes. Revisado durante o dry-run do `/ds-fundacao`, antes de qualquer implementação.
 > **Origem:** valores extraídos de `docs/design-system/AUDITORIA-LANDING.md`. Nada aqui é invenção — cada cor, fonte, raio e curva vem do CSS da landing page, exceto o que está marcado como `[derivado]`.
 
 Este documento é a **lei**. Os comandos `/ds-fundacao` e `/ds-migrar` implementam exatamente o que está escrito aqui e nada além. Se algo necessário não estiver especificado, o comando **para e pergunta** — não improvisa.
@@ -57,11 +58,14 @@ A diferença entre `surface-0` e `surface-1` é de ~2% de luminosidade. Isso é 
 
 | Token | Valor | Contraste sobre `surface-0` | Uso |
 |---|---|---|---|
-| `--color-text-primary` | `#f2ece0` | 17.3:1 | Títulos, valores, texto principal |
-| `--color-text-secondary` | `#8b877d` | 5.7:1 | Descrição, meta, coluna secundária de tabela |
-| `--color-text-accent` | `#c1793f` | 5.9:1 | Link, label ativo, número em destaque |
+| `--color-warm-white` | `#f2ece0` | 17.3:1 | Títulos, valores, texto principal |
+| `--color-steel` | `#8b877d` | 5.7:1 | Descrição, meta, coluna secundária de tabela |
 
-**Não existe um terceiro nível de texto.** A auditoria do sistema encontrou `text-gray-500`, `600`, `700` e `800` usados como texto — todos reprovam em contraste. Estão **proibidos**. Se algo parece precisar de um cinza mais apagado que `text-secondary`, a resposta é reduzir o peso ou o tamanho, não a luminosidade.
+Destaque de texto (link, label ativo, número em destaque) usa o token de marca diretamente — `--color-copper` / classe `text-copper`. Não existe um `--color-text-accent` dedicado.
+
+Os nomes de texto são os da própria landing (`--warm-white`, `--steel`), não `text-primary`/`text-secondary`. No Tailwind v4, `--color-X` gera as classes `text-X`/`bg-X`/`border-X`; um token chamado `--color-text-primary` produziria `text-text-primary`, não `text-primary`.
+
+**Não existe um terceiro nível de texto.** A auditoria do sistema encontrou `text-gray-500`, `600`, `700` e `800` usados como texto — todos reprovam em contraste. Estão **proibidos**. Se algo parece precisar de um cinza mais apagado que `text-steel`, a resposta é reduzir o peso ou o tamanho, não a luminosidade.
 
 ### 1.4 Bordas
 
@@ -83,8 +87,7 @@ A landing não tem cores de estado — um site institucional não precisa. Todas
 | `--color-danger` | `#d4614a` | 5.4:1 | Erro, exclusão, atraso |
 | `--color-info` | `#7e9aaf` | 6.9:1 | Neutro informativo |
 
-Cada uma tem um fundo correspondente para badge e banner, sempre a mesma cor a 12% de opacidade:
-`--color-success-bg: rgba(123,160,91,0.12)` e equivalentes.
+Para fundo de badge e banner, use o modificador de opacidade do Tailwind v4 sobre o próprio token — `bg-success/12`, `bg-warning/12`, `bg-danger/12`, `bg-info/12`. Não existe token `-bg` dedicado: `--color-success-bg` geraria a classe colidida `bg-success-bg`.
 
 **Regra de uso:** cor nunca é o único portador de significado. Todo estado semântico traz também texto ou ícone.
 
@@ -93,11 +96,13 @@ Cada uma tem um fundo correspondente para badge e banner, sempre a mesma cor a 1
 Obrigatórios. O código atual referencia estes nomes em centenas de lugares e a migração precisa ser aditiva.
 
 ```
---color-industrial-dark : alias de surface-0
+--color-industrial-dark : alias de surface-0, valor literal #050505 (não var())
 --color-copper          : token real (nome preservado)
 --color-copper-light    : token real (nome preservado)
 --color-gold-aged       : token real (nome preservado)
 ```
+
+O alias usa o hex literal, não `var(--color-surface-0)`: o modificador de opacidade do Tailwind v4 (`bg-industrial-dark/50`) compila para `color-mix()`, e a indireção de `var()` quebra isso.
 
 Os aliases só podem ser removidos quando `/ds-migrar` tiver passado por todos os arquivos e o grep por eles retornar vazio.
 
@@ -195,13 +200,17 @@ Autorizado apenas em: modal, dropdown, popover, toast, tooltip. Em nenhuma outra
 
 ## 6. Movimento
 
-Curva única, herdada da landing: `--ease: cubic-bezier(0.16, 1, 0.3, 1)`.
+Curva única, herdada da landing: `--ease-brand: cubic-bezier(0.16, 1, 0.3, 1)` → utilitária `ease-brand`. O sufixo evita colisão com os `--ease-in` / `--ease-out` nativos da v4.
 
-| Token | Duração | Uso |
-|---|---|---|
-| `--dur-fast` | `120ms` | Cor, opacidade, borda |
-| `--dur-base` | `200ms` | Transformação, abertura de menu |
-| `--dur-slow` | `400ms` | Entrada de modal, transição de página |
+| Token | Duração | Classe no JSX | Uso |
+|---|---|---|---|
+| `--dur-fast` | `120ms` | `duration-100` | Cor, opacidade, borda |
+| `--dur-base` | `200ms` | `duration-200` | Transformação, abertura de menu |
+| `--dur-slow` | `400ms` | `duration-400` | Entrada de modal, transição de página |
+
+O Tailwind v4 **não tem namespace de duração** — as variáveis acima existem para uso em CSS puro, e no JSX usa-se a classe numérica correspondente.
+
+Utilitárias customizadas (escala tipográfica, atmosfera) devem ser declaradas com a diretiva `@utility`, não dentro de `@layer utilities` — só assim compõem com variantes como `hover:` e `md:`.
 
 **Proibido:** `hover:scale-*`, `group-hover:scale-*` e qualquer duração acima de 400ms. A auditoria encontrou `scale-[1.02]` e `scale-110`. Botão de sistema não cresce ao passar o mouse — ele clareia. Use `filter: brightness(1.12)`, como a landing faz.
 
@@ -255,18 +264,18 @@ Tamanhos: `sm` (32px de altura, padding 8/12, texto 13px) · `md` (40px, 12/20, 
 |---|---|---|---|---|
 | `primary` | gradiente de marca 135deg | `#050505` | nenhuma | Uma por tela. A ação principal |
 | `secondary` | transparente | `--color-copper` | 1px `--color-copper` | Ação de apoio |
-| `ghost` | transparente | `--color-text-secondary` | 1px transparent | Ação terciária, ícone |
+| `ghost` | transparente | `--color-steel` | 1px transparent | Ação terciária, ícone |
 | `danger` | transparente | `--color-danger` | 1px `--color-danger` | Exclusão, cancelamento |
 
 Estados: `hover` → `filter: brightness(1.12)` no primary, fundo a 8% de opacidade nos demais · `active` → `brightness(0.94)`, sem deslocamento · `disabled` → `opacity: 0.4`, `cursor: not-allowed`, sem hover · `loading` → spinner de 16px no lugar do texto, largura preservada, `aria-busy="true"`, botão desabilitado.
 
 ### 9.2 Input
 
-Altura 40px. Fundo `surface-2`. Borda 1px `--color-line-strong`. Raio `sm`. Texto `body` em `text-primary`. Placeholder em `text-secondary`.
+Altura 40px. Fundo `surface-2`. Borda 1px `--color-line-strong`. Raio `sm`. Texto `body` em `text-warm-white`. Placeholder em `text-steel`.
 
 Foco: borda `--color-copper` mais anel de 2px. Erro: borda `--color-danger`, `aria-invalid="true"`, mensagem abaixo em `body-sm` na cor `danger`. Desabilitado: `opacity: 0.4`.
 
-Label acima, sempre, no estilo `label`, ligada por `htmlFor`/`id`. Ícone opcional à esquerda com 16px, `text-secondary`, que passa a `copper` quando o campo recebe foco. Texto de ajuda abaixo em `body-sm`/`text-secondary`.
+Label acima, sempre, no estilo `label`, ligada por `htmlFor`/`id`. Ícone opcional à esquerda com 16px, `text-steel`, que passa a `copper` quando o campo recebe foco. Texto de ajuda abaixo em `body-sm`/`text-steel`.
 
 ### 9.3 Card
 
@@ -274,11 +283,11 @@ Fundo `surface-1`, borda 1px `--color-line`, raio `md`, padding 24px, sem sombra
 
 Subcomponentes: `Card.Header` (título `h3` + ação à direita, com divisor de 1px abaixo) e `Card.Body`.
 
-**Card de métrica** é uma variante: label em `label`/`text-secondary` no topo, valor em `data-lg`/`text-primary` abaixo, variação opcional como badge semântico. Sem ícone dentro de caixa colorida.
+**Card de métrica** é uma variante: label em `label`/`text-steel` no topo, valor em `data-lg`/`text-warm-white` abaixo, variação opcional como badge semântico. Sem ícone dentro de caixa colorida.
 
 ### 9.4 Badge
 
-Altura 20px, padding 2/8, raio `sm`, texto `label`. Variantes `neutral` (fundo `surface-2`, texto `text-secondary`), `success`, `warning`, `danger`, `info` — cada uma com o `-bg` correspondente a 12% e o texto na cor cheia.
+Altura 20px, padding 2/8, raio `sm`, texto `label`. Variantes `neutral` (fundo `surface-2`, texto `text-steel`), `success`, `warning`, `danger`, `info` — cada uma com `bg-{variante}/12` (modificador de opacidade, não token `-bg`) e o texto na cor cheia.
 
 ### 9.5 Modal
 
@@ -290,11 +299,11 @@ Título em `h2`. Rodapé com ações alinhadas à direita, `secondary` antes de 
 
 ### 9.6 Label, Spinner, EmptyState
 
-**Label** — `label` em `text-secondary`, `uppercase`, `htmlFor` obrigatório.
+**Label** — `label` em `text-steel`, `uppercase`, `htmlFor` obrigatório.
 
 **Spinner** — anel de 2px em `--color-copper`, tamanhos 16 e 24. Respeita `prefers-reduced-motion`.
 
-**EmptyState** — centralizado, vinheta opcional ao fundo, ícone de 20px em `text-secondary`, título em `h3`, descrição em `body`/`text-secondary`, um botão `primary`. Sem ilustração, sem emoji.
+**EmptyState** — centralizado, vinheta opcional ao fundo, ícone de 20px em `text-steel`, título em `h3`, descrição em `body`/`text-steel`, um botão `primary`. Sem ilustração, sem emoji.
 
 ---
 
@@ -307,14 +316,15 @@ Referência direta para o `/ds-migrar`.
 | `bg-[#121212]`, `bg-industrial-dark` | `bg-surface-0` |
 | `bg-[#1a1a1a]`, `bg-[#161616]` | `bg-surface-1` |
 | `border-gray-800`, `border-gray-800/50` | `border-line` |
-| `text-gray-500`, `text-gray-600` | `text-secondary` |
-| `text-gray-700`, `text-gray-800` (texto ou ícone) | `text-secondary` |
-| `text-white` | `text-primary` |
-| `text-emerald-500`, `bg-emerald-500/10` | `text-success`, `bg-success-bg` |
+| `text-gray-500`, `text-gray-600` | `text-steel` |
+| `text-gray-700`, `text-gray-800` (texto ou ícone) | `text-steel` |
+| `text-white` | `text-warm-white` |
+| `text-emerald-500`, `bg-emerald-500/10` | `text-success`, `bg-success/12` |
 | `text-red-400`, `border-red-900/50` | `text-danger`, `border-danger` |
 | `rounded-2xl`, `rounded-3xl`, `rounded-[2.5rem]` | `rounded-md` |
 | `rounded-full` em botão ou tag | `rounded-sm` |
 | `style={{borderRadius:'25px'}}` | `rounded-sm` |
+| `rounded` sem sufixo (ex. `Login.jsx`) | `rounded-sm` ou `rounded-md`, explícito — sem sufixo resolve para o `--radius` default da v4, não para o token do sistema, mesmo coincidindo hoje |
 | `shadow-xl`, `shadow-2xl`, `shadow-[0_0_15px_...]` | remover |
 | `hover:scale-[1.02]`, `group-hover:scale-110` | remover |
 | `text-[9px]`, `text-[10px]` | `text-label` |

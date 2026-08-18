@@ -1,8 +1,152 @@
 @import "tailwindcss";
 
 @theme {
-    --color-industrial-dark: #121212;
-    --color-copper: #b87333;
-    --color-copper-light: #da8a47;
-    --color-gold-aged: #c5b358;
+    /* Superfície */
+    --color-surface-0: #050505;
+    --color-surface-1: #0e0d0c;
+    --color-surface-2: #17150f;
+    --color-surface-3: #221e17;
+
+    /* Marca */
+    --color-copper: #c1793f;
+    --color-copper-light: #d08f56;
+    --color-gold-aged: #a68a52;
+
+    /* Texto */
+    --color-warm-white: #f2ece0;
+    --color-steel: #8b877d;
+
+    /* Borda */
+    --color-line: rgba(242, 236, 224, 0.12);
+    --color-line-strong: rgba(242, 236, 224, 0.40);
+
+    /* Semântica — fundo de badge/banner via bg-success/12 etc., sem token -bg */
+    --color-success: #7ba05b;
+    --color-warning: #d9a03f;
+    --color-danger: #d4614a;
+    --color-info: #7e9aaf;
+
+    /* Alias de compatibilidade — remover quando /ds-migrar zerar o grep */
+    --color-industrial-dark: #050505;
+
+    /* Forma */
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-full: 9999px;
+
+    /* Sombra — única exceção autorizada, uso restrito a overlay (modal/dropdown/popover/toast) */
+    --shadow-overlay: 0 16px 48px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+
+    /* Movimento — --dur-* não geram utilitário Tailwind; JSX usa duration-100/200/400 */
+    --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 120ms;
+    --dur-base: 200ms;
+    --dur-slow: 400ms;
+
+    /* Tipografia */
+    --font-display: 'Fraunces', 'Georgia', serif;
+    --font-sans: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --tracking-button: 0.02em;
+
+    /* Dimensão de componente */
+    --container-modal: 560px;
+}
+
+/* =========================================================
+   Base
+   ========================================================= */
+body {
+    background-color: var(--color-surface-0);
+    color: var(--color-warm-white);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   Escala tipográfica — @utility para compor com hover:/md:
+   Cor não entra aqui: combina com text-warm-white/text-steel/text-copper
+   ========================================================= */
+@utility text-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+}
+@utility text-h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+}
+@utility text-h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.15;
+}
+@utility text-h3 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.15;
+}
+@utility text-body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.5;
+}
+@utility text-body-sm {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.5;
+}
+@utility text-data {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+}
+@utility text-data-lg {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+}
+@utility text-label {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+/* =========================================================
+   Atmosfera — só os dois recursos autorizados pela spec (seção 7)
+   Sem grão, sem ruído, sem brilho de lâmpada: a landing não usa.
+   ========================================================= */
+@utility atmosphere-vignette {
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, var(--color-surface-2), var(--color-surface-0));
+}
+@utility surface-header-blur {
+    backdrop-filter: blur(6px);
+    background: linear-gradient(to bottom, rgba(5,5,5,0.85), transparent);
+}
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

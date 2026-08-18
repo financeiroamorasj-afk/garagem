@@ -4,8 +4,6 @@ import Button from './ui/Button'
 export default function BarberColumn({ professional, appointments = [], onAddAppointment }) {
     return (
         <div className="flex-shrink-0 w-80 h-full flex flex-col bg-surface-2 border-r-2 border-r-copper/50 last:border-r-0 shadow-[-5px_0_15px_-5px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-            {/* Texture Overlay */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
 
             {/* Header */}
             <div className="p-4 border-b-2 border-b-copper/30 bg-black/20 flex items-center justify-between backdrop-blur-sm sticky top-0 z-10">

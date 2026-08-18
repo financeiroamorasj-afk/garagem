@@ -1,105 +1,118 @@
 ---
-description: Migra uma tela ou componente do Garagem para o design system, sem alterar comportamento
-argument-hint: "<arquivo ou pasta> — ex: src/pages/AdminDashboard.jsx"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(npm run build:*), Bash(npm run lint:*), Bash(git diff:*), Bash(git status:*)
+description: Migra o código existente do Garagem System para os tokens e primitivos do design system aprovado em /design-system
 ---
 
-# /ds-migrar — Migração de tela
+# /ds-migrar
 
-Migra **um alvo por vez** para o design system: `$ARGUMENTS`
+## Objetivo
 
-Se `$ARGUMENTS` estiver vazio, pare e peça o alvo. **Nunca migre o projeto inteiro de uma vez.**
+O design system (tokens em `src/index.css` + 8 primitivos em `src/components/ui/`) já foi criado, revisado visualmente em `/design-system` e **aprovado por Rafa**. Este comando migra o restante do código (`src/pages`, `src/components`) para usar esses tokens e primitivos, substituindo os padrões antigos.
 
-## A regra que define este comando
+**Este NÃO é um comando de refatoração de lógica.** É migração visual: trocar `className` hardcoded por tokens/primitivos, sem alterar comportamento, state, chamadas ao Supabase, rotas ou props de negócio.
 
-> **Só muda a aparência. O comportamento fica idêntico.**
+---
 
-Nenhuma alteração em: estado, hooks, handlers, chamadas ao Supabase, props recebidas, rotas, condicionais de renderização, formato de dados, textos visíveis ao usuário.
+## Regras de ouro (não negociáveis)
 
-Se durante a migração você achar que a lógica está errada ou mal escrita: **anote no relatório final e siga em frente**. Correção de lógica é outro trabalho.
+1. **Nunca altere lógica.** Se um `onClick`, `useState`, `useEffect`, query ao Supabase, ou prop de negócio precisar mudar para a migração funcionar, PARE e reporte — não decida sozinho.
+2. **Prefira os primitivos sobre className cru.** Se existe `<Button>`, `<Input>`, `<Card>`, `<Badge>`, `<Modal>`, `<Label>`, `<Spinner>` ou `<EmptyState>` que cobre o caso, use o primitivo em vez de recriar o estilo com Tailwind direto.
+3. **Gradientes e sombras grandes em elementos estáticos (não-overlay): NÃO REMOVA AUTOMATICAMENTE.** Rafa ainda vai decidir tela por tela se ficam, viram exceção documentada, ou saem. Ao encontrar um, **apenas sinalize no relatório** (arquivo, linha, trecho) e deixe como está no código por enquanto.
+4. **Não toque no `.env`, configs do Supabase, rotas do `react-router-dom`, ou schema/queries.**
+5. **Um arquivo por commit.** Cada página/componente migrado = um commit separado, mensagem no padrão `ds-migrar: <nome do arquivo>`. Isso permite reverter um arquivo sem afetar os outros.
+6. **Não quebre a rota `/design-system`.** Ela é a fonte de verdade visual — não a edite neste processo.
 
-## Pré-requisitos
+---
 
-1. `docs/design-system/DESIGN-SYSTEM.md` existe — é a lei.
-2. `src/components/ui/` existe com os primitivos (rode `/ds-fundacao` antes).
-3. `git status` limpo. Se não estiver, avise e pergunte antes de continuar.
+## Mapeamento: padrão antigo → token/primitivo novo
 
-## Passo 1 — Registrar o antes
+| Padrão antigo encontrado no código | Substituir por |
+|---|---|
+| `bg-[#1a1a1a]`, `bg-[#121212]`, `bg-[#161616]`, `bg-industrial-dark` | `bg-surface-0` / `bg-surface-1` / `bg-surface-2` / `bg-surface-3` (conforme camada de elevação) |
+| `text-gray-500`, `text-gray-600`, `text-gray-800` | `text-steel` (ou `text-warm-white` se for texto primário) |
+| `border-gray-800`, `border-gray-900` | classe de borda com token `--color-line` (verificar nome exato no `index.css`) |
+| `rounded-3xl`, `rounded-2xl`, `rounded-[3rem]`, `rounded-full`, `borderRadius: '25px'` (padrão antigo "Rebip" em `ClientSearch.jsx`) | `rounded` (2px) ou `rounded-md` (4px) — nunca mais que isso |
+| `shadow-2xl`, `shadow-xl` em card estático (não-modal) | **sinalizar, não remover** (ver Regra 3) |
+| `bg-gradient-to-r from-copper to-gold-aged` (texto ou botão) | **sinalizar, não remover** (ver Regra 3) |
+| Botões com classes manuais (`bg-copper text-white font-black py-4 px-8 rounded-2xl ...`) | `<Button variant="primary" size="...">` |
+| Inputs manuais (`<input className="w-full bg-industrial-dark border ...">`) | `<Input>` |
+| Cards de dado/estatística (`bg-[#1a1a1a] border ... rounded-3xl p-6`) | `<Card>` |
+| Badges de status (pendente/pago/atrasado) | `<Badge variant="...">` |
+| Overlays de modal manuais | `<Modal>` |
+| Loading spinners manuais (`animate-spin rounded-full border-b-2`) | `<Spinner>` |
+| Telas/listas vazias sem dado | `<EmptyState>` |
+| Fontes: `font-black`, `tracking-tighter`, `uppercase` em headers de página/seção | Aplicar classe de tipografia correspondente da escala (`display`, `h1`, `h2` → Fraunces 600) |
+| Fontes: labels pequenos uppercase (`text-[9px] font-black uppercase tracking-widest`) | Classe `label` da escala (JetBrains Mono 500, uppercase) |
+| Valores monetários (`R$ {value.toLocaleString(...)}`) | Classe `data` / `data-lg` da escala (JetBrains Mono, tabular-nums) — **manter a lógica de formatação `.toLocaleString`, só trocar a className** |
 
-Leia o arquivo inteiro. Antes de editar, produza um inventário:
-- Todo elemento de UI e a className atual de cada um
-- Quais desses já têm primitivo equivalente em `src/components/ui/`
-- Quais não têm (candidatos a novo componente)
-- Quais são realmente específicos desta tela (ficam inline, mas com tokens)
+---
 
-Mostre esse inventário e o **plano de substituição** antes de tocar em qualquer linha.
+## Escopo de arquivos (ordem de prioridade)
 
-## Passo 2 — Substituir
+Escaneie `src/pages` e `src/components` por completo — esta lista é o que já identificamos, mas não é exaustiva:
 
-Ordem de preferência, sempre nesta sequência:
+**Páginas:**
+1. `src/pages/Login.jsx`
+2. `src/pages/Dashboard.jsx`
+3. `src/pages/AdminDashboard.jsx` (maior arquivo, migrar por seção/tab: overview → team → services → inventory → settings)
 
-1. **Existe primitivo?** Use o primitivo.
-2. **Não existe, mas o padrão se repete em 2+ telas?** Pare, avise, e proponha criar o primitivo antes de continuar.
-3. **É específico desta tela?** Mantenha inline, mas só com classes de token.
+**Componentes:**
+4. `src/components/ClientSearch.jsx` (atenção especial — tem o padrão antigo "Rebip" comentado explicitamente no código, é o principal candidato ao mapeamento de `borderRadius: '25px'`)
+5. `src/components/ServiceProductModal.jsx`
+6. `src/components/BarberModal.jsx`
+7. `src/components/QuickAppointmentModal.jsx`
+8. `src/components/CurrencyInput.jsx`
+9. Qualquer outro componente em `src/components` não listado acima
 
-Enquanto substitui:
-- Todo hex literal vira token.
-- Toda classe de paleta padrão do Tailwind (`gray-`, `emerald-`, `red-`, `slate-`...) vira token semântico.
-- Todo radius vira a escala da spec.
-- Todo tamanho de fonte vira a escala da spec. Nada abaixo de 11px.
-- Toda sombra vira a escala de elevação da spec.
-- Toda transição vira as durações da spec.
-- Ícones lucide: só os tamanhos que a spec permite.
+Migre **um arquivo por vez, nesta ordem**. Não pule para o próximo sem reportar o anterior.
 
-## Passo 3 — Acessibilidade no caminho
+---
 
-Já que o arquivo está aberto, corrija sem alterar comportamento:
-- `<label>` conectado ao input via `htmlFor`/`id`
-- Botão que só tem ícone recebe `aria-label`
-- Ordem de headings coerente (`h1` → `h2` → `h3`, sem pular nível)
-- `focus-visible` visível em tudo que é focável
-- Contraste dentro do mínimo da spec — se algum par ficar abaixo, use o token mais claro e registre a troca
-- `window.confirm()` para exclusão: **mantenha por enquanto**, mas registre como pendência de UX
+## Lembretes técnicos (gotchas já mapeados no projeto)
 
-## Passo 4 — Verificar
+- `--color-text-primary` colide com namespace do Tailwind → use os aliases `--color-warm-white` / `--color-steel`, nunca crie `text-text-*`.
+- `var()` dentro de `@theme` quebra `color-mix()` em opacidade — se precisar de um novo alias com opacidade (`bg-algo/12`), use hex literal, não `var()`.
+- Tokens de `duration` não têm namespace no Tailwind — use `duration-100/200/400` direto na classe, não crie variável.
+- Utilities customizadas precisam de `@utility`, não `@layer utilities`.
+- O único uso autorizado de valor arbitrário do Tailwind neste projeto é `brightness-[...]`. Qualquer outro valor arbitrário que você for tentado a criar (`rounded-[3rem]`, `bg-[#1a1a1a]`) é exatamente o que este comando existe para eliminar — não crie novos.
 
-1. `npm run build` passa
-2. `npm run lint` sem erros novos
-3. `git diff --stat` — se o diff estiver muito maior do que o esperado para uma troca de estilo, pare e explique por quê
-4. Releia o próprio diff procurando por: handler removido, condicional alterada, prop perdida, texto mudado. **Se encontrar, reverta essa parte.**
+---
 
-## Passo 5 — Relatório
+## Processo por arquivo
 
-Imprima no terminal:
+Para cada arquivo, nesta ordem:
+
+1. Leia o arquivo inteiro antes de editar.
+2. Liste mentalmente (ou em comentário temporário) todos os padrões antigos encontrados, usando a tabela de mapeamento.
+3. Aplique as substituições, preservando 100% da lógica (props, state, handlers, imports de dados).
+4. Rode o app localmente (ou pelo menos confirme que não há erro de sintaxe/import) antes de commitar.
+5. Commit: `git commit -m "ds-migrar: <nome-do-arquivo>"`.
+6. Adicione ao relatório final (ver formato abaixo).
+
+---
+
+## Formato do relatório final
+
+Ao terminar (ou ao pausar por bloqueio), produza um resumo assim:
 
 ```
-MIGRADO: <arquivo>
+## Relatório /ds-migrar
 
-Substituições
-  <elemento>  <className antiga>  →  <primitivo ou token>
-  ...
+### Arquivos migrados
+- src/pages/Login.jsx ✅
+- src/pages/Dashboard.jsx ✅
+- ...
 
-Tokens novos necessários (se houver)
-  <nome>  <motivo>  → precisa de aprovação antes de existir
+### Pontos sinalizados para decisão do Rafa (NÃO alterados)
+- src/components/ClientSearch.jsx:23 — borderRadius: '25px' (padrão "Rebip" antigo, comentado no código)
+- src/pages/AdminDashboard.jsx:142 — bg-gradient-to-r from-copper to-gold-aged (texto do logo "Garagem")
+- src/pages/Login.jsx:88 — shadow-[0_0_15px_rgba(184,115,51,0.3)] em botão de login
+- ...
 
-Componentes que faltam
-  <nome>  <onde apareceu>  <quantas vezes>
+### Bloqueios / dúvidas (precisei parar)
+- [descrever qualquer caso onde a migração exigiria mudar lógica, ou onde o mapeamento não estava claro]
 
-Pendências anotadas (não corrigidas)
-  <lógica suspeita / UX / dado>
-
-Verificação
-  build: ok | lint: ok | diff: X arquivos, +Y −Z
-  contraste mínimo desta tela: X:1
+### Commits gerados
+- <lista de commits, um por arquivo>
 ```
 
-E anexe o mesmo relatório em `docs/design-system/MIGRACOES.md` (append, nunca sobrescreve).
-
-## Não faça
-
-- Não migre mais de um alvo por execução.
-- Não crie token novo por conta própria — proponha e espere aprovação.
-- Não instale dependência.
-- Não renomeie variável, função ou arquivo.
-- Não reordene imports ou reformate o arquivo inteiro — o diff precisa ser legível.
-- Não altere texto de interface, mesmo com erro de português. Registre e siga.
+Não segue para o merge/push sozinho — o relatório é para Rafa revisar aqui no chat antes de aprovar.
