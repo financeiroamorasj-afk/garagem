@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, ShoppingBag, Calendar, Check } from 'lucide-react';
 import ClientSearch from './ClientSearch';
 import CurrencyInput from './CurrencyInput';
+import Button from './ui/Button';
+import Label from './ui/Label';
 
 const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) => {
     const [tab, setTab] = useState(activeTab);
@@ -12,14 +14,14 @@ const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-            <div className="w-full max-w-lg bg-industrial-dark rounded-t-3xl sm:rounded-3xl border-t sm:border border-gray-800 shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-surface-0/60 backdrop-blur-sm transition-opacity">
+            <div className="w-full max-w-lg bg-surface-0 rounded-t-md sm:rounded-md border-t sm:border border-line shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
 
                 {/* Header / Tabs */}
-                <div className="flex border-b border-gray-800">
+                <div className="flex border-b border-line">
                     <button
                         onClick={() => setTab('encaixe')}
-                        className={`flex-1 py-4 text-sm font-bold transition-colors ${tab === 'encaixe' ? 'text-copper border-b-2 border-copper' : 'text-gray-500'
+                        className={`flex-1 py-4 text-sm font-semibold transition-colors duration-100 ease-brand ${tab === 'encaixe' ? 'text-copper border-b-2 border-copper' : 'text-steel'
                             }`}
                     >
                         <Calendar className="inline-block w-4 h-4 mr-2" />
@@ -27,13 +29,13 @@ const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) =>
                     </button>
                     <button
                         onClick={() => setTab('venda')}
-                        className={`flex-1 py-4 text-sm font-bold transition-colors ${tab === 'venda' ? 'text-copper border-b-2 border-copper' : 'text-gray-500'
+                        className={`flex-1 py-4 text-sm font-semibold transition-colors duration-100 ease-brand ${tab === 'venda' ? 'text-copper border-b-2 border-copper' : 'text-steel'
                             }`}
                     >
                         <ShoppingBag className="inline-block w-4 h-4 mr-2" />
                         VENDA PRODUTO
                     </button>
-                    <button onClick={onClose} className="p-4 text-gray-500 hover:text-white">
+                    <button onClick={onClose} className="p-4 text-steel hover:text-warm-white transition-colors duration-100 ease-brand">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
@@ -41,7 +43,7 @@ const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) =>
                 {/* Content */}
                 <div className="p-6 space-y-6">
                     <section className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Cliente</label>
+                        <Label>Cliente</Label>
                         <ClientSearch onSelect={setSelectedClient} clients={[]} />
                     </section>
 
@@ -55,9 +57,9 @@ const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) =>
                             />
 
                             <div className="flex flex-col space-y-1">
-                                <label className="text-sm font-medium text-gray-400 ml-1">Observações</label>
+                                <Label>Observações</Label>
                                 <textarea
-                                    className="w-full bg-industrial-dark border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-copper transition-colors h-24 resize-none"
+                                    className="w-full bg-surface-2 border border-line-strong rounded-sm px-4 py-3 text-warm-white placeholder:text-steel focus:outline-none focus:border-copper transition-colors duration-100 ease-brand h-24 resize-none"
                                     placeholder={tab === 'encaixe' ? 'Ex: Corte e Barba' : 'Ex: Pomada Efeito Matte'}
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
@@ -67,13 +69,15 @@ const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) =>
                     </section>
 
                     {/* Action Button */}
-                    <button
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full gap-2 shadow-[0_4px_20px_rgba(184,115,51,0.3)]"
                         onClick={() => onSave({ tab, selectedClient, value, description })}
-                        className="w-full bg-copper hover:bg-copper-light text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(184,115,51,0.3)] transition-all active:scale-[0.98] flex items-center justify-center space-x-2 text-lg"
                     >
                         <Check className="w-6 h-6" />
                         <span>CONFIRMAR AGORA</span>
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
