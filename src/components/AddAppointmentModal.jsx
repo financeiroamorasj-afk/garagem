@@ -1,7 +1,9 @@
 
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import Modal from './Modal'
+import Modal from './ui/Modal'
+import Input from './ui/Input'
+import Button from './ui/Button'
 
 export default function AddAppointmentModal({ isOpen, onClose, onSuccess, professionalId }) {
     const [clientName, setClientName] = useState('')
@@ -64,70 +66,48 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
     }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Novo Agendamento">
+        <Modal open={isOpen} onClose={onClose} title="Novo Agendamento">
             <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                    <div className="p-3 text-sm text-red-500 bg-red-900/20 border border-red-900/50 rounded">
+                    <div className="p-3 text-body-sm text-danger bg-danger/12 border border-danger/40 rounded-sm">
                         {error}
                     </div>
                 )}
 
-                <div>
-                    <label className="block text-xs font-medium uppercase tracking-widest text-copper mb-1">
-                        Nome do Cliente
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        className="w-full px-4 py-2 bg-black/20 border border-white/10 rounded focus:outline-none focus:border-copper focus:ring-1 focus:ring-copper text-white placeholder-white/20 transition-all"
-                        placeholder="Ex: Carlos Oliveira"
-                        value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
-                    />
-                </div>
+                <Input
+                    label="Nome do Cliente"
+                    type="text"
+                    required
+                    placeholder="Ex: Carlos Oliveira"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                />
 
-                <div>
-                    <label className="block text-xs font-medium uppercase tracking-widest text-copper mb-1">
-                        Serviço
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        className="w-full px-4 py-2 bg-black/20 border border-white/10 rounded focus:outline-none focus:border-copper focus:ring-1 focus:ring-copper text-white placeholder-white/20 transition-all"
-                        placeholder="Ex: Barba e Cabelo"
-                        value={service}
-                        onChange={(e) => setService(e.target.value)}
-                    />
-                </div>
+                <Input
+                    label="Serviço"
+                    type="text"
+                    required
+                    placeholder="Ex: Barba e Cabelo"
+                    value={service}
+                    onChange={(e) => setService(e.target.value)}
+                />
 
-                <div>
-                    <label className="block text-xs font-medium uppercase tracking-widest text-copper mb-1">
-                        Horário
-                    </label>
-                    <input
-                        type="time"
-                        required
-                        className="w-full px-4 py-2 bg-black/20 border border-white/10 rounded focus:outline-none focus:border-copper focus:ring-1 focus:ring-copper text-white placeholder-white/20 transition-all [color-scheme:dark]"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                    />
-                </div>
+                <Input
+                    label="Horário"
+                    type="time"
+                    required
+                    className="[color-scheme:dark]"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                />
 
                 <div className="flex justify-end gap-3 pt-4">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-bold text-white/60 hover:text-white transition-colors uppercase tracking-wider"
-                    >
+                    <Button type="button" variant="ghost" onClick={onClose}>
                         Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-6 py-2 text-sm font-bold bg-copper text-industrial-dark rounded hover:bg-copper-light shadow-[0_0_15px_rgba(184,115,51,0.2)] transition-all duration-300 uppercase tracking-wider disabled:opacity-50"
-                    >
+                    </Button>
+                    <Button type="submit" variant="primary" disabled={loading}>
                         {loading ? 'Agendar' : 'Agendar'}
-                    </button>
+                    </Button>
                 </div>
             </form>
         </Modal>
