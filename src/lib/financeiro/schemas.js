@@ -2,6 +2,9 @@ export const DIRECOES_FINANCEIRAS = ['entrada', 'saida']
 export const STATUS_PAGAR = ['pendente', 'pago', 'estornado', 'cancelado']
 export const STATUS_RECEBER = ['previsto', 'liquidado', 'estornado', 'cancelado']
 export const MOTIVOS_CREDITO = ['emissao', 'uso', 'estorno', 'ajuste', 'expiracao']
+export const TIPOS_CONTA = ['corrente', 'poupanca', 'caixa', 'carteira_digital', 'cartao']
+export const TIPOS_CATEGORIA = ['entrada', 'saida', 'ambos']
+export const GRUPOS_DRE = ['receita_servicos', 'receita_produtos', 'cmv', 'despesa_fixa', 'despesa_variavel', 'despesa_financeira', 'pro_labore', 'impostos', 'outros']
 
 export function exigirUuid(valor, campo) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(valor))) throw new TypeError(`${campo} inválido`)
@@ -18,6 +21,35 @@ export function exigirValorPositivo(valor, campo = 'Valor') {
   const numero = Number(valor)
   if (!Number.isFinite(numero) || numero <= 0) throw new TypeError(`${campo} deve ser maior que zero`)
   return numero
+}
+
+export function exigirTexto(valor, campo, minimo = 2, maximo = 100) {
+  const texto = String(valor ?? '').trim()
+  if (texto.length < minimo || texto.length > maximo) throw new TypeError(`${campo} inválido`)
+  return texto
+}
+
+export function textoOpcional(valor, campo, maximo = 100) {
+  const texto = String(valor ?? '').trim()
+  if (!texto) return null
+  if (texto.length > maximo) throw new TypeError(`${campo} inválido`)
+  return texto
+}
+
+export function exigirOpcao(valor, opcoes, campo) {
+  if (!opcoes.includes(valor)) throw new TypeError(`${campo} inválido`)
+  return valor
+}
+
+export function exigirValorMonetario(valor, campo = 'Valor') {
+  const numero = Number(valor)
+  if (!Number.isFinite(numero)) throw new TypeError(`${campo} inválido`)
+  return numero
+}
+
+export function exigirBooleano(valor, campo) {
+  if (typeof valor !== 'boolean') throw new TypeError(`${campo} inválido`)
+  return valor
 }
 
 export function exigirPeriodo(inicio, fim) {

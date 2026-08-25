@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { arredondarCentavos, normalizarMoeda } from '../src/lib/financeiro/moeda.js'
 import { periodoMensalBrt } from '../src/lib/financeiro/periodo.js'
-import { exigirChaveIdempotencia, exigirValorPositivo, exigirPeriodo, exigirPaginacao } from '../src/lib/financeiro/schemas.js'
+import { exigirChaveIdempotencia, exigirValorPositivo, exigirPeriodo, exigirPaginacao, exigirTexto, textoOpcional, exigirOpcao, exigirValorMonetario, exigirBooleano, TIPOS_CONTA, GRUPOS_DRE } from '../src/lib/financeiro/schemas.js'
 
 test('normaliza e arredonda moeda sem acumular ponto flutuante', () => {
   assert.equal(normalizarMoeda('1.234,567'), 1234.57)
@@ -40,4 +40,17 @@ test('transferência rejeita valor que arredonda para zero antes da RPC', () => 
   const valorValidado = arredondarCentavos(exigirValorPositivo(0.004, 'Valor da transferência'))
   assert.equal(valorValidado, 0)
   assert.throws(() => exigirValorPositivo(valorValidado, 'Valor da transferência'), /maior que zero/)
+})
+
+test('valida e normaliza campos dos cadastros financeiros', () => {
+  assert.equal(exigirTexto('  Conta principal  ', 'Nome'), 'Conta principal')
+  assert.equal(textoOpcional('   ', 'Instituição'), null)
+  assert.equal(exigirOpcao('corrente', TIPOS_CONTA, 'Tipo'), 'corrente')
+  assert.equal(exigirOpcao('despesa_fixa', GRUPOS_DRE, 'Grupo DRE'), 'despesa_fixa')
+  assert.equal(exigirValorMonetario(-10.25, 'Saldo inicial'), -10.25)
+  assert.throws(() => exigirTexto('x', 'Nome'), /Nome inválido/)
+  assert.throws(() => exigirOpcao('inventado', TIPOS_CONTA, 'Tipo'), /Tipo inválido/)
+  assert.throws(() => exigirValorMonetario(Number.POSITIVE_INFINITY, 'Saldo inicial'), /Saldo inicial inválido/)
+  assert.equal(exigirBooleano(true, 'Incluir inativas'), true)
+  assert.throws(() => exigirBooleano('true', 'Incluir inativas'), /Incluir inativas inválido/)
 })
