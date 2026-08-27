@@ -87,7 +87,7 @@ BEGIN
   FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
   WHERE n.nspname='public' AND p.proname LIKE 'financeiro_%';
   -- A Fase 2C acrescenta sete escritas e duas leituras de cadastro às oito RPCs da Fase 2B.
-  IF v_auth_count<>27 OR v_anon_count<>0 THEN RAISE EXCEPTION 'CONJUNTO_RPC_EXPOSTO_INVALIDO: auth %, anon %',v_auth_count,v_anon_count; END IF;
+  IF v_auth_count<>28 OR v_anon_count<>0 THEN RAISE EXCEPTION 'CONJUNTO_RPC_EXPOSTO_INVALIDO: auth %, anon %',v_auth_count,v_anon_count; END IF;
   IF has_function_privilege('authenticated','public.financeiro_assert_admin()','EXECUTE') OR has_function_privilege('authenticated','public.financeiro_auditar(uuid,text,text,uuid,jsonb,jsonb,text)','EXECUTE') THEN RAISE EXCEPTION 'HELPER_INTERNO_EXPOSTO'; END IF;
   FOREACH v_tabela IN ARRAY ARRAY['financeiro_categorias','financeiro_contas_bancarias','financeiro_contas_pagar','financeiro_contas_receber','financeiro_movimentacoes','financeiro_creditos_clientes','financeiro_creditos_movimentacoes','financeiro_audit_log'] LOOP
     IF has_table_privilege('authenticated','public.'||v_tabela,'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon','public.'||v_tabela,'SELECT,INSERT,UPDATE,DELETE') THEN RAISE EXCEPTION 'TABELA_EXPOSTA: %',v_tabela; END IF;

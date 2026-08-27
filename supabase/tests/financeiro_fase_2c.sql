@@ -129,7 +129,7 @@ BEGIN
          count(*) FILTER(WHERE has_function_privilege('public',p.oid,'EXECUTE'))
     INTO v_auth,v_anon,v_public FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
    WHERE n.nspname='public' AND p.proname LIKE 'financeiro_%';
-  IF v_auth<>27 OR v_anon<>0 OR v_public<>0 THEN RAISE EXCEPTION 'CONJUNTO_RPC_INVALIDO auth %, anon %, public %',v_auth,v_anon,v_public; END IF;
+  IF v_auth<>28 OR v_anon<>0 OR v_public<>0 THEN RAISE EXCEPTION 'CONJUNTO_RPC_INVALIDO auth %, anon %, public %',v_auth,v_anon,v_public; END IF;
   IF has_table_privilege('authenticated','public.financeiro_idempotencia','SELECT,INSERT,UPDATE,DELETE')
     OR has_table_privilege('anon','public.financeiro_idempotencia','SELECT,INSERT,UPDATE,DELETE')
     OR has_table_privilege('authenticated','public.financeiro_audit_log','SELECT,INSERT,UPDATE,DELETE') THEN RAISE EXCEPTION 'TABELA_INTERNA_EXPOSTA'; END IF;

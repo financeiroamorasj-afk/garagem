@@ -86,3 +86,81 @@ test('pagamento e transferência concorrentes não consomem a mesma disponibilid
     await Promise.all([setup.end(), payment.end(), transfer.end()])
   }
 })
+
+test('dois aportes distintos não ultrapassam a disponibilidade da conta', async () => {
+  const setup = new Client({ connectionString })
+  const first = new Client({ connectionString })
+  const second = new Client({ connectionString })
+  const tenantId = crypto.randomUUID()
+  const adminId = crypto.randomUUID()
+  const accountId = crypto.randomUUID()
+  const envelopeId = crypto.randomUUID()
+
+  await Promise.all([setup.connect(), first.connect(), second.connect()])
+  try {
+    await setup.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant concorrência aporte',$2)", [tenantId, `tenant-aporte-${tenantId}`])
+    await setup.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [adminId, `admin-${adminId}@local.test`])
+    await setup.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin aporte',$3)", [adminId, tenantId, `admin-${adminId}@local.test`])
+    await setup.query("INSERT INTO public.financeiro_contas_bancarias(id,barbearia_id,nome,tipo,saldo_inicial,conta_principal) VALUES($1,$2,'Conta aporte','corrente',100,true)", [accountId, tenantId])
+    await setup.query("INSERT INTO public.financeiro_envelopes(id,barbearia_id,conta_bancaria_id,nome,finalidade,saldo_acumulado) VALUES($1,$2,$3,'Reserva aporte','reserva',20)", [envelopeId, tenantId, accountId])
+    await Promise.all([
+      first.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId]),
+      second.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId]),
+    ])
+
+    const results = await Promise.allSettled([
+      first.query('SELECT public.financeiro_aportar_envelope($1,50,$2,NULL) result', [envelopeId, `aporte-a-${crypto.randomUUID()}`]),
+      second.query('SELECT public.financeiro_aportar_envelope($1,50,$2,NULL) result', [envelopeId, `aporte-b-${crypto.randomUUID()}`]),
+    ])
+    assert.equal(results.filter(({ status }) => status === 'fulfilled').length, 1)
+    assert.equal(results.filter(({ status }) => status === 'rejected').length, 1)
+    assert.match(results.find(({ status }) => status === 'rejected').reason.message, /FINANCEIRO_SALDO_DISPONIVEL_INSUFICIENTE/)
+    const state = await setup.query("SELECT saldo_acumulado,(SELECT count(*) FROM public.financeiro_envelopes_transacoes WHERE envelope_id=$1 AND tipo='aporte_avulso') quantidade FROM public.financeiro_envelopes WHERE id=$1", [envelopeId])
+    assert.equal(Number(state.rows[0].saldo_acumulado), 70)
+    assert.equal(Number(state.rows[0].quantidade), 1)
+  } finally {
+    await setup.query('DELETE FROM auth.users WHERE id=$1', [adminId]).catch(() => {})
+    await setup.query('DELETE FROM public.barbearias WHERE id=$1', [tenantId]).catch(() => {})
+    await Promise.all([setup.end(), first.end(), second.end()])
+  }
+})
+
+test('retries simultâneos do mesmo aporte criam uma única transação', async () => {
+  const setup = new Client({ connectionString })
+  const first = new Client({ connectionString })
+  const second = new Client({ connectionString })
+  const tenantId = crypto.randomUUID()
+  const adminId = crypto.randomUUID()
+  const accountId = crypto.randomUUID()
+  const envelopeId = crypto.randomUUID()
+  const key = `aporte-retry-${crypto.randomUUID()}`
+
+  await Promise.all([setup.connect(), first.connect(), second.connect()])
+  try {
+    await setup.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant retry aporte',$2)", [tenantId, `tenant-retry-aporte-${tenantId}`])
+    await setup.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [adminId, `admin-${adminId}@local.test`])
+    await setup.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin retry aporte',$3)", [adminId, tenantId, `admin-${adminId}@local.test`])
+    await setup.query("INSERT INTO public.financeiro_contas_bancarias(id,barbearia_id,nome,tipo,saldo_inicial,conta_principal) VALUES($1,$2,'Conta retry aporte','corrente',100,true)", [accountId, tenantId])
+    await setup.query("INSERT INTO public.financeiro_envelopes(id,barbearia_id,conta_bancaria_id,nome,finalidade,saldo_acumulado) VALUES($1,$2,$3,'Reserva retry','reserva',20)", [envelopeId, tenantId, accountId])
+    await Promise.all([
+      first.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId]),
+      second.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId]),
+    ])
+
+    const results = await Promise.all([
+      first.query('SELECT public.financeiro_aportar_envelope($1,30,$2,NULL) result', [envelopeId, key]),
+      second.query('SELECT public.financeiro_aportar_envelope($1,30,$2,NULL) result', [envelopeId, key]),
+    ])
+    const responses = results.map(({ rows }) => rows[0].result)
+    assert.equal(responses.filter(({ idempotente }) => idempotente === false).length, 1)
+    assert.equal(responses.filter(({ idempotente }) => idempotente === true).length, 1)
+    assert.equal(responses[0].transacao_id, responses[1].transacao_id)
+    const state = await setup.query("SELECT saldo_acumulado,(SELECT count(*) FROM public.financeiro_envelopes_transacoes WHERE envelope_id=$1 AND tipo='aporte_avulso') quantidade FROM public.financeiro_envelopes WHERE id=$1", [envelopeId])
+    assert.equal(Number(state.rows[0].saldo_acumulado), 50)
+    assert.equal(Number(state.rows[0].quantidade), 1)
+  } finally {
+    await setup.query('DELETE FROM auth.users WHERE id=$1', [adminId]).catch(() => {})
+    await setup.query('DELETE FROM public.barbearias WHERE id=$1', [tenantId]).catch(() => {})
+    await Promise.all([setup.end(), first.end(), second.end()])
+  }
+})
