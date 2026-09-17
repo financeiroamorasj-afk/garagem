@@ -34,7 +34,7 @@ export default function ProtectedRoute() {
     }
 
     if (!session) {
-        return <Navigate to="/" replace />
+        return <Navigate to="/login" replace />
     }
 
     return <Outlet />
