@@ -1,6 +1,6 @@
 # Checklist para o MVP — Garagem System
 
-> Atualizado em 27/08/2026 a partir do código, migrations, testes e auditorias do projeto. Este documento organiza prioridades; não autoriza deploys ou alterações remotas.
+> Atualizado em 22/09/2026 a partir do código, migrations, testes e auditorias do projeto. Este documento organiza prioridades; não autoriza deploys ou alterações remotas.
 
 ## Legenda
 
@@ -20,8 +20,8 @@
 - [x] Envelopes: cadastro, percentuais, distribuição diária, extrato e aporte avulso.
 - [x] Proteção para pagamentos e transferências não consumirem valores reservados.
 - [x] Backup, deploy e auditoria da Fase 2D.1 em produção.
-- [~] Consolidar e versionar toda a UI financeira atual com sua árvore completa de dependências.
-- [ ] Corrigir os erros globais de lint preexistentes e estabelecer uma suíte limpa como critério de entrega.
+- [x] Consolidar e versionar toda a UI financeira atual com sua árvore completa de dependências.
+- [x] Corrigir os erros globais de lint preexistentes e estabelecer uma suíte limpa como critério de entrega.
 
 ### Operação diária — prioridade máxima
 

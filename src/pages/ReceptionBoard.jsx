@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, TrendingUp, Bell } from 'lucide-react';
+import { Calendar, Bell } from 'lucide-react';
 import TimeGrid from '../components/TimeGrid';
 import AdminAppointmentModal from '../components/AdminAppointmentModal';
-import { supabase } from '../lib/supabase'; // Assuming Supabase client is exported from here
 
 const MOCK_PROFESSIONALS = [
     { id: '1', nome: 'Dener' },

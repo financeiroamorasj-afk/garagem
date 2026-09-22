@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { Users } from 'lucide-react'
@@ -20,22 +20,7 @@ export default function Dashboard() {
     const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false)
     const [selectedProfessionalId, setSelectedProfessionalId] = useState(null)
 
-    useEffect(() => {
-        fetchData()
-    }, [])
-
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            await Promise.all([fetchProfessionals(), fetchAppointments()])
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const fetchProfessionals = async () => {
+    const fetchProfessionals = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('profissionais')
@@ -47,9 +32,9 @@ export default function Dashboard() {
         } catch (error) {
             console.error('Error fetching professionals:', error.message)
         }
-    }
+    }, [])
 
-    const fetchAppointments = async () => {
+    const fetchAppointments = useCallback(async () => {
         try {
             // Simplification: fetching all appointments for now
             // In production, filter by date range (today/week)
@@ -65,7 +50,22 @@ export default function Dashboard() {
         } catch (error) {
             console.error('Error fetching appointments:', error.message)
         }
-    }
+    }, [])
+
+    const fetchData = useCallback(async () => {
+        setLoading(true)
+        try {
+            await Promise.all([fetchProfessionals(), fetchAppointments()])
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setLoading(false)
+        }
+    }, [fetchAppointments, fetchProfessionals])
+
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
 
     const handleOpenAppointmentModal = (professionalId) => {
         setSelectedProfessionalId(professionalId)
