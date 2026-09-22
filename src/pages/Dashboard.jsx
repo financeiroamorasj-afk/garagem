@@ -40,7 +40,7 @@ export default function Dashboard() {
             const { data, error } = await supabase
                 .from('profissionais')
                 .select('*')
-                .order('created_at', { ascending: true })
+                .order('criado_em', { ascending: true })
 
             if (error) throw error
             setProfessionals(data || [])
@@ -53,10 +53,12 @@ export default function Dashboard() {
         try {
             // Simplification: fetching all appointments for now
             // In production, filter by date range (today/week)
+            // Embeds cliente/servico: a tabela guarda só as FKs (cliente_id,
+            // servico_id), então os nomes exibidos no card vêm do join.
             const { data, error } = await supabase
                 .from('agendamentos')
-                .select('*')
-                .order('horario', { ascending: true })
+                .select('*, clientes(nome), servicos(nome)')
+                .order('data_hora', { ascending: true })
 
             if (error) throw error
             setAppointments(data || [])

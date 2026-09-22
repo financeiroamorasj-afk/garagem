@@ -22,7 +22,7 @@ test('duas conexões com a mesma chave criam uma única transferência', async (
     await setup.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant concorrência',$2)", [tenantId, `tenant-concorrencia-${tenantId}`])
     await setup.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [adminId, `admin-${adminId}@local.test`])
     await setup.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin concorrência',$3)", [adminId, tenantId, `admin-${adminId}@local.test`])
-    await setup.query("INSERT INTO public.financeiro_contas_bancarias(id,barbearia_id,nome,tipo) VALUES($1,$3,'Origem','corrente'),($2,$3,'Destino','corrente')", [origemId, destinoId, tenantId])
+    await setup.query("INSERT INTO public.financeiro_contas_bancarias(id,barbearia_id,nome,tipo,saldo_inicial) VALUES($1,$3,'Origem','corrente',100),($2,$3,'Destino','corrente',0)", [origemId, destinoId, tenantId])
     await setup.query('COMMIT')
 
     await first.query('BEGIN')

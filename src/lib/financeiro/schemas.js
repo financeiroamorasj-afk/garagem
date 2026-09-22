@@ -5,6 +5,7 @@ export const MOTIVOS_CREDITO = ['emissao', 'uso', 'estorno', 'ajuste', 'expiraca
 export const TIPOS_CONTA = ['corrente', 'poupanca', 'caixa', 'carteira_digital', 'cartao']
 export const TIPOS_CATEGORIA = ['entrada', 'saida', 'ambos']
 export const GRUPOS_DRE = ['receita_servicos', 'receita_produtos', 'cmv', 'despesa_fixa', 'despesa_variavel', 'despesa_financeira', 'pro_labore', 'impostos', 'outros']
+export const FINALIDADES_ENVELOPE = ['reserva', 'reinvestimento', 'socios', 'impostos', 'outros']
 
 export function exigirUuid(valor, campo) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(valor))) throw new TypeError(`${campo} inválido`)
@@ -62,4 +63,22 @@ export function exigirPeriodo(inicio, fim) {
 export function exigirPaginacao(pagina = 1, porPagina = 25) {
   if (!Number.isInteger(pagina) || pagina < 1 || !Number.isInteger(porPagina) || porPagina < 1 || porPagina > 100) throw new RangeError('Paginação inválida')
   return { pagina, porPagina }
+}
+
+export function exigirPercentualOpcional(valor) {
+  if (valor === null || valor === undefined || valor === '') return null
+  const percentual = Number(valor)
+  if (!Number.isFinite(percentual) || percentual < 0 || percentual > 100) throw new TypeError('Percentual deve estar entre 0 e 100')
+  return Math.round(percentual * 100) / 100
+}
+
+export function exigirDataBrtNaoFutura(valor, hojeBrt) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(valor)) || String(valor) > String(hojeBrt)) throw new TypeError('Data BRT inválida')
+  return String(valor)
+}
+
+export function exigirVersao(valor) {
+  const versao = String(valor ?? '').trim()
+  if (!versao || Number.isNaN(Date.parse(versao))) throw new TypeError('Versão inválida')
+  return versao
 }

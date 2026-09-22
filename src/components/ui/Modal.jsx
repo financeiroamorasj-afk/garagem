@@ -15,7 +15,12 @@ const FOCUSABLE_SELECTOR =
 function Modal({ open, onClose, title, footer, className = '', children }) {
   const panelRef = useRef(null)
   const triggerRef = useRef(null)
+  const onCloseRef = useRef(onClose)
   const titleId = useId()
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
@@ -32,7 +37,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
       if (event.key !== 'Tab' || !panel) return
@@ -58,7 +63,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
       document.body.style.overflow = previousOverflow
       triggerRef.current?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
@@ -66,7 +71,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-surface-0/80 p-6"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (event.target === event.currentTarget) onCloseRef.current()
       }}
     >
       <div

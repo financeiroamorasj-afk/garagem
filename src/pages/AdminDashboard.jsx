@@ -23,7 +23,6 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import CurrencyInput from '../components/CurrencyInput';
 import ServiceProductModal from '../components/ServiceProductModal';
 import BarberModal from '../components/BarberModal';
 import QuickAppointmentModal from '../components/QuickAppointmentModal';
@@ -35,7 +34,7 @@ import Input from '../components/ui/Input';
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
-    const [isExtraHoursModalOpen, setIsExtraHoursModalOpen] = useState(false);
+    const [, setIsExtraHoursModalOpen] = useState(false);
 
     // Modais de Serviço
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
@@ -204,9 +203,9 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-surface-0 text-warm-white flex tracking-tight">
+        <div className="min-h-full bg-surface-0 text-warm-white tracking-tight">
             {/* Sidebar Gerencial */}
-            <aside className="w-64 border-r border-line bg-surface-1 flex flex-col pt-8">
+            <aside className="hidden" aria-hidden="true">
                 <div className="px-6 mb-10">
                     <h2 className="text-display text-copper uppercase">GARAGEM</h2>
                     <p className="text-label text-steel mt-1">SISTEMA DE GESTÃO</p>
@@ -244,8 +243,8 @@ const AdminDashboard = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-10 overflow-y-auto">
-                <header className="flex justify-between items-center mb-10">
+            <main className="min-w-0 p-6">
+                <header className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <h1 className="text-h1 text-warm-white uppercase">
                             {activeTab === 'settings' ? 'Configurações da Unidade' :
@@ -263,7 +262,7 @@ const AdminDashboard = () => {
                         </p>
                     </div>
 
-                    <div className="flex space-x-4">
+                    <div className="flex flex-col gap-4 sm:flex-row">
                         <Button
                             variant="secondary"
                             size="lg"

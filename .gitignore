@@ -15,6 +15,8 @@ dist-ssr
 # Env files
 .env
 .env.local
+# Backups de .env (contêm credenciais de produção — nunca versionar)
+*.bak
 
 # Editor directories and files
 .vscode/*

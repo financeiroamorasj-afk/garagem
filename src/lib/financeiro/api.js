@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 import { arredondarCentavos } from './moeda'
-import { exigirChaveIdempotencia, exigirUuid, exigirValorPositivo, exigirPeriodo, exigirPaginacao, exigirTexto, textoOpcional, exigirOpcao, exigirValorMonetario, exigirBooleano, MOTIVOS_CREDITO, STATUS_PAGAR, STATUS_RECEBER, TIPOS_CONTA, TIPOS_CATEGORIA, GRUPOS_DRE } from './schemas'
+import { exigirChaveIdempotencia, exigirUuid, exigirValorPositivo, exigirPeriodo, exigirPaginacao, exigirTexto, textoOpcional, exigirOpcao, exigirValorMonetario, exigirBooleano, exigirPercentualOpcional, exigirDataBrtNaoFutura, exigirVersao, MOTIVOS_CREDITO, STATUS_PAGAR, STATUS_RECEBER, TIPOS_CONTA, TIPOS_CATEGORIA, GRUPOS_DRE, FINALIDADES_ENVELOPE } from './schemas'
 
 async function executarRpc(nome, payload) {
   const { data, error } = await supabase.rpc(nome, payload)
@@ -123,5 +123,80 @@ export function listarTitulos({ tipo, dataInicio, dataFim, status = null, ordena
   return executarRpc('financeiro_listar_titulos', {
     p_tipo: tipo, p_data_inicio: periodo.inicio, p_data_fim: periodo.fim, p_status: status,
     p_ordenar_por: ordenarPor, p_direcao: direcao, p_pagina: paginacao.pagina, p_por_pagina: paginacao.porPagina,
+  })
+}
+
+export function listarEnvelopes({ incluirInativos = false } = {}) {
+  return executarRpc('financeiro_listar_envelopes', {
+    p_incluir_inativos: exigirBooleano(incluirInativos, 'Filtro de envelopes inativos'),
+  })
+}
+
+export function listarSaldosDisponiveisContas() {
+  return executarRpc('financeiro_saldos_disponiveis_contas', {})
+}
+
+export function normalizarValorAporte(valor) {
+  try {
+    const valorValidado = arredondarCentavos(exigirValorPositivo(valor, 'Valor da reserva'))
+    return exigirValorPositivo(valorValidado, 'Valor da reserva')
+  } catch {
+    throw new TypeError('FINANCEIRO_VALOR_INVALIDO')
+  }
+}
+
+export function aportarEnvelope({ envelopeId, valor, idempotencyKey, correlationId }) {
+  return executarRpc('financeiro_aportar_envelope', {
+    p_envelope_id: exigirUuid(envelopeId, 'Envelope'),
+    p_valor: normalizarValorAporte(valor),
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
+export function listarTransacoesEnvelope({ envelopeId, dataInicio, dataFim, pagina = 1, porPagina = 25 }) {
+  const periodo = exigirPeriodo(dataInicio, dataFim)
+  const paginacao = exigirPaginacao(pagina, porPagina)
+  return executarRpc('financeiro_listar_transacoes_envelope', {
+    p_envelope_id: exigirUuid(envelopeId, 'Envelope'),
+    p_data_inicio: periodo.inicio,
+    p_data_fim: periodo.fim,
+    p_pagina: paginacao.pagina,
+    p_por_pagina: paginacao.porPagina,
+  })
+}
+
+export function criarEnvelope({ contaBancariaId, nome, finalidade, percentual, idempotencyKey, correlationId }) {
+  return executarRpc('financeiro_criar_envelope', {
+    p_conta_bancaria_id: exigirUuid(contaBancariaId, 'Conta bancária'), p_nome: exigirTexto(nome, 'Nome'),
+    p_finalidade: exigirOpcao(finalidade, FINALIDADES_ENVELOPE, 'Finalidade'), p_percentual: exigirPercentualOpcional(percentual),
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey), p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
+export function editarEnvelope({ envelopeId, contaBancariaId, nome, finalidade, percentual, expectedUpdatedAt, idempotencyKey, correlationId }) {
+  return executarRpc('financeiro_editar_envelope', {
+    p_envelope_id: exigirUuid(envelopeId, 'Envelope'), p_conta_bancaria_id: exigirUuid(contaBancariaId, 'Conta bancária'),
+    p_nome: exigirTexto(nome, 'Nome'), p_finalidade: exigirOpcao(finalidade, FINALIDADES_ENVELOPE, 'Finalidade'),
+    p_percentual: exigirPercentualOpcional(percentual), p_expected_updated_at: exigirVersao(expectedUpdatedAt),
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey), p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
+export function definirEnvelopeAtivo({ envelopeId, ativo, idempotencyKey, correlationId }) {
+  return executarRpc('financeiro_definir_envelope_ativo', {
+    p_envelope_id: exigirUuid(envelopeId, 'Envelope'), p_ativo: exigirBooleano(ativo, 'Situação do envelope'),
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey), p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
+export function simularDistribuicaoEnvelopes({ data, hojeBrt }) {
+  return executarRpc('financeiro_simular_distribuicao_diaria', { p_data: exigirDataBrtNaoFutura(data, hojeBrt) })
+}
+
+export function distribuirEnvelopesDiario({ data, hojeBrt, idempotencyKey, correlationId }) {
+  return executarRpc('financeiro_distribuir_envelopes_diario', {
+    p_data: exigirDataBrtNaoFutura(data, hojeBrt), p_idempotency_key: exigirChaveIdempotencia(idempotencyKey),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
   })
 }

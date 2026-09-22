@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { X, ShoppingBag, Calendar, Check } from 'lucide-react';
 import ClientSearch from './ClientSearch';
-import CurrencyInput from './CurrencyInput';
+import CurrencyInput from './ui/CurrencyInput';
 import Button from './ui/Button';
 import Label from './ui/Label';
 
 const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) => {
     const [tab, setTab] = useState(activeTab);
     const [selectedClient, setSelectedClient] = useState(null);
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState(null);
     const [description, setDescription] = useState('');
 
     if (!isOpen) return null;
@@ -53,7 +53,7 @@ const QuickActionModal = ({ isOpen, onClose, onSave, activeTab = 'encaixe' }) =>
                                 id="amount"
                                 label={tab === 'encaixe' ? 'Valor do Serviço' : 'Valor da Venda'}
                                 value={value}
-                                onChange={setValue}
+                                onValueChange={setValue}
                             />
 
                             <div className="flex flex-col space-y-1">

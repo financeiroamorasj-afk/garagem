@@ -1,12 +1,47 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { arredondarCentavos, normalizarMoeda } from '../src/lib/financeiro/moeda.js'
+import { arredondarCentavos, formatarEntradaCentavos, interpretarEntradaCentavos, normalizarMoeda } from '../src/lib/financeiro/moeda.js'
 import { periodoMensalBrt } from '../src/lib/financeiro/periodo.js'
 import { exigirChaveIdempotencia, exigirValorPositivo, exigirPeriodo, exigirPaginacao, exigirTexto, textoOpcional, exigirOpcao, exigirValorMonetario, exigirBooleano, TIPOS_CONTA, GRUPOS_DRE } from '../src/lib/financeiro/schemas.js'
 
 test('normaliza e arredonda moeda sem acumular ponto flutuante', () => {
   assert.equal(normalizarMoeda('1.234,567'), 1234.57)
   assert.equal(arredondarCentavos(0.1 + 0.2), 0.3)
+})
+
+test('interpreta digitação monetária exclusivamente como centavos', () => {
+  assert.equal(interpretarEntradaCentavos('500'), 5)
+  assert.equal(interpretarEntradaCentavos('50000'), 500)
+  assert.equal(interpretarEntradaCentavos('R$ 1.234,56'), 1234.56)
+  assert.equal(interpretarEntradaCentavos('50'), 0.5)
+  assert.equal(interpretarEntradaCentavos(''), null)
+  assert.equal(interpretarEntradaCentavos('0'), 0)
+})
+
+test('controla sinal, formatação e limites seguros da entrada monetária', () => {
+  assert.equal(interpretarEntradaCentavos('-500'), 5)
+  assert.equal(interpretarEntradaCentavos('-500', { allowNegative: true }), -5)
+  assert.equal(formatarEntradaCentavos(1234.56), '1.234,56')
+  assert.equal(formatarEntradaCentavos(null), '')
+  assert.throws(() => interpretarEntradaCentavos('9007199254740992'), /limite seguro/)
+  assert.throws(() => formatarEntradaCentavos(Infinity), /inválido/)
+})
+
+test('não mantém implementação monetária legada', async () => {
+  const { access, readFile } = await import('node:fs/promises')
+  const { constants } = await import('node:fs')
+  await assert.rejects(access(new URL('../src/components/CurrencyInput.jsx', import.meta.url), constants.F_OK))
+  const consumers = [
+    '../src/components/AddAppointmentModal.jsx',
+    '../src/components/AdminAppointmentModal.jsx',
+    '../src/components/QuickActionModal.jsx',
+    '../src/components/ServiceProductModal.jsx',
+    '../src/pages/financeiro/FinanceRegistrations.jsx',
+  ]
+  for (const consumer of consumers) {
+    const source = await readFile(new URL(consumer, import.meta.url), 'utf8')
+    assert.match(source, /ui\/CurrencyInput/)
+  }
 })
 
 test('gera período mensal válido', () => {
