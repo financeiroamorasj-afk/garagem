@@ -60,6 +60,12 @@ export function exigirPeriodo(inicio, fim) {
   return { inicio, fim }
 }
 
+export function exigirData(valor, campo = 'Data') {
+  const data = String(valor ?? '')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || Number.isNaN(Date.parse(`${data}T00:00:00Z`))) throw new TypeError(`${campo} inválida`)
+  return data
+}
+
 export function exigirPaginacao(pagina = 1, porPagina = 25) {
   if (!Number.isInteger(pagina) || pagina < 1 || !Number.isInteger(porPagina) || porPagina < 1 || porPagina > 100) throw new RangeError('Paginação inválida')
   return { pagina, porPagina }

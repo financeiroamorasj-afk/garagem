@@ -25,8 +25,8 @@
 
 ### Operação diária — prioridade máxima
 
-- [ ] Criar, editar e cancelar lançamentos manuais a pagar.
-- [ ] Criar, editar e cancelar lançamentos manuais a receber.
+- [~] Criar, editar e cancelar lançamentos manuais a pagar (implementado e validado localmente; migration ainda não aplicada em produção).
+- [~] Criar, editar e cancelar lançamentos manuais a receber (implementado e validado localmente; migration ainda não aplicada em produção).
 - [ ] Definir regras para títulos recorrentes e parcelados.
 - [ ] Implementar pagamentos e recebimentos parciais, ou declarar explicitamente que o MVP aceita apenas liquidação integral.
 - [ ] Implementar estorno auditável de pagamento e recebimento.
@@ -156,4 +156,4 @@
 
 ## Próximo checkpoint recomendado
 
-Concluir a auditoria de escopo do commit da UI de envelopes. Em seguida, iniciar o contrato seguro de criação e manutenção de títulos manuais. Esse contrato desbloqueia o resgate dos envelopes e transforma o financeiro atual em uma ferramenta utilizável no dia a dia.
+Revisar e aplicar com backup a migration de títulos manuais. Em seguida, implementar a transferência entre contas na interface e conectar o resgate dos envelopes aos títulos pendentes.

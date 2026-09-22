@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 import { arredondarCentavos } from './moeda'
-import { exigirChaveIdempotencia, exigirUuid, exigirValorPositivo, exigirPeriodo, exigirPaginacao, exigirTexto, textoOpcional, exigirOpcao, exigirValorMonetario, exigirBooleano, exigirPercentualOpcional, exigirDataBrtNaoFutura, exigirVersao, MOTIVOS_CREDITO, STATUS_PAGAR, STATUS_RECEBER, TIPOS_CONTA, TIPOS_CATEGORIA, GRUPOS_DRE, FINALIDADES_ENVELOPE } from './schemas'
+import { exigirChaveIdempotencia, exigirUuid, exigirValorPositivo, exigirPeriodo, exigirPaginacao, exigirTexto, textoOpcional, exigirOpcao, exigirValorMonetario, exigirBooleano, exigirPercentualOpcional, exigirDataBrtNaoFutura, exigirVersao, exigirData, MOTIVOS_CREDITO, STATUS_PAGAR, STATUS_RECEBER, TIPOS_CONTA, TIPOS_CATEGORIA, GRUPOS_DRE, FINALIDADES_ENVELOPE } from './schemas'
 
 async function executarRpc(nome, payload) {
   const { data, error } = await supabase.rpc(nome, payload)
@@ -123,6 +123,53 @@ export function listarTitulos({ tipo, dataInicio, dataFim, status = null, ordena
   return executarRpc('financeiro_listar_titulos', {
     p_tipo: tipo, p_data_inicio: periodo.inicio, p_data_fim: periodo.fim, p_status: status,
     p_ordenar_por: ordenarPor, p_direcao: direcao, p_pagina: paginacao.pagina, p_por_pagina: paginacao.porPagina,
+  })
+}
+
+function normalizarTituloManual({ tipo, descricao, valor, taxa = 0, dataEvento, dataCompetencia, metodoPagamento = null, categoriaId = null }) {
+  const tipoValidado = exigirOpcao(tipo, ['pagar', 'receber'], 'Tipo do título')
+  const valorValidado = arredondarCentavos(exigirValorPositivo(valor, 'Valor'))
+  exigirValorPositivo(valorValidado, 'Valor')
+  const taxaValidada = arredondarCentavos(exigirValorMonetario(taxa, 'Taxa'))
+  if (taxaValidada < 0 || taxaValidada > valorValidado) throw new TypeError('Taxa inválida')
+  if (tipoValidado === 'pagar' && taxaValidada !== 0) throw new TypeError('Conta a pagar não aceita taxa de recebimento')
+
+  return {
+    p_tipo: tipoValidado,
+    p_descricao: exigirTexto(descricao, 'Descrição', 2, 200),
+    p_valor: valorValidado,
+    p_taxa: taxaValidada,
+    p_data_evento: exigirData(dataEvento, tipoValidado === 'pagar' ? 'Data de vencimento' : 'Data de previsão'),
+    p_data_competencia: exigirData(dataCompetencia, 'Data de competência'),
+    p_metodo_pagamento: tipoValidado === 'receber' ? exigirTexto(metodoPagamento, 'Método de pagamento', 2, 50) : null,
+    p_categoria_id: categoriaId ? exigirUuid(categoriaId, 'Categoria') : null,
+  }
+}
+
+export function criarTituloManual({ idempotencyKey, correlationId, ...titulo }) {
+  return executarRpc('financeiro_criar_titulo_manual', {
+    ...normalizarTituloManual(titulo),
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
+export function editarTituloManual({ tituloId, expectedUpdatedAt, correlationId, ...titulo }) {
+  return executarRpc('financeiro_editar_titulo_manual', {
+    ...normalizarTituloManual(titulo),
+    p_titulo_id: exigirUuid(tituloId, 'Título'),
+    p_expected_updated_at: exigirVersao(expectedUpdatedAt),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
+export function cancelarTituloManual({ tipo, tituloId, expectedUpdatedAt, motivo, correlationId }) {
+  return executarRpc('financeiro_cancelar_titulo_manual', {
+    p_tipo: exigirOpcao(tipo, ['pagar', 'receber'], 'Tipo do título'),
+    p_titulo_id: exigirUuid(tituloId, 'Título'),
+    p_expected_updated_at: exigirVersao(expectedUpdatedAt),
+    p_motivo: exigirTexto(motivo, 'Motivo', 2, 200),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
   })
 }
 
