@@ -1,28 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Check, User, MapPin, Phone, UserCircle } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import Label from './ui/Label';
 
-const BarberModal = ({ isOpen, onClose, onSave, initialData = null }) => {
-    const [formData, setFormData] = useState({
-        nome: '',
-        apelido: '',
-        telefone: '',
-        endereco: ''
-    });
-
-    useEffect(() => {
-        if (isOpen) {
-            setFormData({
-                nome: initialData?.nome || '',
-                apelido: initialData?.apelido || '',
-                telefone: initialData?.telefone || '',
-                endereco: initialData?.endereco || ''
-            });
-        }
-    }, [isOpen, initialData]);
+const BarberModalContent = ({ onClose, onSave, initialData }) => {
+    const [formData, setFormData] = useState(() => ({
+        nome: initialData?.nome || '',
+        apelido: initialData?.apelido || '',
+        telefone: initialData?.telefone || '',
+        endereco: initialData?.endereco || '',
+    }));
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -30,7 +19,7 @@ const BarberModal = ({ isOpen, onClose, onSave, initialData = null }) => {
 
     return (
         <Modal
-            open={isOpen}
+            open
             onClose={onClose}
             title={
                 <span className="flex items-center gap-3">
@@ -94,6 +83,19 @@ const BarberModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                 </section>
             </div>
         </Modal>
+    );
+};
+
+const BarberModal = ({ isOpen, onClose, onSave, initialData = null }) => {
+    if (!isOpen) return null;
+
+    return (
+        <BarberModalContent
+            key={initialData?.id || 'novo-profissional'}
+            onClose={onClose}
+            onSave={onSave}
+            initialData={initialData}
+        />
     );
 };
 

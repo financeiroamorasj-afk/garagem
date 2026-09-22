@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import garagemLogo from '../assets/brand/garagem-logo-full.png'
 
 export default function Login() {
     const [email, setEmail] = useState('')
@@ -15,7 +16,7 @@ export default function Login() {
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (session) {
-                navigate('/dashboard')
+                navigate('/admin/dashboard')
             }
         })
 
@@ -40,13 +41,15 @@ export default function Login() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-surface-0 font-sans">
-            <div className="w-full max-w-md p-8 space-y-8 bg-black/40 border border-copper rounded-md shadow-2xl backdrop-blur-sm">
-                <div className="text-center">
-                    <h2 className="text-display text-transparent bg-clip-text bg-gradient-to-r from-copper to-gold-aged uppercase">
-                        Garagem
-                    </h2>
-                    <p className="mt-2 text-body-sm text-copper/80">Sistema de Gestão Premium</p>
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-0 p-6 font-sans">
+            <div className="atmosphere-vignette absolute inset-0" aria-hidden="true" />
+            <div className="relative w-full max-w-md space-y-8 rounded-md border border-line bg-surface-1 p-8">
+                <div className="flex justify-center">
+                    <img
+                        src={garagemLogo}
+                        alt="Garagem System — Sistema de gestão para barbearias"
+                        className="w-64 max-w-full object-contain"
+                    />
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleLogin}>

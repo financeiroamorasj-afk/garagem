@@ -254,6 +254,16 @@ Nenhum outro tamanho. Ícone sozinho num botão exige `aria-label`. Ícone decor
 
 ## 9. Componentes
 
+### Campos monetários
+
+Todo valor monetário editável usa exclusivamente `src/components/ui/CurrencyInput.jsx`.
+O componente recebe e devolve número em reais por `onValueChange` e interpreta a
+digitação como centavos: `500` → `R$ 5,00` e `50000` → `R$ 500,00`. O valor
+vazio devolve `null`, enquanto `0` continua sendo zero explícito. Valores
+negativos são bloqueados por padrão e exigem `allowNegative`, reservado a
+fluxos como saldo inicial de conta. Valores somente exibidos continuam usando
+`formatarBRL`.
+
 Todos em `src/components/ui/`. Todo componente aceita `className` (mesclado, não sobrescrito) e repassa `...props`. Todo elemento focável tem `focus-visible` com anel de 2px em `--color-copper` e offset de 2px. `outline: none` sem substituto é proibido.
 
 ### 9.1 Button
@@ -345,3 +355,11 @@ Fora do escopo desta versão, registradas para depois:
 - **Modo claro** — não existe e não está planejado.
 - **Tokens de gráfico** — quando entrar biblioteca de gráficos, a paleta categórica precisa ser definida aqui antes.
 - **`galeria-corte-degrade.jpg`** — ativo órfão na landing, sem referência. Verificar se pode ser removido.
+
+---
+
+## 12. Scrollbars
+
+As scrollbars globais e das regiões internas roláveis têm 8px. O trilho usa `surface-0`; o polegar usa `line-strong` com borda de 2px em `surface-0`. Em hover e interação, o polegar passa a `copper`. No Firefox, usar `scrollbar-width: thin` e `scrollbar-color: line-strong surface-0`.
+
+Não usar sombra, gradiente nem formato pill. A página não pode produzir rolagem horizontal; componentes largos devem conter a própria rolagem.

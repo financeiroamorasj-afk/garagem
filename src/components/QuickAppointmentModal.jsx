@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     X,
     Check,
@@ -15,8 +15,12 @@ import {
 import ClientSearch from './ClientSearch';
 import Button from './ui/Button';
 
-const QuickAppointmentModal = ({
-    isOpen,
+const timeToMinutes = (time) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+};
+
+const QuickAppointmentModalContent = ({
     onClose,
     onSave,
     professionals = [],
@@ -27,70 +31,39 @@ const QuickAppointmentModal = ({
 }) => {
     const [selectedClient, setSelectedClient] = useState(null);
     const [selectedServices, setSelectedServices] = useState([]);
-    const [selectedBarber, setSelectedBarber] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedBarber, setSelectedBarber] = useState(() => professionals[0]?.id || '');
+    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [time, setTime] = useState('10:00');
     const [selectedProducts, setSelectedProducts] = useState([]);
-    const [conflict, setConflict] = useState(null);
-
-    // Reset state when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedClient(null);
-            setSelectedServices([]);
-            setSelectedBarber(professionals[0]?.id || '');
-            setDate(new Date().toISOString().split('T')[0]);
-            setTime('10:00');
-            setSelectedProducts([]);
-            setConflict(null);
-        }
-    }, [isOpen, professionals]);
+    const activeBarber = selectedBarber || professionals[0]?.id || '';
 
     // Conflict Detection Logic
-    useEffect(() => {
-        if (selectedBarber && date && time && selectedServices.length > 0) {
-            const totalDuration = selectedServices.reduce((acc, s) => acc + (s.duration || 30), 0);
-            const startMinutes = timeToMinutes(time);
-            const endMinutes = startMinutes + totalDuration;
+    const conflict = useMemo(() => {
+        if (!activeBarber || !date || !time || selectedServices.length === 0) return null;
 
-            const overlapping = appointments.find(app => {
-                if (app.barberId !== selectedBarber || app.date !== date) return false;
+        const totalDuration = selectedServices.reduce((acc, service) => acc + (service.duration || 30), 0);
+        const startMinutes = timeToMinutes(time);
+        const endMinutes = startMinutes + totalDuration;
+        const overlaps = (appointment, barberId) => {
+            if (appointment.barberId !== barberId || appointment.date !== date) return false;
 
-                const appStart = timeToMinutes(app.time);
-                const appEnd = appStart + app.duration;
+            const appointmentStart = timeToMinutes(appointment.time);
+            const appointmentEnd = appointmentStart + appointment.duration;
+            return startMinutes < appointmentEnd && endMinutes > appointmentStart;
+        };
 
-                return (startMinutes < appEnd && endMinutes > appStart);
-            });
+        if (!appointments.some(appointment => overlaps(appointment, activeBarber))) return null;
 
-            if (overlapping) {
-                // Suggest another barber
-                const suggestedBarber = professionals.find(p => {
-                    if (p.id === selectedBarber) return false;
-                    const otherOverlapping = appointments.find(app => {
-                        if (app.barberId !== p.id || app.date !== date) return false;
-                        const appStart = timeToMinutes(app.time);
-                        const appEnd = appStart + app.duration;
-                        return (startMinutes < appEnd && endMinutes > appStart);
-                    });
-                    return !otherOverlapping;
-                });
+        const suggestion = professionals.find(professional => (
+            professional.id !== activeBarber
+            && !appointments.some(appointment => overlaps(appointment, professional.id))
+        ));
 
-                setConflict({
-                    message: `O barbeiro já possui um agendamento neste horário.`,
-                    suggestion: suggestedBarber ? suggestedBarber : null
-                });
-            } else {
-                setConflict(null);
-            }
-        } else {
-            setConflict(null);
-        }
-    }, [selectedBarber, date, time, selectedServices, appointments, professionals]);
-
-    const timeToMinutes = (t) => {
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + m;
-    };
+        return {
+            message: 'O barbeiro já possui um agendamento neste horário.',
+            suggestion: suggestion || null,
+        };
+    }, [activeBarber, appointments, date, professionals, selectedServices, time]);
 
     const toggleService = (service) => {
         if (selectedServices.find(s => s.id === service.id)) {
@@ -109,7 +82,7 @@ const QuickAppointmentModal = ({
     };
 
     const handleSave = () => {
-        if (!selectedClient || selectedServices.length === 0 || !selectedBarber) {
+        if (!selectedClient || selectedServices.length === 0 || !activeBarber) {
             alert('Por favor, preencha todos os campos obrigatórios.');
             return;
         }
@@ -121,7 +94,7 @@ const QuickAppointmentModal = ({
         onSave({
             clientId: selectedClient.id,
             clientName: selectedClient.nome,
-            barberId: selectedBarber,
+            barberId: activeBarber,
             services: selectedServices,
             products: selectedProducts,
             date,
@@ -130,8 +103,6 @@ const QuickAppointmentModal = ({
             totalValue
         });
     };
-
-    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-surface-0/80 backdrop-blur-md overflow-y-auto">
@@ -205,7 +176,7 @@ const QuickAppointmentModal = ({
                             <section className="space-y-3">
                                 <label className="text-label text-steel">Profissional</label>
                                 <select
-                                    value={selectedBarber}
+                                    value={activeBarber}
                                     onChange={(e) => setSelectedBarber(e.target.value)}
                                     className="w-full bg-surface-2 border border-line-strong rounded-sm px-6 py-4 text-warm-white focus:border-copper outline-none appearance-none font-semibold text-body"
                                 >
@@ -322,6 +293,12 @@ const QuickAppointmentModal = ({
             </div>
         </div>
     );
+};
+
+const QuickAppointmentModal = ({ isOpen, ...props }) => {
+    if (!isOpen) return null;
+
+    return <QuickAppointmentModalContent {...props} />;
 };
 
 export default QuickAppointmentModal;

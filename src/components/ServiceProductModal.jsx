@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Tag, Package } from 'lucide-react';
-import CurrencyInput from './CurrencyInput';
+import CurrencyInput from './ui/CurrencyInput';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Input from './ui/Input';
@@ -9,13 +9,15 @@ import Label from './ui/Label';
 const ServiceProductModal = ({ isOpen, onClose, onSave, type = 'service', initialData = null }) => {
     const [name, setName] = useState('');
     const [duration, setDuration] = useState(30);
-    const [value, setValue] = useState(0);
-    const [cost, setCost] = useState(0);
+    const [value, setValue] = useState(null);
+    const [cost, setCost] = useState(null);
     const [description, setDescription] = useState('');
 
     // Reset state when initialData changes or modal opens
     useEffect(() => {
         if (isOpen) {
+            // O modal reutilizado precisa reidratar o rascunho ao trocar o cadastro selecionado.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setName(initialData?.name || '');
             setDuration(initialData?.duration || 30);
             setValue(initialData?.value || 0);
@@ -61,13 +63,7 @@ const ServiceProductModal = ({ isOpen, onClose, onSave, type = 'service', initia
 
                 <div className={`grid grid-cols-1 ${type === 'product' || type === 'service' ? 'md:grid-cols-2' : ''} gap-6`}>
                     {type === 'product' && (
-                        <section className="space-y-2">
-                            <Label>Custo de Compra (R$)</Label>
-                            <CurrencyInput
-                                value={cost}
-                                onChange={setCost}
-                            />
-                        </section>
+                        <CurrencyInput label="Custo de Compra" value={cost} onValueChange={setCost} />
                     )}
                     {type === 'service' && (
                         <section className="space-y-2">
@@ -84,13 +80,7 @@ const ServiceProductModal = ({ isOpen, onClose, onSave, type = 'service', initia
                             </div>
                         </section>
                     )}
-                    <section className="space-y-2">
-                        <Label>{type === 'product' ? 'Preço de Venda' : 'Valor'} (R$)</Label>
-                        <CurrencyInput
-                            value={value}
-                            onChange={setValue}
-                        />
-                    </section>
+                    <CurrencyInput label={type === 'product' ? 'Preço de Venda' : 'Valor'} value={value} onValueChange={setValue} />
                 </div>
 
                 <section className="space-y-2">

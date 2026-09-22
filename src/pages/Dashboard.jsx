@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { Users } from 'lucide-react'
@@ -20,11 +20,39 @@ export default function Dashboard() {
     const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false)
     const [selectedProfessionalId, setSelectedProfessionalId] = useState(null)
 
-    useEffect(() => {
-        fetchData()
+    const fetchProfessionals = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('profissionais')
+                .select('*')
+                .order('criado_em', { ascending: true })
+
+            if (error) throw error
+            setProfessionals(data || [])
+        } catch (error) {
+            console.error('Error fetching professionals:', error.message)
+        }
     }, [])
 
-    const fetchData = async () => {
+    const fetchAppointments = useCallback(async () => {
+        try {
+            // Simplification: fetching all appointments for now
+            // In production, filter by date range (today/week)
+            // Embeds cliente/servico: a tabela guarda só as FKs (cliente_id,
+            // servico_id), então os nomes exibidos no card vêm do join.
+            const { data, error } = await supabase
+                .from('agendamentos')
+                .select('*, clientes(nome), servicos(nome)')
+                .order('data_hora', { ascending: true })
+
+            if (error) throw error
+            setAppointments(data || [])
+        } catch (error) {
+            console.error('Error fetching appointments:', error.message)
+        }
+    }, [])
+
+    const fetchData = useCallback(async () => {
         setLoading(true)
         try {
             await Promise.all([fetchProfessionals(), fetchAppointments()])
@@ -33,37 +61,11 @@ export default function Dashboard() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [fetchAppointments, fetchProfessionals])
 
-    const fetchProfessionals = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('profissionais')
-                .select('*')
-                .order('created_at', { ascending: true })
-
-            if (error) throw error
-            setProfessionals(data || [])
-        } catch (error) {
-            console.error('Error fetching professionals:', error.message)
-        }
-    }
-
-    const fetchAppointments = async () => {
-        try {
-            // Simplification: fetching all appointments for now
-            // In production, filter by date range (today/week)
-            const { data, error } = await supabase
-                .from('agendamentos')
-                .select('*')
-                .order('horario', { ascending: true })
-
-            if (error) throw error
-            setAppointments(data || [])
-        } catch (error) {
-            console.error('Error fetching appointments:', error.message)
-        }
-    }
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
 
     const handleOpenAppointmentModal = (professionalId) => {
         setSelectedProfessionalId(professionalId)

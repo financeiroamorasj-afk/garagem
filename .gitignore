@@ -15,11 +15,14 @@ dist-ssr
 # Env files
 .env
 .env.local
+# Backups de .env (contêm credenciais de produção — nunca versionar)
+*.bak
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
+.obsidian/
 .DS_Store
 *.suo
 *.ntvs*

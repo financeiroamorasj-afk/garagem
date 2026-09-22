@@ -1,118 +1,31 @@
-import { Outlet, Link, NavLink } from 'react-router-dom';
-import { useState } from 'react';
-import { Home, DollarSign, Scissors, Settings, ChevronLeft, Menu } from 'lucide-react'; // Placeholder icons
-
-// Mock user, replace with actual auth context
-const useUser = () => ({ user: { role: 'admin' }, loading: false });
+import { Outlet, Link, NavLink, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Home, ChartNoAxesCombined, Landmark, Tags, Scissors, Settings, ChevronLeft, Menu, ShieldX, WalletCards } from 'lucide-react'
+import EmptyState from '../ui/EmptyState'
+import Spinner from '../ui/Spinner'
+import useAdminProfile from '../../hooks/useAdminProfile'
+import { resolveAdminAccess } from '../../lib/auth/adminAccess'
+import garagemSymbol from '../../assets/brand/garagem-symbol.png'
 
 const navItems = [
-    {
-        group: 'Visão Geral',
-        items: [
-            { label: 'Dashboard', href: '/admin/dashboard', icon: <Home size={20} /> },
-        ]
-    },
-    {
-        group: 'Financeiro',
-        items: [
-            { label: 'Conciliação', href: '/admin/financeiro/conciliacao', icon: <DollarSign size={20} /> },
-            { label: 'DRE', href: '/admin/financeiro/dre', icon: <DollarSign size={20} /> },
-        ]
-    },
-    {
-        group: 'Operacional',
-        items: [
-            { label: 'Barbeiros', href: '/admin/barbeiros', icon: <Scissors size={20} /> },
-        ]
-    },
-    {
-        group: 'Sistema',
-        items: [
-            { label: 'Configurações', href: '/admin/configuracoes', icon: <Settings size={20} /> },
-        ]
-    }
-];
+  { group: 'Visão Geral', items: [{ label: 'Dashboard', href: '/admin/dashboard', icon: Home }] },
+  { group: 'Financeiro', items: [{ label: 'Visão financeira', href: '/admin/financeiro', icon: ChartNoAxesCombined }, { label: 'Contas', href: '/admin/financeiro/titulos', icon: Landmark }, { label: 'Envelopes', href: '/admin/financeiro/envelopes', icon: WalletCards }, { label: 'Cadastros', href: '/admin/financeiro/cadastros', icon: Tags }] },
+  { group: 'Operacional', items: [{ label: 'Barbeiros', href: '/admin/barbeiros', icon: Scissors }] },
+  { group: 'Sistema', items: [{ label: 'Configurações', href: '/admin/configuracoes', icon: Settings }] },
+]
 
-const Sidebar = ({ isCollapsed }) => (
-    <aside className={`bg-surface-1 border-r border-line transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="flex items-center justify-center h-16 border-b border-line">
-            <span className={`text-gold-aged font-bold text-2xl ${isCollapsed ? 'hidden' : 'block'}`}>GARAGEM</span>
-            <span className={`text-gold-aged font-bold text-2xl ${isCollapsed ? 'block' : 'hidden'}`}>G</span>
-        </div>
-        <nav className="flex-1 p-4 space-y-6">
-            {navItems.map(navGroup => (
-                <div key={navGroup.group}>
-                    <h3 className={`text-label text-steel-dark mb-2 ${isCollapsed ? 'text-center' : 'pl-2'}`}>
-                        {isCollapsed ? navGroup.group.substring(0, 1) : navGroup.group}
-                    </h3>
-                    <ul className="space-y-2">
-                        {navGroup.items.map(item => (
-                            <li key={item.label}>
-                                <NavLink
-                                    to={item.href}
-                                    end
-                                    className={({ isActive }) =>
-                                        `flex items-center p-2 rounded-lg transition-colors ${
-                                            isActive
-                                                ? 'bg-surface-brand-selected text-gold-aged'
-                                                : 'text-steel hover:bg-surface-3'
-                                        } ${isCollapsed ? 'justify-center' : ''}`
-                                    }
-                                >
-                                    {item.icon}
-                                    {!isCollapsed && <span className="ml-3">{item.label}</span>}
-                                </NavLink>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ))}
-        </nav>
-    </aside>
-);
-
-const Header = ({ isCollapsed, setCollapsed }) => (
-    <header className="bg-surface-2/80 backdrop-blur-sm border-b border-line sticky top-0 z-20 flex items-center justify-between h-16 px-6">
-        <button onClick={() => setCollapsed(!isCollapsed)} className="text-steel hover:text-white">
-            {isCollapsed ? <Menu size={24} /> : <ChevronLeft size={24} />}
-        </button>
-        <div className="flex items-center space-x-4">
-            <span className="text-steel">Usuário Admin</span>
-            {/* User menu can go here */}
-        </div>
-    </header>
-);
+function Sidebar({ isCollapsed }) {
+  return <aside className={`border-r border-line bg-surface-1 transition-all duration-200 ease-brand ${isCollapsed ? 'w-20' : 'w-64'}`}><div className={`flex h-16 items-center border-b border-line ${isCollapsed ? 'justify-center' : 'gap-3 px-6'}`}><img src={garagemSymbol} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />{!isCollapsed && <span className="text-h3 text-gold-aged">GARAGEM</span>}</div><nav className="flex-1 space-y-6 p-4" aria-label="Navegação administrativa">{navItems.map((group) => <div key={group.group}><h2 className={`mb-2 text-label text-steel ${isCollapsed ? 'text-center' : 'pl-2'}`}>{isCollapsed ? group.group.slice(0, 1) : group.group}</h2><ul className="space-y-2">{group.items.map((item) => { const Icon = item.icon; return <li key={item.href}><NavLink to={item.href} end aria-label={isCollapsed ? item.label : undefined} className={({ isActive }) => `flex min-h-10 items-center rounded-sm border px-3 text-body-sm font-semibold transition-colors duration-100 ease-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1 ${isActive ? 'border-copper bg-copper/8 text-copper' : 'border-transparent text-steel hover:bg-surface-2 hover:text-warm-white'} ${isCollapsed ? 'justify-center' : ''}`}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{!isCollapsed && <span className="ml-3">{item.label}</span>}</NavLink></li>})}</ul></div>)}</nav></aside>
+}
 
 export default function AdminLayout() {
-    const { user, loading } = useUser();
-    const [isCollapsed, setCollapsed] = useState(false);
+  const auth = useAdminProfile()
+  const access = resolveAdminAccess(auth)
+  const [isCollapsed, setCollapsed] = useState(false)
 
-    if (loading) {
-        return <div>Carregando...</div>; // Or a spinner
-    }
+  if (access === 'loading') return <div className="flex min-h-screen items-center justify-center bg-surface-0"><span className="inline-flex items-center gap-3 text-body text-steel"><Spinner size={24} /> Verificando acesso</span></div>
+  if (access === 'signed_out') return <Navigate to="/login" replace />
+  if (access === 'denied') return <div className="flex min-h-screen items-center justify-center bg-surface-0 p-6"><EmptyState icon={ShieldX} title="Acesso administrativo negado" description="Seu perfil não possui autorização administrativa ou não pôde ser validado." action={<Link to="/login" className="rounded-sm border border-copper px-5 py-3 text-body font-semibold text-copper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper">Voltar ao login</Link>} /></div>
 
-    // ACL Check
-    if (!user || !['admin', 'master'].includes(user.role)) {
-        return (
-            <div className="flex h-screen w-full flex-col items-center justify-center bg-surface-1 text-white">
-                <h1 className="text-4xl font-bold">Acesso Negado</h1>
-                <p className="mt-2 text-steel">Você não tem permissão para acessar esta página.</p>
-                <Link to="/login" className="mt-6 text-gold-aged hover:underline">
-                    Voltar para o Login
-                </Link>
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex h-screen bg-surface-main text-text-primary">
-            <Sidebar isCollapsed={isCollapsed} />
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <Header isCollapsed={isCollapsed} setCollapsed={setCollapsed} />
-                <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-                    <Outlet />
-                </main>
-            </div>
-        </div>
-    );
+  return <div className="flex h-screen bg-surface-0 text-warm-white"><Sidebar isCollapsed={isCollapsed} /><div className="flex min-w-0 flex-1 flex-col overflow-hidden"><header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-surface-1/80 px-6 backdrop-blur-sm"><button aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'} onClick={() => setCollapsed(!isCollapsed)} className="rounded-sm p-2 text-steel transition-colors duration-100 ease-brand hover:bg-surface-2 hover:text-warm-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper">{isCollapsed ? <Menu size={20} strokeWidth={1.75} aria-hidden="true" /> : <ChevronLeft size={20} strokeWidth={1.75} aria-hidden="true" />}</button><span className="text-body-sm text-steel">{auth.profile.nome || 'Usuário administrador'}</span></header><main className="flex-1 overflow-y-auto p-6"><Outlet /></main></div></div>
 }

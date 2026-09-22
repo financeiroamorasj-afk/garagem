@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Search, Check } from 'lucide-react';
 import ClientSearch from './ClientSearch';
-import CurrencyInput from './CurrencyInput';
+import CurrencyInput from './ui/CurrencyInput';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Input from './ui/Input';
@@ -9,10 +9,10 @@ import Label from './ui/Label';
 
 const AdminAppointmentModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     const [selectedClient, setSelectedClient] = useState(null);
-    const [profissionalId, setProfissionalId] = useState(initialData.profissionalId || '');
+    const [profissionalId] = useState(initialData.profissionalId || '');
     const [servicoId, setServicoId] = useState('');
     const [horario, setHorario] = useState(initialData.time || '09:00');
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState(null);
 
     return (
         <Modal
@@ -47,13 +47,7 @@ const AdminAppointmentModal = ({ isOpen, onClose, onSave, initialData = {} }) =>
                         onChange={(e) => setHorario(e.target.value)}
                     />
 
-                    <section className="space-y-2">
-                        <Label>Valor do Serviço</Label>
-                        <CurrencyInput
-                            value={value}
-                            onChange={setValue}
-                        />
-                    </section>
+                    <CurrencyInput label="Valor do Serviço" value={value} onValueChange={setValue} />
                 </div>
 
                 <section className="space-y-2">
