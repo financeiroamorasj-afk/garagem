@@ -353,7 +353,7 @@ Fora do escopo desta versão, registradas para depois:
 - **Monorepo** — adiado. A landing é HTML/CSS/JS sem build; unificar exige tooling ou porte para React. Por ora os tokens são copiados manualmente. Quando houver `packages/brand`, este documento vira a fonte do `tokens.css`.
 - **`window.confirm()`** para exclusão, em `AdminDashboard`. Vira `Modal` de confirmação numa etapa posterior.
 - **Modo claro** — não existe e não está planejado.
-- **Tokens de gráfico** — quando entrar biblioteca de gráficos, a paleta categórica precisa ser definida aqui antes.
+- **Tokens de gráfico** — quando entrar biblioteca de gráficos, a paleta categórica precisa ser definida aqui antes. Para o Mapa da barbearia, resolvido na seção 13.
 - **`galeria-corte-degrade.jpg`** — ativo órfão na landing, sem referência. Verificar se pode ser removido.
 
 ---
@@ -363,3 +363,45 @@ Fora do escopo desta versão, registradas para depois:
 As scrollbars globais e das regiões internas roláveis têm 8px. O trilho usa `surface-0`; o polegar usa `line-strong` com borda de 2px em `surface-0`. Em hover e interação, o polegar passa a `copper`. No Firefox, usar `scrollbar-width: thin` e `scrollbar-color: line-strong surface-0`.
 
 Não usar sombra, gradiente nem formato pill. A página não pode produzir rolagem horizontal; componentes largos devem conter a própria rolagem.
+
+---
+
+## 13. Mapa da barbearia (radar)
+
+> Aprovado por Rafa em 23/09/2026 a partir do mockup do radar. Resolve, para esta tela, a pendência "Tokens de gráfico" da seção 11. Implementação: `src/pages/MapaBarbearia.jsx`, geometria em `src/lib/mapa/geometria.js`.
+
+### 13.1 Paleta categórica dos núcleos `[derivado]`
+
+Cada núcleo do radar tem uma cor de identidade, tirada da temperatura da marca (metais e materiais de barbearia). Cor de núcleo nunca comunica estado: o estado é sempre `--color-danger` (alerta) mais texto.
+
+| Token | Valor | Núcleo |
+|---|---|---|
+| `--color-mapa-cobre` | `#c1793f` | Contas (igual a `copper`) |
+| `--color-mapa-latao` | `#c9a45c` | Categorias |
+| `--color-mapa-patina` | `#6f9a8d` | Cofres (envelopes) |
+| `--color-mapa-oliva` | `#9aa66a` | Comissões |
+| `--color-mapa-aco` | `#7f95a8` | Equipe |
+| `--color-mapa-ameixa` | `#a07c96` | Clientes |
+| `--color-mapa-osso` | `#cfc2a8` | Agenda |
+
+### 13.2 Estrutura do radar `[derivado]`
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--color-mapa-grade` | `#2a2419` | Matriz de pontos vazia |
+| `--color-mapa-trilho` | `#2b251b` | Anéis e divisórias |
+| `--color-mapa-trilho-forte` | `#3d3629` | Anel de acessos, marcas maiores |
+| `--color-mapa-faixa` | `#110e0a` | Fundo da faixa de itens |
+| `--color-mapa-painel` | `#0a0908` | Painel lateral do mapa |
+| `--color-mapa-texto` | `#e6dfd2` | Rótulos dentro do SVG |
+| `--color-mapa-alerta-suave` | `#e8998a` | Texto de alerta sobre fundo escuro do radar |
+| `--color-mapa-lancamento-suave` | `#e8c27a` | Data do lançamento em foco |
+
+O anel de lançamentos usa `--color-warning`; os alertas, `--color-danger`. Os valores são espelhados em `src/lib/mapa/tokens.js` porque o SVG precisa deles literais; `tests/mapa-modelo.test.js` falha se os dois divergirem.
+
+### 13.3 Exceções autorizadas — só nesta tela
+
+- **Brilho:** filtro `feGaussianBlur` (desvio 2,5) nos núcleos, no centro e no item em foco. Continua proibido em qualquer outro componente.
+- **Movimento contínuo:** varredura do radar (16 s), anel tracejado do centro (60 s) e pulsos de alerta (1,8–2 s). A varredura e os pulsos somem com `prefers-reduced-motion`; o anel do centro continua girando por ser lento (60 s por volta). Transições de interface continuam limitadas a 400 ms.
+- **Ícones próprios:** bigode (Clientes) e poste de barbeiro (centro) em `src/components/mapa/IconeMapa.jsx`, na mesma grade 24×24 e traço do `lucide-react`. Os demais núcleos usam lucide: `Landmark`, `Tag`, `Vault`, `HandCoins`, `Scissors`, `CalendarDays`.
+- **Tamanhos no SVG:** rótulos radiais e de núcleo usam 7,5–9,5 unidades do viewBox (948 unidades de largura). Numa tela comum isso fica entre ~7 e ~10px, abaixo do piso de 11px da seção 2. É uma exceção consciente, igual ao Mapa da casa: o mesmo texto aparece sempre no painel lateral em tamanho normal, então o radar nunca é o único lugar onde uma informação pode ser lida.

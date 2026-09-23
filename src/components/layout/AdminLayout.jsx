@@ -1,6 +1,6 @@
 import { Outlet, Link, NavLink, Navigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Home, ChartNoAxesCombined, Landmark, Tags, Scissors, Settings, ChevronLeft, Menu, ShieldX, WalletCards } from 'lucide-react'
+import { Home, ChartNoAxesCombined, Landmark, Tags, Scissors, Settings, ChevronLeft, Menu, ShieldX, WalletCards, Radar } from 'lucide-react'
 import EmptyState from '../ui/EmptyState'
 import Spinner from '../ui/Spinner'
 import useAdminProfile from '../../hooks/useAdminProfile'
@@ -8,7 +8,7 @@ import { resolveAdminAccess } from '../../lib/auth/adminAccess'
 import garagemSymbol from '../../assets/brand/garagem-symbol.png'
 
 const navItems = [
-  { group: 'Visão Geral', items: [{ label: 'Dashboard', href: '/admin/dashboard', icon: Home }] },
+  { group: 'Visão Geral', items: [{ label: 'Dashboard', href: '/admin/dashboard', icon: Home }, { label: 'Mapa da barbearia', href: '/admin/mapa', icon: Radar }] },
   { group: 'Financeiro', items: [{ label: 'Visão financeira', href: '/admin/financeiro', icon: ChartNoAxesCombined }, { label: 'Contas', href: '/admin/financeiro/titulos', icon: Landmark }, { label: 'Envelopes', href: '/admin/financeiro/envelopes', icon: WalletCards }, { label: 'Cadastros', href: '/admin/financeiro/cadastros', icon: Tags }] },
   { group: 'Operacional', items: [{ label: 'Barbeiros', href: '/admin/barbeiros', icon: Scissors }] },
   { group: 'Sistema', items: [{ label: 'Configurações', href: '/admin/configuracoes', icon: Settings }] },

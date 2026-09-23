@@ -12,6 +12,7 @@ import FinanceTitles from './pages/financeiro/FinanceTitles'
 import FinanceRegistrations from './pages/financeiro/FinanceRegistrations'
 import FinanceEnvelopes from './pages/financeiro/FinanceEnvelopes'
 import AdminPlaceholder from './pages/AdminPlaceholder'
+import MapaBarbearia from './pages/MapaBarbearia'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="mapa" element={<MapaBarbearia />} />
             <Route path="financeiro" element={<FinanceOverview />} />
             <Route path="financeiro/titulos" element={<FinanceTitles />} />
             <Route path="financeiro/cadastros" element={<FinanceRegistrations />} />
