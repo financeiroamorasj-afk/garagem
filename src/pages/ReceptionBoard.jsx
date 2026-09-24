@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarDays, CircleDollarSign, Clock3, Headset, LogOut, Package, Phone, RefreshCw, Scissors, Search } from 'lucide-react'
+import { CalendarDays, CircleDollarSign, Clock3, CreditCard, Headset, LogOut, Package, Phone, RefreshCw, Scissors, Search } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
+import ReceptionCheckoutModal from '../components/ReceptionCheckoutModal'
 import { dataLocalKey, statusAgenda } from '../lib/agenda/ui'
 import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
 import { buscarClientesRecepcao, listarAgendaRecepcao, listarFilaRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
@@ -45,6 +46,8 @@ export default function ReceptionBoard() {
   const [searching, setSearching] = useState(false)
   const [clientResults, setClientResults] = useState([])
   const [searchError, setSearchError] = useState('')
+  const [checkoutTarget, setCheckoutTarget] = useState(null)
+  const [notice, setNotice] = useState('')
 
   const endDate = view === 'hoje' ? today : addDays(today, 6)
   const load = useCallback(async () => {
@@ -127,9 +130,21 @@ export default function ReceptionBoard() {
           ].map(([label, value, icon]) => <Card key={label} className="p-4">{icon}<span className="block text-data-lg text-warm-white">{value}</span><span className="text-label text-steel">{label}</span></Card>)}
         </section>
 
+        {notice && <div role="status" className="rounded-md border border-success/35 bg-success/10 p-4 text-body-sm text-success">{notice}</div>}
+
         <section className="space-y-3" aria-labelledby="queue-title">
           <div><span className="text-label text-copper">FILA DO BALCÃO</span><h2 id="queue-title" className="mt-1 text-h2 text-warm-white">Aguardando cobrança</h2><p className="mt-1 text-body-sm text-steel">Atendimentos cuja parte técnica já foi encerrada pelo barbeiro.</p></div>
-          {queue.length === 0 ? <Card className="p-4 text-body-sm text-steel">Nenhum atendimento aguardando cobrança.</Card> : <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">{queue.map((item) => <Card key={item.pendencia_id} className="border-copper/40 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-h3 text-warm-white">{item.cliente_nome}</h3><p className="mt-1 text-body-sm font-semibold text-copper">{item.profissional_nome}</p><p className="mt-2 text-body-sm text-steel">{item.servico_nome}</p></div><Badge variant="warning">Na fila</Badge></div>{item.produtos.length > 0 && <div className="mt-3 space-y-1 border-t border-line pt-3"><p className="flex items-center gap-2 text-label text-steel"><Package size={14} /> PRODUTOS</p>{item.produtos.map((product) => <p key={product.id} className="text-body-sm text-steel">{product.quantidade}× {product.nome}</p>)}</div>}<div className="mt-4 flex items-end justify-between gap-3 border-t border-line pt-3"><div><span className="block text-label text-steel">Total previsto</span><strong className="text-data-lg text-gold-aged">{formatarBRL(item.valor_total)}</strong></div><span className="text-label text-info">Cobrança na próxima etapa</span></div></Card>)}</div>}
+          {queue.length === 0 ? <Card className="p-4 text-body-sm text-steel">Nenhum atendimento aguardando cobrança.</Card> : (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {queue.map((item) => (
+                <Card key={item.pendencia_id} className="border-copper/40 p-4">
+                  <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-h3 text-warm-white">{item.cliente_nome}</h3><p className="mt-1 text-body-sm font-semibold text-copper">{item.profissional_nome}</p><p className="mt-2 text-body-sm text-steel">{item.servico_nome}</p></div><Badge variant="warning">Na fila</Badge></div>
+                  {item.produtos.length > 0 && <div className="mt-3 space-y-1 border-t border-line pt-3"><p className="flex items-center gap-2 text-label text-steel"><Package size={14} /> PRODUTOS</p>{item.produtos.map((product) => <p key={product.id} className="text-body-sm text-steel">{product.quantidade}× {product.nome}</p>)}</div>}
+                  <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3 sm:flex-row sm:items-end sm:justify-between"><div><span className="block text-label text-steel">Total previsto</span><strong className="text-data-lg text-gold-aged">{formatarBRL(item.valor_total)}</strong></div><Button onClick={() => { setNotice(''); setCheckoutTarget(item) }}><CreditCard size={16} /> Conferir e cobrar</Button></div>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
 
         <Card className="p-4 sm:p-5">
@@ -148,6 +163,7 @@ export default function ReceptionBoard() {
           </section>
         )}
       </main>
+      <ReceptionCheckoutModal open={Boolean(checkoutTarget)} pending={checkoutTarget} onClose={() => setCheckoutTarget(null)} onSuccess={async () => { setCheckoutTarget(null); setNotice('Cobrança confirmada. Estoque e registros do atendimento foram atualizados.'); await load() }} />
     </div>
   )
 }
