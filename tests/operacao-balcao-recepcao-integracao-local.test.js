@@ -75,11 +75,39 @@ test('recepção devolve atendimento com histórico e conclui venda avulsa atôm
     assert.equal(directLine.profissional_id, null)
     assert.equal(Number(directLine.comissao_valor), 0)
 
+    const listedBeforeRefund = await db.query('SELECT * FROM public.recepcao_vendas_balcao_listar(current_date,current_date,50)')
+    assert.equal(listedBeforeRefund.rows.length, 2)
+    assert.equal(listedBeforeRefund.rows.find((row) => row.id === counterSale.id).produtos.length, 2)
+
+    const refundKey = crypto.randomUUID()
+    const refunded = await db.query("SELECT public.recepcao_venda_avulsa_estornar($1,'Cliente desistiu da compra',$2) result", [counterSale.id, refundKey])
+    const repeatedRefund = await db.query("SELECT public.recepcao_venda_avulsa_estornar($1,'Cliente desistiu da compra',$2) result", [counterSale.id, refundKey])
+    assert.equal(refunded.rows[0].result.venda.status, 'estornada')
+    assert.equal(repeatedRefund.rows[0].result.idempotente, true)
+    const restoredStock = (await db.query('SELECT id,estoque_quantidade FROM public.produtos WHERE id=ANY($1)', [[firstProductId, secondProductId]])).rows
+    assert.equal(restoredStock.find((row) => row.id === firstProductId).estoque_quantidade, 5)
+    assert.equal(restoredStock.find((row) => row.id === secondProductId).estoque_quantidade, 3)
+    assert.deepEqual((await db.query('SELECT DISTINCT status FROM public.vendas_produtos WHERE venda_balcao_id=$1', [counterSale.id])).rows.map((row) => row.status), ['cancelada'])
+    assert.deepEqual((await db.query('SELECT DISTINCT status FROM public.financeiro_contas_receber WHERE venda_balcao_id=$1', [counterSale.id])).rows.map((row) => row.status), ['estornado'])
+    assert.deepEqual((await db.query('SELECT DISTINCT status FROM public.financeiro_movimentacoes WHERE venda_balcao_id=$1', [counterSale.id])).rows.map((row) => row.status), ['estornado'])
+    assert.equal((await db.query("SELECT count(*)::int total FROM public.estoque_movimentacoes WHERE venda_produto_id IN (SELECT id FROM public.vendas_produtos WHERE venda_balcao_id=$1) AND tipo='estorno'", [counterSale.id])).rows[0].total, 2)
+    const listedAfterRefund = await db.query('SELECT * FROM public.recepcao_vendas_balcao_listar(current_date,current_date,50)')
+    assert.equal(listedAfterRefund.rows.find((row) => row.id === counterSale.id).motivo_estorno, 'Cliente desistiu da compra')
+    await assert.rejects(
+      db.query("SELECT public.recepcao_venda_avulsa_estornar($1,'Nova tentativa indevida',$2)", [counterSale.id, crypto.randomUUID()]),
+      /RECEPCAO_ESTORNO_JA_REALIZADO/,
+    )
+
     await setUser(db, otherReceptionId)
     assert.equal((await db.query('SELECT * FROM public.recepcao_profissionais_listar()')).rows.length, 0)
+    assert.equal((await db.query('SELECT * FROM public.recepcao_vendas_balcao_listar(current_date,current_date,50)')).rows.length, 0)
     await assert.rejects(
       db.query("SELECT public.recepcao_venda_avulsa_concluir($1::jsonb,NULL,0,'pix',0,current_date,$2)", [JSON.stringify([{ produto_id: firstProductId, quantidade: 1 }]), crypto.randomUUID()]),
       /RECEPCAO_VENDA_PRODUTO_NAO_ENCONTRADO/,
+    )
+    await assert.rejects(
+      db.query("SELECT public.recepcao_venda_avulsa_estornar($1,'Tentativa em outra unidade',$2)", [directSale.rows[0].result.venda.id, crypto.randomUUID()]),
+      /RECEPCAO_ESTORNO_VENDA_NAO_ENCONTRADA/,
     )
   } finally {
     await db.query('DELETE FROM public.atendimento_operacao_log WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})

@@ -63,6 +63,15 @@ export async function listarProfissionaisRecepcao() {
   return (await rpc('recepcao_profissionais_listar')) ?? []
 }
 
+export async function listarVendasBalcaoRecepcao(dataInicial, dataFinal, limite = 50) {
+  if (!DATE_KEY.test(String(dataInicial ?? '')) || !DATE_KEY.test(String(dataFinal ?? ''))) throw new TypeError('Período inválido')
+  return (await rpc('recepcao_vendas_balcao_listar', {
+    p_data_inicial: dataInicial,
+    p_data_final: dataFinal,
+    p_limite: Number(limite),
+  })) ?? []
+}
+
 export function salvarCarrinhoRecepcao({ pendenciaId, valorServico, produtos, expectedUpdatedAt }) {
   if (!pendenciaId || !expectedUpdatedAt) throw new TypeError('Atualize a fila antes de alterar o carrinho.')
   const serviceValue = Number(valorServico)
@@ -115,6 +124,17 @@ export function venderProdutosRecepcao({ produtos, profissionalId = null, descon
   })
 }
 
+export function estornarVendaBalcaoRecepcao({ vendaId, motivo, chaveIdempotencia }) {
+  const reason = String(motivo ?? '').trim()
+  if (!vendaId || !chaveIdempotencia) throw new TypeError('Atualize as vendas e tente novamente.')
+  if (reason.length < 3 || reason.length > 500) throw new TypeError('Informe o motivo do estorno.')
+  return rpc('recepcao_venda_avulsa_estornar', {
+    p_venda_id: vendaId,
+    p_motivo: reason,
+    p_chave_idempotencia: chaveIdempotencia,
+  })
+}
+
 const ERRORS = {
   RECEPCAO_ADMIN_NAO_AUTORIZADO: 'Seu usuário não pode administrar a recepção.',
   RECEPCAO_NAO_AUTORIZADA: 'Este acesso não pertence à equipe de recepção.',
@@ -157,6 +177,12 @@ const ERRORS = {
   RECEPCAO_VENDA_PAGAMENTO_INVALIDO: 'Selecione a forma de pagamento.',
   RECEPCAO_VENDA_DATA_INVALIDA: 'A data prevista para receber não pode estar no passado.',
   RECEPCAO_VENDA_CONTA_NAO_CONFIGURADA: 'A barbearia precisa configurar uma conta antes da venda.',
+  RECEPCAO_VENDAS_PERIODO_INVALIDO: 'Escolha um período de até 31 dias.',
+  RECEPCAO_VENDAS_LIMITE_INVALIDO: 'Não foi possível carregar o histórico de vendas.',
+  RECEPCAO_ESTORNO_MOTIVO_INVALIDO: 'Informe por que a venda está sendo estornada.',
+  RECEPCAO_ESTORNO_VENDA_NAO_ENCONTRADA: 'Esta venda não foi encontrada.',
+  RECEPCAO_ESTORNO_JA_REALIZADO: 'Esta venda já foi estornada em outro dispositivo.',
+  RECEPCAO_ESTORNO_PRODUTO_NAO_ENCONTRADO: 'Um produto desta venda não está mais disponível para ajuste.',
 }
 
 export function mensagemErroRecepcao(error) {

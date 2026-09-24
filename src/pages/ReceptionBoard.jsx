@@ -10,9 +10,10 @@ import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
 import ReceptionCheckoutModal from '../components/ReceptionCheckoutModal'
 import ReceptionProductSaleModal from '../components/ReceptionProductSaleModal'
+import ReceptionSalesHistory from '../components/ReceptionSalesHistory'
 import { dataLocalKey, statusAgenda } from '../lib/agenda/ui'
 import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
-import { buscarClientesRecepcao, devolverAtendimentoRecepcao, listarAgendaRecepcao, listarFilaRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
+import { buscarClientesRecepcao, devolverAtendimentoRecepcao, estornarVendaBalcaoRecepcao, listarAgendaRecepcao, listarFilaRecepcao, listarVendasBalcaoRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import { supabase } from '../lib/supabase'
 
@@ -42,6 +43,7 @@ export default function ReceptionBoard() {
   const [appointments, setAppointments] = useState([])
   const [availability, setAvailability] = useState([])
   const [queue, setQueue] = useState([])
+  const [counterSales, setCounterSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
@@ -55,20 +57,27 @@ export default function ReceptionBoard() {
   const [returnReason, setReturnReason] = useState('')
   const [returning, setReturning] = useState(false)
   const [returnError, setReturnError] = useState('')
+  const [refundTarget, setRefundTarget] = useState(null)
+  const [refundReason, setRefundReason] = useState('')
+  const [refundKey, setRefundKey] = useState('')
+  const [refunding, setRefunding] = useState(false)
+  const [refundError, setRefundError] = useState('')
 
   const endDate = view === 'hoje' ? today : addDays(today, 6)
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [agenda, team, pendingQueue] = await Promise.all([
+      const [agenda, team, pendingQueue, recentSales] = await Promise.all([
         listarAgendaRecepcao(today, endDate),
         listarDisponibilidadeOperacional({ dataInicial: today, dataFinal: endDate }),
         listarFilaRecepcao(),
+        listarVendasBalcaoRecepcao(today, endDate),
       ])
       setAppointments(agenda)
       setAvailability(team)
       setQueue(pendingQueue)
+      setCounterSales(recentSales)
     } catch (loadError) {
       setError(mensagemErroRecepcao(loadError))
     } finally {
@@ -126,6 +135,30 @@ export default function ReceptionBoard() {
     }
   }
 
+  function openRefund(sale) {
+    setNotice('')
+    setRefundError('')
+    setRefundReason('')
+    setRefundKey(crypto.randomUUID())
+    setRefundTarget(sale)
+  }
+
+  async function refundSale() {
+    setRefunding(true)
+    setRefundError('')
+    try {
+      await estornarVendaBalcaoRecepcao({ vendaId: refundTarget.id, motivo: refundReason, chaveIdempotencia: refundKey })
+      setRefundTarget(null)
+      setRefundReason('')
+      setNotice('Venda estornada. O estoque foi devolvido e os registros financeiros foram atualizados.')
+      await load()
+    } catch (refundFailure) {
+      setRefundError(mensagemErroRecepcao(refundFailure))
+    } finally {
+      setRefunding(false)
+    }
+  }
+
   return (
     <div className="min-h-[100dvh] overflow-x-hidden bg-surface-0 text-warm-white">
       <header className="sticky top-0 z-20 border-b border-line bg-surface-1/95 backdrop-blur-md">
@@ -170,6 +203,8 @@ export default function ReceptionBoard() {
           )}
         </section>
 
+        <ReceptionSalesHistory sales={counterSales} onRefund={openRefund} />
+
         <Card className="p-4 sm:p-5">
           <form onSubmit={search} className="flex flex-col gap-3 sm:flex-row sm:items-end"><div className="min-w-0 flex-1"><Input label="Encontrar cliente" icon={Search} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nome ou telefone" /></div><Button type="submit" loading={searching}>Buscar</Button></form>
           {searchError && <p role="alert" className="mt-3 text-body-sm text-danger">{searchError}</p>}
@@ -190,6 +225,9 @@ export default function ReceptionBoard() {
       <ReceptionProductSaleModal open={saleOpen} onClose={() => setSaleOpen(false)} onSuccess={async () => { setSaleOpen(false); setNotice('Venda avulsa concluída e estoque atualizado.'); await load() }} />
       <Modal open={Boolean(returnTarget)} onClose={() => !returning && setReturnTarget(null)} title="Devolver ao barbeiro" footer={<><Button variant="secondary" disabled={returning} onClick={() => setReturnTarget(null)}>Voltar</Button><Button variant="danger" loading={returning} disabled={returnReason.trim().length < 3} onClick={returnToBarber}><RotateCcw size={16} /> Confirmar devolução</Button></>}>
         <div className="space-y-4"><p className="text-body text-steel">O atendimento de <strong className="text-warm-white">{returnTarget?.cliente_nome}</strong> sairá da fila e voltará para o barbeiro corrigir. Nenhum estoque será baixado.</p>{returnError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{returnError}</p>}<label className="block text-label text-steel"><span className="mb-2 block">Motivo da devolução</span><textarea value={returnReason} onChange={(event) => setReturnReason(event.target.value)} maxLength={500} rows={4} placeholder="Ex.: produto incorreto ou atendimento ainda não finalizado" className="w-full resize-y rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper" /></label></div>
+      </Modal>
+      <Modal open={Boolean(refundTarget)} onClose={() => !refunding && setRefundTarget(null)} title="Estornar venda avulsa" footer={<><Button variant="secondary" disabled={refunding} onClick={() => setRefundTarget(null)}>Voltar</Button><Button variant="danger" loading={refunding} disabled={refundReason.trim().length < 3} onClick={refundSale}><RotateCcw size={16} /> Confirmar estorno</Button></>}>
+        <div className="space-y-4"><p className="text-body text-steel">A venda de <strong className="text-warm-white">{formatarBRL(refundTarget?.valor_final || 0)}</strong> será estornada. Os produtos voltarão ao estoque e os registros financeiros serão marcados como estornados.</p><p className="rounded-sm border border-warning/35 bg-warning/10 p-3 text-body-sm text-warning">Esta operação fica registrada e não apaga o histórico da venda.</p>{refundError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{refundError}</p>}<label className="block text-label text-steel"><span className="mb-2 block">Motivo do estorno</span><textarea value={refundReason} onChange={(event) => setRefundReason(event.target.value)} maxLength={500} rows={4} placeholder="Ex.: cliente desistiu da compra" className="w-full resize-y rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper" /></label></div>
       </Modal>
     </div>
   )
