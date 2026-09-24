@@ -49,3 +49,15 @@ Esta lista resume as frentes atuais que faltam (baseado na auditoria do fim de a
 - [x] Permitir agendamento e cancelamento com disponibilidade real e protecao atomica contra conflito.
 - [x] Criar sessao temporaria revogavel e manter todas as tabelas privadas via RLS.
 - [ ] Conectar um provedor de pagamento para habilitar pagamento antecipado; contrato e estados ja preparados no banco.
+
+## P1.7 — Módulo de Recepção (adicional da assinatura)
+- [ ] Modelar o direito comercial do módulo (`entitlement`) separado da ativação feita pelo proprietário na unidade.
+- [ ] Permitir convite e gestão de usuários individuais com papel `recepcao`.
+- [ ] Substituir o painel mockado de recepção por agenda e fila operacionais reais.
+- [ ] Adicionar o estado `aguardando_pagamento` entre o fim técnico do atendimento e sua conclusão financeira.
+- [ ] Permitir que o barbeiro envie serviço e produtos para um carrinho pendente, sem baixa antecipada de estoque.
+- [ ] Permitir que a recepção confira o carrinho, acrescente produtos e faça a cobrança no balcão.
+- [ ] Reutilizar o checkout atômico para efetivar pagamento, comissão, estoque e financeiro somente uma vez.
+- [ ] Restringir contas, saldos, envelopes, margens e repasses ao proprietário.
+- [ ] Cobrir concorrência entre dois caixas, auditoria e recuperação após perda de conexão.
+- [ ] Seguir a especificação e a sequência de [[Módulo de Recepção]].
