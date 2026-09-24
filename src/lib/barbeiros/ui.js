@@ -7,6 +7,7 @@ const messages = {
   BARBEIROS_TELEFONE_INVALIDO: 'Informe um telefone válido.',
   BARBEIROS_ESPECIALIDADE_INVALIDA: 'Informe uma especialidade válida.',
   BARBEIROS_COMISSAO_INVALIDA: 'A comissão deve ficar entre 0% e 100%.',
+  BARBEIROS_COMISSAO_PRODUTOS_INVALIDA: 'A comissão de produtos deve ficar entre 0% e 100%.',
   BARBEIROS_EMAIL_EM_USO: 'Este e-mail já está vinculado a outro usuário.',
   BARBEIROS_ACESSO_JA_CRIADO: 'Este barbeiro já possui um usuário de acesso.',
   BARBEIROS_CONVITE_FALHOU: 'Não foi possível enviar o convite de acesso. Tente novamente.',
