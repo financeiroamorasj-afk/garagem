@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 test('painéis mostram disponibilidade e conclusão registra memória com foto compactada', async () => {
-  const [barber, admin, availability, completion, image, cutApi, migration, availabilityMigration, extendedMigration] = await Promise.all([
+  const [barber, admin, availability, completion, image, cutApi, migration, availabilityMigration, extendedMigration, checkoutMigration, financePage] = await Promise.all([
     readFile(new URL('../src/pages/BarberDashboard.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/AdminAgenda.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/AvailabilityOverview.jsx', import.meta.url), 'utf8'),
@@ -13,6 +13,8 @@ test('painéis mostram disponibilidade e conclusão registra memória com foto c
     readFile(new URL('../supabase/migrations/20260923210000_memoria_cortes.sql', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20260923211000_disponibilidade_operacional.sql', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20260923212000_disponibilidade_calendario_extenso.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/migrations/20260924120000_checkout_atendimento.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../src/pages/financeiro/FinanceTitles.jsx', import.meta.url), 'utf8'),
   ])
 
   assert.match(admin, /Disponibilidade e conflitos da equipe/)
@@ -23,12 +25,18 @@ test('painéis mostram disponibilidade e conclusão registra memória com foto c
   assert.match(availability, /conflito/)
   assert.match(completion, /Preferências permanentes do cliente/)
   assert.match(completion, /Foto do resultado/)
+  assert.match(completion, /PRODUTOS DO ATENDIMENTO/)
+  assert.match(completion, /Data prevista para receber/)
   assert.match(image, /image\/webp/)
   assert.match(image, /maxBytes = 800 \* 1024/)
-  assert.match(cutApi, /barbeiro_atendimento_concluir/)
+  assert.match(cutApi, /barbeiro_checkout_concluir/)
   assert.match(migration, /file_size_limit=EXCLUDED\.file_size_limit/)
   assert.match(migration, /cliente_cortes_um_ativo_idx/)
   assert.match(availabilityMigration, /Fora da disponibilidade/)
   assert.match(availabilityMigration, /Choque entre atendimentos/)
   assert.match(extendedMigration, /p_data_final-p_data_inicial>62/)
+  assert.match(checkoutMigration, /CREATE TABLE public\.atendimento_fechamentos/)
+  assert.match(checkoutMigration, /CHECKOUT_ESTOQUE_INSUFICIENTE/)
+  assert.match(checkoutMigration, /admin_checkout_estornar/)
+  assert.match(financePage, /Estornar atendimento/)
 })

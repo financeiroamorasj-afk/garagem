@@ -25,7 +25,7 @@ test('tela usa apenas os wrappers de leitura e gestão autorizados', async () =>
 test('aporte usa somente a RPC auditada com os quatro parâmetros exatos', async () => {
   const api = await readFile(new URL('../src/lib/financeiro/api.js', import.meta.url), 'utf8')
   const page = await readFile(new URL('../src/pages/financeiro/FinanceEnvelopes.jsx', import.meta.url), 'utf8')
-  const wrapper = api.match(/export function aportarEnvelope[\s\S]*?\n}\n/)?.[0] ?? ''
+  const wrapper = api.match(/export function aportarEnvelope[\s\S]*?\r?\n}\r?\n/)?.[0] ?? ''
   assert.match(wrapper, /financeiro_aportar_envelope/)
   for (const parameter of ['p_envelope_id', 'p_valor', 'p_idempotency_key', 'p_correlation_id']) assert.match(wrapper, new RegExp(parameter))
   assert.doesNotMatch(wrapper, /barbearia|tenant|\.from\s*\(/i)
@@ -55,7 +55,7 @@ test('retry preserva a intenção de aporte e fechar ou trocar de envelope a ren
 test('sucesso recarrega RPCs e extrato sem atualização aritmética local', async () => {
   const page = await readFile(new URL('../src/pages/financeiro/FinanceEnvelopes.jsx', import.meta.url), 'utf8')
   const currencyInput = await readFile(new URL('../src/components/ui/CurrencyInput.jsx', import.meta.url), 'utf8')
-  const flow = page.match(/async function confirmReserve[\s\S]*?\n {2}}\n/)?.[0] ?? ''
+  const flow = page.match(/async function confirmReserve[\s\S]*?\r?\n {2}}\r?\n/)?.[0] ?? ''
   assert.match(flow, /await loadData\(\)/)
   assert.match(flow, /await loadStatement\(envelope, 1\)/)
   assert.doesNotMatch(flow, /setEnvelopes\(|setAccounts\(|saldo_acumulado\s*[+-]/)
@@ -66,7 +66,7 @@ test('sucesso recarrega RPCs e extrato sem atualização aritmética local', asy
 
 test('valor do aporte é arredondado e validado novamente depois dos centavos', async () => {
   const api = await readFile(new URL('../src/lib/financeiro/api.js', import.meta.url), 'utf8')
-  const normalizer = api.match(/export function normalizarValorAporte[\s\S]*?\n}\n/)?.[0] ?? ''
+  const normalizer = api.match(/export function normalizarValorAporte[\s\S]*?\r?\n}\r?\n/)?.[0] ?? ''
   assert.match(normalizer, /arredondarCentavos\(exigirValorPositivo/)
   assert.match(normalizer, /return exigirValorPositivo\(valorValidado/)
   assert.equal(arredondarCentavos(1.005), 1.01)

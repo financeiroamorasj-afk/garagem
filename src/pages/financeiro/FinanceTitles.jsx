@@ -8,7 +8,7 @@ import Label from '../../components/ui/Label'
 import Modal from '../../components/ui/Modal'
 import PeriodSelector from '../../components/ui/PeriodSelector'
 import Tabs from '../../components/ui/Tabs'
-import { cancelarTituloManual, criarTituloManual, editarTituloManual, listarCategorias, listarContasBancarias, listarTitulos, pagarConta, receberConta } from '../../lib/financeiro/api'
+import { cancelarTituloManual, criarTituloManual, editarTituloManual, estornarCheckout, listarCategorias, listarContasBancarias, listarTitulos, pagarConta, receberConta } from '../../lib/financeiro/api'
 import { dataCompetenciaBrt, periodoMensalBrt } from '../../lib/financeiro/periodo'
 import { formatarBRL } from '../../lib/financeiro/moeda'
 import { settlementKeyFor } from '../../lib/financeiro/settlementIntent'
@@ -55,6 +55,8 @@ export default function FinanceTitles() {
   const [titleErrors, setTitleErrors] = useState({})
   const [cancelTarget, setCancelTarget] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
+  const [checkoutReversal, setCheckoutReversal] = useState(null)
+  const [checkoutReversalReason, setCheckoutReversalReason] = useState('')
   const settlementIntentRef = useRef(null)
   const createIntentRef = useRef(null)
 
@@ -196,6 +198,27 @@ export default function FinanceTitles() {
     }
   }
 
+  async function confirmCheckoutReversal(event) {
+    event.preventDefault()
+    const reason = checkoutReversalReason.trim()
+    if (reason.length < 3 || reason.length > 500) {
+      setTitleErrors({ motivoEstorno: 'Informe entre 3 e 500 caracteres.' })
+      return
+    }
+    setSubmitting(true)
+    setTitleErrors({})
+    try {
+      await estornarCheckout({ fechamentoId: checkoutReversal.fechamento_id, motivo: reason })
+      setFeedback('Atendimento estornado. Os títulos, as taxas e o estoque foram revertidos.')
+      setCheckoutReversal(null)
+      await loadTitles()
+    } catch (operationError) {
+      setTitleErrors({ submitEstorno: operationError.message || 'Não foi possível estornar o atendimento.' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   function openSettlement(row) {
     settlementIntentRef.current = settlementKeyFor(null, row.tipo, row.id)
     setSelected(row)
@@ -238,7 +261,7 @@ export default function FinanceTitles() {
     { key: 'status', header: 'Status', render: (value) => <Badge variant={statusVariant[value] ?? 'neutral'}>{value}</Badge> },
   ]
 
-  const table = <DataTable columns={columns} rows={rows} loading={loading} caption={type === 'pagar' ? 'Contas reais a pagar' : 'Contas reais a receber'} emptyTitle="Nenhum título encontrado" emptyDescription="Não há títulos para os filtros e período selecionados." renderAction={(row) => <div className="flex min-w-max flex-wrap justify-end gap-2">{row.pode_liquidar && <Button size="sm" variant="secondary" onClick={() => openSettlement(row)}>{row.tipo === 'pagar' ? 'Pagar' : 'Receber'}</Button>}{row.pode_editar && <Button size="sm" variant="ghost" onClick={() => openEditor(row)}>Editar</Button>}{row.pode_cancelar && <Button size="sm" variant="danger" onClick={() => openCancel(row)}>Cancelar</Button>}{!row.pode_liquidar && !row.pode_editar && !row.pode_cancelar && <span className="text-body-sm text-steel">Sem ação</span>}</div>} />
+  const table = <DataTable columns={columns} rows={rows} loading={loading} caption={type === 'pagar' ? 'Contas reais a pagar' : 'Contas reais a receber'} emptyTitle="Nenhum título encontrado" emptyDescription="Não há títulos para os filtros e período selecionados." renderAction={(row) => <div className="flex min-w-max flex-wrap justify-end gap-2">{row.pode_liquidar && <Button size="sm" variant="secondary" onClick={() => openSettlement(row)}>{row.tipo === 'pagar' ? 'Pagar' : 'Receber'}</Button>}{row.pode_editar && <Button size="sm" variant="ghost" onClick={() => openEditor(row)}>Editar</Button>}{row.pode_cancelar && <Button size="sm" variant="danger" onClick={() => openCancel(row)}>Cancelar</Button>}{row.pode_estornar && <Button size="sm" variant="danger" onClick={() => { setCheckoutReversal(row); setCheckoutReversalReason(''); setTitleErrors({}); setFeedback('') }}>Estornar atendimento</Button>}{!row.pode_liquidar && !row.pode_editar && !row.pode_cancelar && !row.pode_estornar && <span className="text-body-sm text-steel">Sem ação</span>}</div>} />
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -259,6 +282,9 @@ export default function FinanceTitles() {
       </Modal>
       <Modal open={Boolean(cancelTarget)} onClose={closeCancel} title="Cancelar título manual" footer={<><Button variant="secondary" onClick={closeCancel} disabled={submitting}>Voltar</Button><Button variant="danger" type="submit" form="cancel-title-form" loading={submitting}>Cancelar título</Button></>}>
         {cancelTarget && <form id="cancel-title-form" className="space-y-5" onSubmit={confirmCancel} noValidate><p className="text-body text-steel">O lançamento será preservado com status cancelado e ficará disponível na auditoria.</p>{titleErrors.submit && <div role="alert" className="rounded-md border border-danger bg-danger/12 p-4 text-body-sm text-danger">{titleErrors.submit}</div>}<Input label="Motivo do cancelamento" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} error={titleErrors.motivo} maxLength={200} required disabled={submitting} /></form>}
+      </Modal>
+      <Modal open={Boolean(checkoutReversal)} onClose={() => !submitting && setCheckoutReversal(null)} title="Estornar atendimento" footer={<><Button variant="secondary" onClick={() => setCheckoutReversal(null)} disabled={submitting}>Voltar</Button><Button variant="danger" type="submit" form="checkout-reversal-form" loading={submitting}>Confirmar estorno</Button></>}>
+        {checkoutReversal && <form id="checkout-reversal-form" className="space-y-4" onSubmit={confirmCheckoutReversal}><div className="rounded-sm border border-warning/40 bg-warning/10 p-3 text-body-sm text-warning">O estorno afeta todo o atendimento, inclusive os demais títulos do mesmo checkout. Produtos voltarão ao estoque e o lançamento financeiro será marcado como estornado.</div>{titleErrors.submitEstorno && <div role="alert" className="rounded-sm border border-danger bg-danger/10 p-3 text-body-sm text-danger">{titleErrors.submitEstorno}</div>}<label className="block text-label text-steel"><span className="mb-2 block">Motivo do estorno</span><textarea value={checkoutReversalReason} onChange={(event) => setCheckoutReversalReason(event.target.value)} maxLength={500} rows={4} className="w-full rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper" placeholder="Ex.: pagamento devolvido ao cliente" /></label>{titleErrors.motivoEstorno && <p className="text-body-sm text-danger">{titleErrors.motivoEstorno}</p>}</form>}
       </Modal>
     </div>
   )
