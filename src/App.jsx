@@ -3,6 +3,7 @@ import AdminLayout from './components/layout/AdminLayout'
 import Login from './pages/Login'
 import DesignSystem from './pages/DesignSystem'
 import ProtectedRoute from './components/ProtectedRoute'
+import ModuleGate from './components/ModuleGate'
 import AdminDashboard from './pages/AdminDashboard'
 import Dashboard from './pages/Dashboard'
 import BarberDashboard from './pages/BarberDashboard'
@@ -11,7 +12,6 @@ import FinanceOverview from './pages/financeiro/FinanceOverview'
 import FinanceTitles from './pages/financeiro/FinanceTitles'
 import FinanceRegistrations from './pages/financeiro/FinanceRegistrations'
 import FinanceEnvelopes from './pages/financeiro/FinanceEnvelopes'
-import AdminPlaceholder from './pages/AdminPlaceholder'
 import MapaBarbearia from './pages/MapaBarbearia'
 import AdminBarbers from './pages/AdminBarbers'
 import AdminAgenda from './pages/AdminAgenda'
@@ -21,6 +21,7 @@ import AdminClients from './pages/AdminClients'
 import SetPassword from './pages/SetPassword'
 import ClientPortal from './pages/ClientPortal'
 import AdminProducts from './pages/AdminProducts'
+import AdminSettings from './pages/AdminSettings'
 
 function App() {
   return (
@@ -35,7 +36,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/barber/dashboard" element={<BarberDashboard />} />
-          <Route path="/reception/board" element={<ReceptionBoard />} />
+          <Route path="/reception/board" element={<ModuleGate modulo="recepcao"><ReceptionBoard /></ModuleGate>} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
@@ -50,7 +51,7 @@ function App() {
             <Route path="produtos" element={<AdminProducts />} />
             <Route path="disponibilidade" element={<AdminAvailability />} />
             <Route path="clientes" element={<AdminClients />} />
-            <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" description="As configurações administrativas serão disponibilizadas em uma próxima etapa segura." />} />
+            <Route path="configuracoes" element={<AdminSettings />} />
           </Route>
         </Route>
 
