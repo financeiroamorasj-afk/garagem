@@ -69,7 +69,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-surface-0/80 p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-surface-0/80 p-0 sm:items-center sm:p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCloseRef.current()
       }}
@@ -81,7 +81,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
         aria-labelledby={titleId}
         tabIndex={-1}
         className={[
-          'w-full max-w-modal rounded-md bg-surface-3 p-6 shadow-overlay focus:outline-none',
+          'max-h-[100dvh] w-full max-w-modal overflow-y-auto rounded-t-md bg-surface-3 p-4 shadow-overlay focus:outline-none sm:max-h-[calc(100dvh-3rem)] sm:rounded-md sm:p-6',
           className,
         ]
           .filter(Boolean)
@@ -94,7 +94,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
         <div className="mt-4">{children}</div>
 
         {footer && (
-          <div className="mt-6 flex justify-end gap-3">{footer}</div>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:justify-end">{footer}</div>
         )}
       </div>
     </div>,

@@ -26,6 +26,24 @@
     --color-danger: #d4614a;
     --color-info: #7e9aaf;
 
+    /* Mapa da barbearia — paleta categórica dos núcleos e estrutura do radar.
+       Espelhados em src/lib/mapa/tokens.js; ver DESIGN-SYSTEM.md seção 13. */
+    --color-mapa-cobre: #c1793f;
+    --color-mapa-latao: #c9a45c;
+    --color-mapa-patina: #6f9a8d;
+    --color-mapa-oliva: #9aa66a;
+    --color-mapa-aco: #7f95a8;
+    --color-mapa-ameixa: #a07c96;
+    --color-mapa-osso: #cfc2a8;
+    --color-mapa-grade: #2a2419;
+    --color-mapa-trilho: #2b251b;
+    --color-mapa-trilho-forte: #3d3629;
+    --color-mapa-faixa: #110e0a;
+    --color-mapa-painel: #0a0908;
+    --color-mapa-texto: #e6dfd2;
+    --color-mapa-alerta-suave: #e8998a;
+    --color-mapa-lancamento-suave: #e8c27a;
+
     /* Alias de compatibilidade — remover quando /ds-migrar zerar o grep */
     --color-industrial-dark: #050505;
 

@@ -105,28 +105,28 @@ const QuickAppointmentModalContent = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-surface-0/80 backdrop-blur-md overflow-y-auto">
-            <div className="w-full max-w-4xl bg-surface-3 rounded-md border border-line shadow-overlay flex flex-col my-8">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-surface-0/80 p-0 backdrop-blur-md sm:items-center sm:p-4">
+            <div className="flex max-h-[100dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-md border border-line bg-surface-3 shadow-overlay sm:max-h-[calc(100dvh-2rem)] sm:rounded-md">
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-8 border-b border-line">
-                    <div className="flex items-center space-x-3">
-                        <div className="bg-copper/10 p-3 rounded-md text-copper">
-                            <Scissors size={24} />
+                <div className="flex shrink-0 items-center justify-between border-b border-line p-4 sm:p-6 lg:p-8">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="shrink-0 rounded-md bg-copper/10 p-2.5 text-copper sm:p-3">
+                            <Scissors size={22} />
                         </div>
-                        <div>
-                            <h2 className="text-h1 text-warm-white uppercase">NOVO CORTE</h2>
+                        <div className="min-w-0">
+                            <h2 className="truncate text-h2 text-warm-white uppercase sm:text-h1">NOVO CORTE</h2>
                             <p className="text-label text-steel leading-none">Agendamento & Venda</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-steel hover:text-warm-white transition-colors duration-100 ease-brand">
-                        <X size={32} />
+                    <button aria-label="Fechar" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-steel transition-colors duration-100 ease-brand hover:bg-surface-2 hover:text-warm-white">
+                        <X size={24} />
                     </button>
                 </div>
 
-                <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
                     {/* Left Column: Form */}
-                    <div className="flex-1 p-10 space-y-8 border-r border-line overflow-y-auto">
+                    <div className="flex-1 space-y-7 p-4 sm:p-6 lg:overflow-y-auto lg:border-r lg:border-line lg:p-10">
 
                         {/* Client Search */}
                         <section className="space-y-3">
@@ -151,12 +151,12 @@ const QuickAppointmentModalContent = ({
                                     Total: {selectedServices.reduce((acc, s) => acc + (s.duration || 30), 0)} min
                                 </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {services.map(service => (
                                     <button
                                         key={service.id}
                                         onClick={() => toggleService(service)}
-                                        className={`p-4 rounded-sm border text-left transition-colors duration-100 ease-brand relative overflow-hidden group ${selectedServices.find(s => s.id === service.id)
+                                        className={`relative min-h-16 overflow-hidden rounded-sm border p-4 text-left transition-colors duration-100 ease-brand group ${selectedServices.find(s => s.id === service.id)
                                                 ? 'bg-copper text-surface-0 border-copper shadow-lg'
                                                 : 'bg-surface-2 border-line text-steel hover:border-line-strong'
                                             }`}
@@ -172,13 +172,13 @@ const QuickAppointmentModalContent = ({
                         </section>
 
                         {/* Professional & Time */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <section className="space-y-3">
                                 <label className="text-label text-steel">Profissional</label>
                                 <select
                                     value={activeBarber}
                                     onChange={(e) => setSelectedBarber(e.target.value)}
-                                    className="w-full bg-surface-2 border border-line-strong rounded-sm px-6 py-4 text-warm-white focus:border-copper outline-none appearance-none font-semibold text-body"
+                                    className="w-full appearance-none rounded-sm border border-line-strong bg-surface-2 px-4 py-3.5 text-body font-semibold text-warm-white outline-none focus:border-copper sm:px-6 sm:py-4"
                                 >
                                     {professionals.map(pro => (
                                         <option key={pro.id} value={pro.id}>{pro.apelido}</option>
@@ -187,18 +187,18 @@ const QuickAppointmentModalContent = ({
                             </section>
                             <section className="space-y-3">
                                 <label className="text-label text-steel">Horário</label>
-                                <div className="flex space-x-2">
+                                <div className="flex flex-col gap-2 sm:flex-row">
                                     <input
                                         type="date"
                                         value={date}
                                         onChange={(e) => setDate(e.target.value)}
-                                        className="bg-surface-2 border border-line-strong rounded-sm px-4 py-4 text-warm-white text-body-sm font-semibold focus:border-copper outline-none flex-1"
+                                        className="min-w-0 flex-1 rounded-sm border border-line-strong bg-surface-2 px-3 py-3.5 text-body-sm font-semibold text-warm-white outline-none focus:border-copper sm:px-4 sm:py-4"
                                     />
                                     <input
                                         type="time"
                                         value={time}
                                         onChange={(e) => setTime(e.target.value)}
-                                        className="bg-surface-2 border border-line-strong rounded-sm px-4 py-4 text-warm-white text-body-sm font-semibold focus:border-copper outline-none w-28"
+                                        className="w-full rounded-sm border border-line-strong bg-surface-2 px-3 py-3.5 text-body-sm font-semibold text-warm-white outline-none focus:border-copper sm:w-28 sm:px-4 sm:py-4"
                                     />
                                 </div>
                             </section>
@@ -206,7 +206,7 @@ const QuickAppointmentModalContent = ({
 
                         {/* Conflict Warning */}
                         {conflict && (
-                            <div className="bg-danger/12 border border-danger/40 p-6 rounded-md animate-pulse">
+                            <div className="animate-pulse rounded-md border border-danger/40 bg-danger/12 p-4 sm:p-6">
                                 <div className="flex items-start space-x-4">
                                     <AlertTriangle className="text-danger shrink-0" size={24} />
                                     <div>
@@ -227,7 +227,7 @@ const QuickAppointmentModalContent = ({
                     </div>
 
                     {/* Right Column: Products & Summary */}
-                    <div className="w-full lg:w-[320px] bg-surface-0 p-10 flex flex-col border-t lg:border-t-0 lg:border-l border-line">
+                    <div className="flex w-full shrink-0 flex-col border-t border-line bg-surface-0 p-4 sm:p-6 lg:w-[320px] lg:border-l lg:border-t-0 lg:p-10">
                         <div className="flex-1 space-y-8 overflow-y-auto">
                             <section className="space-y-4">
                                 <label className="text-label text-steel">Adicionar Produto</label>
