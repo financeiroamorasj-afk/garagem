@@ -44,6 +44,25 @@ export async function obterUrlFotoCorte(path, expiresIn = 900) {
   return data?.signedUrl ?? null
 }
 
+function montarMemoria({ estilo, pentes, acabamento, barba, observacoes, preferencias, foto, uploadedPath }) {
+  const memoria = {
+    estilo: String(estilo).trim(),
+    pentes: String(pentes ?? '').trim() || null,
+    acabamento: String(acabamento ?? '').trim() || null,
+    barba: String(barba ?? '').trim() || null,
+    observacoes: String(observacoes ?? '').trim() || null,
+    preferencias_cliente: String(preferencias ?? '').trim() || null,
+  }
+  if (uploadedPath) Object.assign(memoria, {
+    foto_path: uploadedPath,
+    foto_mime: foto.imagem.mime,
+    foto_bytes: foto.imagem.bytes,
+    foto_largura: foto.imagem.width,
+    foto_altura: foto.imagem.height,
+  })
+  return memoria
+}
+
 export async function concluirCheckoutAtendimento({
   appointmentId,
   estilo,
@@ -67,21 +86,7 @@ export async function concluirCheckoutAtendimento({
   let uploadedPath = null
   try {
     if (foto) uploadedPath = await enviarFotoCorte({ clienteId: foto.clienteId, imagem: foto.imagem })
-    const memoria = {
-      estilo: String(estilo).trim(),
-      pentes: String(pentes ?? '').trim() || null,
-      acabamento: String(acabamento ?? '').trim() || null,
-      barba: String(barba ?? '').trim() || null,
-      observacoes: String(observacoes ?? '').trim() || null,
-      preferencias_cliente: String(preferencias ?? '').trim() || null,
-    }
-    if (uploadedPath) Object.assign(memoria, {
-      foto_path: uploadedPath,
-      foto_mime: foto.imagem.mime,
-      foto_bytes: foto.imagem.bytes,
-      foto_largura: foto.imagem.width,
-      foto_altura: foto.imagem.height,
-    })
+    const memoria = montarMemoria({ estilo, pentes, acabamento, barba, observacoes, preferencias, foto, uploadedPath })
     return await rpc('barbeiro_checkout_concluir', {
       p_agendamento_id: appointmentId,
       p_memoria: memoria,
@@ -93,6 +98,31 @@ export async function concluirCheckoutAtendimento({
       p_data_recebimento: dataRecebimento,
       p_chave_idempotencia: chaveIdempotencia,
     })
+  } catch (error) {
+    if (uploadedPath) await removerFotoCorte(uploadedPath).catch(() => {})
+    throw error
+  }
+}
+
+export async function enviarAtendimentoRecepcao({
+  appointmentId, estilo, pentes, acabamento, barba, observacoes, preferencias,
+  foto, produtos = [], valorServico, chaveIdempotencia,
+}) {
+  if (!appointmentId || String(estilo ?? '').trim().length < 2) throw new TypeError('Informe como o corte foi realizado.')
+  if (!chaveIdempotencia) throw new TypeError('Revise os dados do atendimento.')
+  let uploadedPath = null
+  try {
+    if (foto) uploadedPath = await enviarFotoCorte({ clienteId: foto.clienteId, imagem: foto.imagem })
+    const memoria = montarMemoria({ estilo, pentes, acabamento, barba, observacoes, preferencias, foto, uploadedPath })
+    const result = await rpc('barbeiro_atendimento_enviar_recepcao', {
+      p_agendamento_id: appointmentId,
+      p_memoria: memoria,
+      p_produtos: produtos.map(({ produtoId, quantidade }) => ({ produto_id: produtoId, quantidade: Number(quantidade) })),
+      p_valor_servico: Number(valorServico),
+      p_chave_idempotencia: chaveIdempotencia,
+    })
+    if (uploadedPath && result?.idempotente) await removerFotoCorte(uploadedPath).catch(() => {})
+    return result
   } catch (error) {
     if (uploadedPath) await removerFotoCorte(uploadedPath).catch(() => {})
     throw error
@@ -121,6 +151,16 @@ const ERRORS = {
   CHECKOUT_ESTOQUE_INSUFICIENTE: 'Um dos produtos não possui estoque suficiente.',
   CHECKOUT_PRODUTO_NAO_ENCONTRADO: 'Um dos produtos não está mais disponível.',
   CHECKOUT_CONTA_NAO_CONFIGURADA: 'A barbearia precisa configurar uma conta financeira antes do fechamento.',
+  CHECKOUT_USAR_RECEPCAO: 'A recepção está ativa. Envie o atendimento para a fila de cobrança.',
+  FILA_RECEPCAO_NAO_AUTORIZADO: 'Seu usuário não pode enviar este atendimento à recepção.',
+  FILA_RECEPCAO_MODULO_INATIVO: 'A recepção não está ativa nesta unidade. Atualize a tela e conclua o pagamento normalmente.',
+  FILA_RECEPCAO_STATUS_INVALIDO: 'O atendimento foi alterado em outro dispositivo. Atualize a agenda.',
+  FILA_RECEPCAO_CLIENTE_OBRIGATORIO: 'Vincule um cliente antes de enviar para cobrança.',
+  FILA_RECEPCAO_MEMORIA_INVALIDA: 'Revise os dados da memória do corte.',
+  FILA_RECEPCAO_FOTO_INVALIDA: 'A foto não passou pela validação de tamanho e formato.',
+  FILA_RECEPCAO_VALOR_INVALIDO: 'Revise o valor do serviço.',
+  FILA_RECEPCAO_ESTOQUE_INSUFICIENTE: 'Um dos produtos não possui estoque suficiente.',
+  FILA_RECEPCAO_PRODUTO_NAO_ENCONTRADO: 'Um dos produtos não está mais disponível.',
 }
 
 export function mensagemErroCorte(error) {

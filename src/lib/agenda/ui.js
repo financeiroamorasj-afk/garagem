@@ -3,6 +3,7 @@ const STATUS = {
   confirmado: { label: 'Confirmado', variant: 'info' },
   encaixe: { label: 'Encaixe', variant: 'info' },
   em_atendimento: { label: 'Em atendimento', variant: 'warning' },
+  aguardando_pagamento: { label: 'Aguardando cobrança', variant: 'info' },
   concluido: { label: 'Concluído', variant: 'success' },
   cancelado: { label: 'Cancelado', variant: 'danger' },
 }
@@ -118,7 +119,7 @@ export function acaoPrincipalAgenda(status) {
 export function resumoAgenda(rows) {
   return {
     total: rows.filter((row) => row.status !== 'cancelado').length,
-    restantes: rows.filter((row) => !['concluido', 'cancelado'].includes(row.status)).length,
+    restantes: rows.filter((row) => !['aguardando_pagamento', 'concluido', 'cancelado'].includes(row.status)).length,
     concluidos: rows.filter((row) => row.status === 'concluido').length,
   }
 }

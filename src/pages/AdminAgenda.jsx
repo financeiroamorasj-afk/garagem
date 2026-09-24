@@ -44,6 +44,7 @@ const STATUS_OPTIONS = [
   ['pendente', 'Pendentes'],
   ['confirmado', 'Confirmados'],
   ['em_atendimento', 'Em atendimento'],
+  ['aguardando_pagamento', 'Aguardando cobrança'],
   ['concluido', 'Concluídos'],
   ['cancelado', 'Cancelados'],
   ['encaixe', 'Encaixes'],

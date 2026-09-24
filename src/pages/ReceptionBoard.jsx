@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarDays, Clock3, Headset, LogOut, Phone, RefreshCw, Scissors, Search, UserRound } from 'lucide-react'
+import { CalendarDays, CircleDollarSign, Clock3, Headset, LogOut, Package, Phone, RefreshCw, Scissors, Search } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -9,7 +9,8 @@ import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
 import { dataLocalKey, statusAgenda } from '../lib/agenda/ui'
 import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
-import { buscarClientesRecepcao, listarAgendaRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
+import { buscarClientesRecepcao, listarAgendaRecepcao, listarFilaRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
+import { formatarBRL } from '../lib/financeiro/moeda'
 import { supabase } from '../lib/supabase'
 
 function addDays(key, amount) {
@@ -37,6 +38,7 @@ export default function ReceptionBoard() {
   const [view, setView] = useState('hoje')
   const [appointments, setAppointments] = useState([])
   const [availability, setAvailability] = useState([])
+  const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
@@ -49,12 +51,14 @@ export default function ReceptionBoard() {
     setLoading(true)
     setError('')
     try {
-      const [agenda, team] = await Promise.all([
+      const [agenda, team, pendingQueue] = await Promise.all([
         listarAgendaRecepcao(today, endDate),
         listarDisponibilidadeOperacional({ dataInicial: today, dataFinal: endDate }),
+        listarFilaRecepcao(),
       ])
       setAppointments(agenda)
       setAvailability(team)
+      setQueue(pendingQueue)
     } catch (loadError) {
       setError(mensagemErroRecepcao(loadError))
     } finally {
@@ -63,13 +67,19 @@ export default function ReceptionBoard() {
   }, [endDate, today])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const channel = supabase.channel('recepcao-fila-operacional')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'atendimento_pendencias' }, () => load())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [load])
 
   const stats = useMemo(() => ({
     hoje: appointments.filter((item) => dataLocalKey(new Date(item.data_hora)) === today).length,
-    confirmados: appointments.filter((item) => item.status === 'confirmado').length,
+    aguardando: queue.length,
     atendimento: appointments.filter((item) => item.status === 'em_atendimento').length,
     conflitos: availability.reduce((total, item) => total + (item.conflitos?.length || 0), 0),
-  }), [appointments, availability, today])
+  }), [appointments, availability, queue.length, today])
 
   async function search(event) {
     event.preventDefault()
@@ -111,10 +121,15 @@ export default function ReceptionBoard() {
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Resumo operacional">
           {[
             ['Horários hoje', stats.hoje, <CalendarDays key="agenda" size={18} className="mb-2 text-copper" />],
-            ['Confirmados', stats.confirmados, <UserRound key="confirmados" size={18} className="mb-2 text-copper" />],
+            ['Aguardando cobrança', stats.aguardando, <CircleDollarSign key="cobranca" size={18} className="mb-2 text-copper" />],
             ['Em atendimento', stats.atendimento, <Scissors key="atendimento" size={18} className="mb-2 text-copper" />],
             ['Conflitos', stats.conflitos, <Clock3 key="conflitos" size={18} className="mb-2 text-copper" />],
           ].map(([label, value, icon]) => <Card key={label} className="p-4">{icon}<span className="block text-data-lg text-warm-white">{value}</span><span className="text-label text-steel">{label}</span></Card>)}
+        </section>
+
+        <section className="space-y-3" aria-labelledby="queue-title">
+          <div><span className="text-label text-copper">FILA DO BALCÃO</span><h2 id="queue-title" className="mt-1 text-h2 text-warm-white">Aguardando cobrança</h2><p className="mt-1 text-body-sm text-steel">Atendimentos cuja parte técnica já foi encerrada pelo barbeiro.</p></div>
+          {queue.length === 0 ? <Card className="p-4 text-body-sm text-steel">Nenhum atendimento aguardando cobrança.</Card> : <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">{queue.map((item) => <Card key={item.pendencia_id} className="border-copper/40 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-h3 text-warm-white">{item.cliente_nome}</h3><p className="mt-1 text-body-sm font-semibold text-copper">{item.profissional_nome}</p><p className="mt-2 text-body-sm text-steel">{item.servico_nome}</p></div><Badge variant="warning">Na fila</Badge></div>{item.produtos.length > 0 && <div className="mt-3 space-y-1 border-t border-line pt-3"><p className="flex items-center gap-2 text-label text-steel"><Package size={14} /> PRODUTOS</p>{item.produtos.map((product) => <p key={product.id} className="text-body-sm text-steel">{product.quantidade}× {product.nome}</p>)}</div>}<div className="mt-4 flex items-end justify-between gap-3 border-t border-line pt-3"><div><span className="block text-label text-steel">Total previsto</span><strong className="text-data-lg text-gold-aged">{formatarBRL(item.valor_total)}</strong></div><span className="text-label text-info">Cobrança na próxima etapa</span></div></Card>)}</div>}
         </section>
 
         <Card className="p-4 sm:p-5">

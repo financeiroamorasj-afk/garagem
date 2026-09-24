@@ -5,10 +5,11 @@ import Input from './ui/Input'
 import Label from './ui/Label'
 import Modal from './ui/Modal'
 import Spinner from './ui/Spinner'
-import { concluirCheckoutAtendimento, mensagemErroCorte, obterUrlFotoCorte } from '../lib/clientes/cortes-api'
+import { concluirCheckoutAtendimento, enviarAtendimentoRecepcao, mensagemErroCorte, obterUrlFotoCorte } from '../lib/clientes/cortes-api'
 import { compactarFotoCorte, formatarTamanho } from '../lib/clientes/imagem'
 import { listarProdutosBarbeiro } from '../lib/produtos/api'
 import { formatarBRL } from '../lib/financeiro/moeda'
+import { verificarAcessoModulo } from '../lib/configuracoes/modulos-api'
 
 const STYLES = ['Degradê', 'Social', 'Navalhado', 'Tesoura', 'Buzz cut']
 const FINISHES = ['Navalha', 'Máquina', 'Tesoura', 'Natural']
@@ -68,6 +69,8 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
   const [paymentMethod, setPaymentMethod] = useState('pix')
   const [receiptDate, setReceiptDate] = useState(hojeLocal())
   const [idempotencyKey, setIdempotencyKey] = useState('')
+  const [receptionMode, setReceptionMode] = useState(false)
+  const [checkingMode, setCheckingMode] = useState(false)
 
   useEffect(() => {
     if (!open || !appointment) return
@@ -86,6 +89,11 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     setPaymentMethod('pix')
     setReceiptDate(hojeLocal())
     setIdempotencyKey(crypto.randomUUID())
+    setCheckingMode(true)
+    verificarAcessoModulo('recepcao')
+      .then(setReceptionMode)
+      .catch(() => setReceptionMode(false))
+      .finally(() => setCheckingMode(false))
     setLoadingProducts(true)
     listarProdutosBarbeiro()
       .then((rows) => setProducts(rows ?? []))
@@ -142,12 +150,8 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     setError('')
     try {
       const numericService = Number(serviceValue)
-      const numericDiscount = Number(discount)
-      const numericFee = Number(fee)
       if (!Number.isFinite(numericService) || numericService < 0) throw new TypeError('Revise o valor do serviço.')
-      if (!Number.isFinite(numericDiscount) || numericDiscount < 0 || numericDiscount > grossTotal) throw new TypeError('O desconto não pode ultrapassar o total.')
-      if (!Number.isFinite(numericFee) || numericFee < 0 || numericFee > finalTotal) throw new TypeError('A taxa não pode ultrapassar o valor final.')
-      const result = await concluirCheckoutAtendimento({
+      const common = {
         appointmentId: appointment.id,
         estilo: style,
         pentes: combs,
@@ -158,12 +162,18 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
         foto: photo ? { clienteId: appointment.cliente_id, imagem: photo } : null,
         produtos: selectedProducts.map((product) => ({ produtoId: product.id, quantidade: product.quantidade })),
         valorServico: numericService,
-        desconto: numericDiscount,
-        formaPagamento: paymentMethod,
-        taxa: numericFee,
-        dataRecebimento: receiptDate,
         chaveIdempotencia: idempotencyKey,
-      })
+      }
+      let result
+      if (receptionMode) {
+        result = await enviarAtendimentoRecepcao(common)
+      } else {
+        const numericDiscount = Number(discount)
+        const numericFee = Number(fee)
+        if (!Number.isFinite(numericDiscount) || numericDiscount < 0 || numericDiscount > grossTotal) throw new TypeError('O desconto não pode ultrapassar o total.')
+        if (!Number.isFinite(numericFee) || numericFee < 0 || numericFee > finalTotal) throw new TypeError('A taxa não pode ultrapassar o valor final.')
+        result = await concluirCheckoutAtendimento({ ...common, desconto: numericDiscount, formaPagamento: paymentMethod, taxa: numericFee, dataRecebimento: receiptDate })
+      }
       await onSuccess?.(result)
       onClose()
     } catch (saveError) {
@@ -177,12 +187,12 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     <Modal
       open={open}
       onClose={() => !saving && onClose()}
-      title="Concluir atendimento"
+      title={receptionMode ? 'Finalizar parte técnica' : 'Concluir atendimento'}
       className="sm:max-w-4xl"
       footer={(
         <>
           <Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button>
-          <Button type="submit" form="cut-completion-form" loading={saving} disabled={compressing || style.trim().length < 2 || finalTotal <= 0}><CheckCircle2 size={17} /> Confirmar {formatarBRL(finalTotal)}</Button>
+          <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || compressing || style.trim().length < 2 || grossTotal <= 0}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
         </>
       )}
     >
@@ -225,7 +235,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
         <section className="space-y-3 border-t border-line pt-5">
           <div>
             <p className="flex items-center gap-2 text-label text-copper"><PackagePlus size={16} /> PRODUTOS DO ATENDIMENTO</p>
-            <p className="mt-1 text-body-sm text-steel">Adicione somente o que o cliente está levando agora. A baixa de estoque será automática.</p>
+            <p className="mt-1 text-body-sm text-steel">{receptionMode ? 'Os itens seguem para conferência no balcão. O estoque só será baixado depois da cobrança.' : 'Adicione somente o que o cliente está levando agora. A baixa de estoque será automática.'}</p>
           </div>
           {loadingProducts ? <p className="text-body-sm text-steel">Carregando produtos...</p> : products.length === 0 ? <p className="rounded-sm border border-line bg-surface-1 p-3 text-body-sm text-steel">Nenhum produto disponível para venda.</p> : (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -244,7 +254,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
           )}
         </section>
 
-        <section className="space-y-4 border-t border-line pt-5">
+        {receptionMode ? <section className="space-y-3 border-t border-line pt-5"><p className="text-label text-copper">COBRANÇA PELA RECEPÇÃO</p><div className="rounded-md border border-info/30 bg-info/10 p-4 text-body-sm text-info">A memória do corte e os produtos serão enviados ao balcão. Nenhum estoque, comissão ou lançamento financeiro será movimentado agora.</div><div className="grid grid-cols-2 gap-3 rounded-md border border-line bg-surface-0 p-4"><span className="text-steel">Serviço</span><strong className="text-right text-warm-white">{formatarBRL(Number(serviceValue || 0))}</strong><span className="text-steel">Produtos sugeridos</span><strong className="text-right text-warm-white">{formatarBRL(productsTotal)}</strong><span className="border-t border-line pt-3 text-label text-copper">TOTAL PREVISTO</span><strong className="border-t border-line pt-3 text-right text-data-lg text-gold-aged">{formatarBRL(grossTotal)}</strong></div></section> : <section className="space-y-4 border-t border-line pt-5">
           <div><p className="flex items-center gap-2 text-label text-copper"><CreditCard size={16} /> PAGAMENTO</p><p className="mt-1 text-body-sm text-steel">Confirme os valores antes de encerrar. O lançamento financeiro será criado automaticamente.</p></div>
           <div className="grid gap-4 sm:grid-cols-3">
             <Input label="Valor do serviço" type="number" min="0" step="0.01" value={serviceValue} onChange={(event) => setServiceValue(event.target.value)} />
@@ -258,7 +268,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
           <div className="rounded-md border border-line bg-surface-0 p-4">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-body-sm"><span className="text-steel">Serviço</span><strong className="text-right text-warm-white">{formatarBRL(Number(serviceValue || 0))}</strong><span className="text-steel">Produtos</span><strong className="text-right text-warm-white">{formatarBRL(productsTotal)}</strong><span className="text-steel">Desconto</span><strong className="text-right text-danger">− {formatarBRL(Number(discount || 0))}</strong><span className="border-t border-line pt-3 text-label text-copper">TOTAL COBRADO</span><strong className="border-t border-line pt-3 text-right text-data-lg text-gold-aged">{formatarBRL(finalTotal)}</strong><span className="text-steel">Líquido após taxa</span><strong className="text-right text-success">{formatarBRL(netTotal)}</strong></div>
           </div>
-        </section>
+        </section>}
 
         <section>
           <Label>Foto do resultado (opcional)</Label>
