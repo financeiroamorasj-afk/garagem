@@ -39,6 +39,7 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
                     value={query}
                     onChange={(e) => {
                         setQuery(e.target.value);
+                        onSelect(null);
                         setIsOpen(true);
                     }}
                     onFocus={() => setIsOpen(true)}
@@ -50,6 +51,7 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
                     {filteredClients.length > 0 ? (
                         filteredClients.map((client) => (
                             <button
+                                type="button"
                                 key={client.id}
                                 onClick={() => {
                                     onSelect(client);
@@ -64,6 +66,7 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
                         ))
                     ) : (
                         <button
+                            type="button"
                             onClick={() => {
                                 onSelect({ nome: query, id: 'new' });
                                 setIsOpen(false);

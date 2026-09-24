@@ -7,15 +7,17 @@ import Button from './ui/Button'
 import Label from './ui/Label'
 import CurrencyInput from './ui/CurrencyInput'
 import ClientSearch from './ClientSearch'
+import { dataLocalKey } from '../lib/agenda/ui'
 
 function todayDateString() {
-    return new Date().toISOString().split('T')[0]
+    return dataLocalKey()
 }
 
-export default function AddAppointmentModal({ isOpen, onClose, onSuccess, professionalId }) {
+export default function AddAppointmentModal({ isOpen, onClose, onSuccess, professionalId = null, initialDate = null }) {
     const [barbeariaId, setBarbeariaId] = useState(null)
     const [servicos, setServicos] = useState([])
     const [clientes, setClientes] = useState([])
+    const [profissionais, setProfissionais] = useState([])
     const [loadingOptions, setLoadingOptions] = useState(false)
 
     const [selectedClient, setSelectedClient] = useState(null)
@@ -23,6 +25,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
     const [valorFinal, setValorFinal] = useState(null)
     const [date, setDate] = useState(todayDateString())
     const [time, setTime] = useState('')
+    const [selectedProfessionalId, setSelectedProfessionalId] = useState(professionalId || '')
 
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -48,7 +51,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                 if (profileError || !profile?.barbearia_id) throw new Error('Erro ao identificar barbearia')
                 setBarbeariaId(profile.barbearia_id)
 
-                const [servicosRes, clientesRes] = await Promise.all([
+                const [servicosRes, clientesRes, profissionaisRes] = await Promise.all([
                     supabase
                         .from('servicos')
                         .select('id, nome, preco, duracao_minutos')
@@ -60,13 +63,24 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                         .select('id, nome, telefone')
                         .eq('barbearia_id', profile.barbearia_id)
                         .order('nome', { ascending: true }),
+                    supabase
+                        .from('profissionais')
+                        .select('id, nome, apelido')
+                        .eq('barbearia_id', profile.barbearia_id)
+                        .eq('ativo', true)
+                        .order('nome', { ascending: true }),
                 ])
 
                 if (servicosRes.error) throw servicosRes.error
                 if (clientesRes.error) throw clientesRes.error
+                if (profissionaisRes.error) throw profissionaisRes.error
 
                 setServicos(servicosRes.data || [])
                 setClientes(clientesRes.data || [])
+                setProfissionais(profissionaisRes.data || [])
+                if (!professionalId && profissionaisRes.data?.length) {
+                    setSelectedProfessionalId(profissionaisRes.data[0].id)
+                }
             } catch (err) {
                 console.error(err)
                 setError(err.message)
@@ -76,7 +90,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
         }
 
         loadOptions()
-    }, [isOpen])
+    }, [isOpen, professionalId])
 
     // Reset ao fechar, pra não vazar estado de uma abertura pra outra.
     useEffect(() => {
@@ -84,11 +98,12 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
             setSelectedClient(null)
             setServicoId('')
             setValorFinal(0)
-            setDate(todayDateString())
+            setDate(initialDate || todayDateString())
             setTime('')
+            setSelectedProfessionalId(professionalId || '')
             setError(null)
         }
-    }, [isOpen])
+    }, [initialDate, isOpen, professionalId])
 
     const handleServicoChange = (e) => {
         const id = e.target.value
@@ -102,7 +117,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
         e.preventDefault()
         setError(null)
 
-        if (!professionalId) { setError('Profissional não selecionado'); return }
+        if (!selectedProfessionalId) { setError('Profissional não selecionado'); return }
         if (!selectedClient) { setError('Selecione ou cadastre um cliente'); return }
         if (!servicoId) { setError('Selecione um serviço'); return }
         if (!date || !time) { setError('Informe data e horário'); return }
@@ -132,7 +147,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                 .insert([
                     {
                         barbearia_id: barbeariaId,
-                        profissional_id: professionalId,
+                        profissional_id: selectedProfessionalId,
                         servico_id: servicoId,
                         cliente_id: clienteId,
                         data_hora: dataHora.toISOString(),
@@ -143,7 +158,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
 
             if (insertError) throw insertError
 
-            onSuccess()
+            await onSuccess?.()
             onClose()
         } catch (err) {
             console.error(err)
@@ -180,6 +195,25 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                         </p>
                     )}
                 </section>
+
+                {!professionalId && (
+                    <section className="space-y-2">
+                        <Label>Barbeiro</Label>
+                        <select
+                            value={selectedProfessionalId}
+                            onChange={(event) => setSelectedProfessionalId(event.target.value)}
+                            disabled={loadingOptions}
+                            className="w-full appearance-none rounded-sm border border-line-strong bg-surface-2 px-4 py-3 text-warm-white outline-none transition-colors duration-100 ease-brand focus:border-copper"
+                        >
+                            <option value="">Selecione um barbeiro...</option>
+                            {profissionais.map((profissional) => (
+                                <option key={profissional.id} value={profissional.id}>
+                                    {profissional.apelido || profissional.nome}
+                                </option>
+                            ))}
+                        </select>
+                    </section>
+                )}
 
                 <section className="space-y-2">
                     <Label>Serviço</Label>

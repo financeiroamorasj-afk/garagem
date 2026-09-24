@@ -13,14 +13,24 @@ import FinanceRegistrations from './pages/financeiro/FinanceRegistrations'
 import FinanceEnvelopes from './pages/financeiro/FinanceEnvelopes'
 import AdminPlaceholder from './pages/AdminPlaceholder'
 import MapaBarbearia from './pages/MapaBarbearia'
+import AdminBarbers from './pages/AdminBarbers'
+import AdminAgenda from './pages/AdminAgenda'
+import AdminCatalog from './pages/AdminCatalog'
+import AdminAvailability from './pages/AdminAvailability'
+import AdminClients from './pages/AdminClients'
+import SetPassword from './pages/SetPassword'
+import ClientPortal from './pages/ClientPortal'
+import AdminProducts from './pages/AdminProducts'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/definir-senha" element={<SetPassword />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/design-system" element={<DesignSystem />} />
+        <Route path="/portal/:slug" element={<ClientPortal />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -34,7 +44,12 @@ function App() {
             <Route path="financeiro/titulos" element={<FinanceTitles />} />
             <Route path="financeiro/cadastros" element={<FinanceRegistrations />} />
             <Route path="financeiro/envelopes" element={<FinanceEnvelopes />} />
-            <Route path="barbeiros" element={<AdminPlaceholder title="Barbeiros" description="A gestão de barbeiros será integrada com segurança em uma próxima etapa." />} />
+            <Route path="barbeiros" element={<AdminBarbers />} />
+            <Route path="agenda" element={<AdminAgenda />} />
+            <Route path="catalogo" element={<AdminCatalog />} />
+            <Route path="produtos" element={<AdminProducts />} />
+            <Route path="disponibilidade" element={<AdminAvailability />} />
+            <Route path="clientes" element={<AdminClients />} />
             <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" description="As configurações administrativas serão disponibilizadas em uma próxima etapa segura." />} />
           </Route>
         </Route>

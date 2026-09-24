@@ -5,6 +5,19 @@ import { useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import garagemLogo from '../assets/brand/garagem-logo-full.png'
+import { homeRouteForRole } from '../lib/auth/homeRoute'
+
+async function homeRouteForUser(userId) {
+    const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+
+    if (error) throw error
+    if (!profile) throw new Error('Este usuário ainda não está vinculado a um perfil do Garagem.')
+    return homeRouteForRole(profile.role)
+}
 
 export default function Login() {
     const [email, setEmail] = useState('')
@@ -14,13 +27,22 @@ export default function Login() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                navigate('/admin/dashboard')
-            }
-        })
+        let active = true
 
-        return () => subscription.unsubscribe()
+        async function redirectExistingSession() {
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+                if (sessionError) throw sessionError
+                if (!session || !active) return
+                const route = await homeRouteForUser(session.user.id)
+                if (active) navigate(route, { replace: true })
+            } catch (sessionError) {
+                if (active) setError(sessionError.message)
+            }
+        }
+
+        redirectExistingSession()
+        return () => { active = false }
     }, [navigate])
 
     const handleLogin = async (e) => {
@@ -28,11 +50,14 @@ export default function Login() {
         setLoading(true)
         setError(null)
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             })
             if (error) throw error
+            if (!data.user) throw new Error('Não foi possível identificar o usuário autenticado.')
+            const route = await homeRouteForUser(data.user.id)
+            navigate(route, { replace: true })
         } catch (error) {
             setError(error.message)
         } finally {
