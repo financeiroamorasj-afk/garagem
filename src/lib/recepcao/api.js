@@ -51,6 +51,10 @@ export async function buscarClientesRecepcao(busca) {
   return (await rpc('recepcao_clientes_buscar', { p_busca: query, p_limite: 20 })) ?? []
 }
 
+export async function listarFilaRecepcao() {
+  return (await rpc('recepcao_fila_listar')) ?? []
+}
+
 const ERRORS = {
   RECEPCAO_ADMIN_NAO_AUTORIZADO: 'Seu usuário não pode administrar a recepção.',
   RECEPCAO_NAO_AUTORIZADA: 'Este acesso não pertence à equipe de recepção.',

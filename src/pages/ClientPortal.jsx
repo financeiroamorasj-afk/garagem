@@ -63,7 +63,7 @@ function time(value) {
 }
 
 function statusLabel(status) {
-  return { pendente: 'Aguardando confirmação', confirmado: 'Confirmado', encaixe: 'Encaixe', em_atendimento: 'Em atendimento', concluido: 'Concluído', cancelado: 'Cancelado' }[status] || status
+  return { pendente: 'Aguardando confirmação', confirmado: 'Confirmado', encaixe: 'Encaixe', em_atendimento: 'Em atendimento', aguardando_pagamento: 'Aguardando pagamento', concluido: 'Concluído', cancelado: 'Cancelado' }[status] || status
 }
 
 function Brand({ shop, compact = false }) {
