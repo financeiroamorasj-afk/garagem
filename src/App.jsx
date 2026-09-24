@@ -22,8 +22,10 @@ import SetPassword from './pages/SetPassword'
 import ClientPortal from './pages/ClientPortal'
 import AdminProducts from './pages/AdminProducts'
 import AdminSettings from './pages/AdminSettings'
+import AdminReceptionReport from './pages/AdminReceptionReport'
 
 const RECEPTION_ROLES = ['recepcao']
+const ADMIN_ROLES = ['admin', 'master']
 
 function App() {
   return (
@@ -53,6 +55,7 @@ function App() {
             <Route path="produtos" element={<AdminProducts />} />
             <Route path="disponibilidade" element={<AdminAvailability />} />
             <Route path="clientes" element={<AdminClients />} />
+            <Route path="recepcao" element={<ModuleGate modulo="recepcao" allowedRoles={ADMIN_ROLES}><AdminReceptionReport /></ModuleGate>} />
             <Route path="configuracoes" element={<AdminSettings />} />
           </Route>
         </Route>

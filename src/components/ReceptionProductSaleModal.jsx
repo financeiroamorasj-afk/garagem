@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Minus, PackagePlus, Plus, ShoppingBag } from 'lucide-react'
+import { CheckCircle2, Minus, PackagePlus, Plus, Search, ShoppingBag, UserRound, X } from 'lucide-react'
 import Button from './ui/Button'
 import Input from './ui/Input'
 import Modal from './ui/Modal'
 import Spinner from './ui/Spinner'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import {
+  buscarClientesRecepcao,
   listarProdutosRecepcao,
   listarProfissionaisRecepcao,
   mensagemErroRecepcao,
@@ -23,6 +24,10 @@ export default function ReceptionProductSaleModal({ open, onClose, onSuccess }) 
   const [professionals, setProfessionals] = useState([])
   const [quantities, setQuantities] = useState({})
   const [professionalId, setProfessionalId] = useState('')
+  const [clientQuery, setClientQuery] = useState('')
+  const [clientResults, setClientResults] = useState([])
+  const [selectedClient, setSelectedClient] = useState(null)
+  const [searchingClients, setSearchingClients] = useState(false)
   const [discount, setDiscount] = useState('0')
   const [fee, setFee] = useState('0')
   const [paymentMethod, setPaymentMethod] = useState('pix')
@@ -36,6 +41,9 @@ export default function ReceptionProductSaleModal({ open, onClose, onSuccess }) 
     if (!open) return
     setQuantities({})
     setProfessionalId('')
+    setClientQuery('')
+    setClientResults([])
+    setSelectedClient(null)
     setDiscount('0')
     setFee('0')
     setPaymentMethod('pix')
@@ -60,6 +68,19 @@ export default function ReceptionProductSaleModal({ open, onClose, onSuccess }) 
     setQuantities((current) => ({ ...current, [product.id]: Math.max(0, Math.min(product.estoque_quantidade, Number(current[product.id] ?? 0) + delta)) }))
   }
 
+  async function searchClients() {
+    setSearchingClients(true)
+    setError('')
+    try {
+      setClientResults(await buscarClientesRecepcao(clientQuery))
+    } catch (searchError) {
+      setError(mensagemErroRecepcao(searchError))
+      setClientResults([])
+    } finally {
+      setSearchingClients(false)
+    }
+  }
+
   async function submit(event) {
     event.preventDefault()
     setSaving(true)
@@ -73,6 +94,7 @@ export default function ReceptionProductSaleModal({ open, onClose, onSuccess }) 
       const result = await venderProdutosRecepcao({
         produtos: selectedProducts.map((product) => ({ produtoId: product.id, quantidade: product.quantidade })),
         profissionalId: professionalId || null,
+        clienteId: selectedClient?.id || null,
         desconto: numericDiscount,
         formaPagamento: paymentMethod,
         taxa: numericFee,
@@ -100,6 +122,10 @@ export default function ReceptionProductSaleModal({ open, onClose, onSuccess }) 
         </section>
 
         <section className="space-y-4 border-t border-line pt-5">
+          <div className="space-y-3">
+            <p className="flex items-center gap-2 text-label text-copper"><UserRound size={16} /> CLIENTE (OPCIONAL)</p>
+            {selectedClient ? <div className="flex items-center justify-between gap-3 rounded-sm border border-copper bg-copper/5 p-3"><div className="min-w-0"><p className="truncate font-semibold text-warm-white">{selectedClient.nome}</p><p className="mt-1 text-body-sm text-steel">{selectedClient.telefone || 'Telefone não informado'}</p></div><button type="button" aria-label="Remover cliente" disabled={saving} onClick={() => { setSelectedClient(null); setClientQuery(''); setClientResults([]) }} className="grid h-10 w-10 shrink-0 place-items-center rounded-sm border border-line text-steel"><X size={16} /></button></div> : <><div className="flex flex-col gap-2 sm:flex-row"><div className="min-w-0 flex-1"><Input label="Buscar cliente" icon={Search} value={clientQuery} onChange={(event) => setClientQuery(event.target.value)} placeholder="Nome ou telefone" /></div><Button type="button" variant="secondary" loading={searchingClients} disabled={clientQuery.trim().length < 2 || saving} onClick={searchClients}>Buscar</Button></div>{clientResults.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{clientResults.map((client) => <button type="button" key={client.id} disabled={saving} onClick={() => { setSelectedClient(client); setClientResults([]) }} className="min-h-12 rounded-sm border border-line bg-surface-1 p-3 text-left hover:border-copper"><span className="block truncate font-semibold text-warm-white">{client.nome}</span><span className="mt-1 block text-body-sm text-steel">{client.telefone || 'Telefone não informado'}</span></button>)}</div>}<p className="text-body-sm text-steel">Sem cliente selecionado, a venda será registrada como venda direta do balcão.</p></>}
+          </div>
           <label className="flex flex-col gap-2 text-label text-steel">Profissional responsável (opcional)<select value={professionalId} onChange={(event) => setProfessionalId(event.target.value)} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper"><option value="">Venda direta da recepção</option>{professionals.map((professional) => <option key={professional.id} value={professional.id}>{professional.apelido || professional.nome}</option>)}</select><span className="text-body-sm normal-case tracking-normal text-steel">Selecione somente quando um barbeiro tiver indicado ou realizado a venda.</span></label>
           <div className="grid gap-4 sm:grid-cols-2"><Input label="Desconto total" type="number" min="0" max={grossTotal} step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} /><Input label="Taxa da operação" type="number" min="0" max={finalTotal} step="0.01" value={fee} onChange={(event) => setFee(event.target.value)} helpText="Ex.: taxa da maquininha" /></div>
           <div className="grid gap-4 sm:grid-cols-2"><label className="flex flex-col gap-2 text-label text-steel">Forma de pagamento<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper">{PAYMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><Input label="Data prevista para receber" type="date" min={hojeLocal()} value={receiptDate} onChange={(event) => setReceiptDate(event.target.value)} helpText={receiptDate === hojeLocal() ? 'Recebimento confirmado agora' : 'Ficará como valor previsto'} /></div>

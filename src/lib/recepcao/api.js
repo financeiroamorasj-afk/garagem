@@ -109,19 +109,25 @@ export function devolverAtendimentoRecepcao({ pendenciaId, motivo, expectedUpdat
   })
 }
 
-export function venderProdutosRecepcao({ produtos, profissionalId = null, desconto, formaPagamento, taxa, dataRecebimento, chaveIdempotencia }) {
+export function venderProdutosRecepcao({ produtos, profissionalId = null, clienteId = null, desconto, formaPagamento, taxa, dataRecebimento, chaveIdempotencia }) {
   if (!Array.isArray(produtos) || produtos.length === 0) throw new TypeError('Adicione pelo menos um produto.')
   if (!chaveIdempotencia) throw new TypeError('Reabra a venda e tente novamente.')
   if (!['dinheiro', 'pix', 'debito', 'credito', 'outro'].includes(formaPagamento)) throw new TypeError('Selecione a forma de pagamento.')
-  return rpc('recepcao_venda_avulsa_concluir', {
+  return rpc('recepcao_venda_avulsa_concluir_cliente', {
     p_produtos: produtos.map(({ produtoId, quantidade }) => ({ produto_id: produtoId, quantidade: Number(quantidade) })),
     p_profissional_id: profissionalId || null,
+    p_cliente_id: clienteId || null,
     p_desconto: Number(desconto),
     p_forma_pagamento: formaPagamento,
     p_taxa: Number(taxa),
     p_data_recebimento: dataRecebimento,
     p_chave_idempotencia: chaveIdempotencia,
   })
+}
+
+export function obterResumoRecepcaoAdmin(dataInicial, dataFinal) {
+  if (!DATE_KEY.test(String(dataInicial ?? '')) || !DATE_KEY.test(String(dataFinal ?? ''))) throw new TypeError('Período inválido')
+  return rpc('admin_recepcao_resumo', { p_data_inicial: dataInicial, p_data_final: dataFinal })
 }
 
 export function estornarVendaBalcaoRecepcao({ vendaId, motivo, chaveIdempotencia }) {
@@ -177,12 +183,15 @@ const ERRORS = {
   RECEPCAO_VENDA_PAGAMENTO_INVALIDO: 'Selecione a forma de pagamento.',
   RECEPCAO_VENDA_DATA_INVALIDA: 'A data prevista para receber não pode estar no passado.',
   RECEPCAO_VENDA_CONTA_NAO_CONFIGURADA: 'A barbearia precisa configurar uma conta antes da venda.',
+  RECEPCAO_VENDA_CLIENTE_INVALIDO: 'O cliente selecionado não está disponível nesta barbearia.',
+  RECEPCAO_VENDA_CHAVE_EM_USO: 'Esta tentativa de venda já foi concluída com outros dados.',
   RECEPCAO_VENDAS_PERIODO_INVALIDO: 'Escolha um período de até 31 dias.',
   RECEPCAO_VENDAS_LIMITE_INVALIDO: 'Não foi possível carregar o histórico de vendas.',
   RECEPCAO_ESTORNO_MOTIVO_INVALIDO: 'Informe por que a venda está sendo estornada.',
   RECEPCAO_ESTORNO_VENDA_NAO_ENCONTRADA: 'Esta venda não foi encontrada.',
   RECEPCAO_ESTORNO_JA_REALIZADO: 'Esta venda já foi estornada em outro dispositivo.',
   RECEPCAO_ESTORNO_PRODUTO_NAO_ENCONTRADO: 'Um produto desta venda não está mais disponível para ajuste.',
+  RECEPCAO_RELATORIO_PERIODO_INVALIDO: 'Escolha um período de até 93 dias.',
 }
 
 export function mensagemErroRecepcao(error) {

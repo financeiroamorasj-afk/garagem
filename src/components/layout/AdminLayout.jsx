@@ -7,6 +7,7 @@ import {
   ChartNoAxesCombined,
   ChevronLeft,
   Home,
+  Headset,
   Landmark,
   Menu,
   Radar,
@@ -51,6 +52,7 @@ const navItems = [
       { label: 'Serviços e materiais', href: '/admin/catalogo', icon: Wrench },
       { label: 'Produtos e estoque', href: '/admin/produtos', icon: PackageSearch },
       { label: 'Disponibilidade', href: '/admin/disponibilidade', icon: CalendarClock },
+      { label: 'Recepção', href: '/admin/recepcao', icon: Headset },
     ],
   },
   {
