@@ -23,6 +23,8 @@ import ClientPortal from './pages/ClientPortal'
 import AdminProducts from './pages/AdminProducts'
 import AdminSettings from './pages/AdminSettings'
 
+const RECEPTION_ROLES = ['recepcao']
+
 function App() {
   return (
     <BrowserRouter>
@@ -36,7 +38,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/barber/dashboard" element={<BarberDashboard />} />
-          <Route path="/reception/board" element={<ModuleGate modulo="recepcao"><ReceptionBoard /></ModuleGate>} />
+          <Route path="/reception/board" element={<ModuleGate modulo="recepcao" allowedRoles={RECEPTION_ROLES}><ReceptionBoard /></ModuleGate>} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />

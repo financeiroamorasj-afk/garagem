@@ -10,12 +10,13 @@ import { homeRouteForRole } from '../lib/auth/homeRoute'
 async function homeRouteForUser(userId) {
     const { data: profile, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, ativo')
         .eq('id', userId)
         .maybeSingle()
 
     if (error) throw error
     if (!profile) throw new Error('Este usuário ainda não está vinculado a um perfil do Garagem.')
+    if (profile.ativo === false) throw new Error('Este acesso foi desativado pelo administrador da barbearia.')
     return homeRouteForRole(profile.role)
 }
 
