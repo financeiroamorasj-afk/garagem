@@ -31,6 +31,7 @@ function barberPayload(input) {
     telefone,
     especialidade: optionalText(input.especialidade, 'Especialidade', 100),
     comissao_percentual: commission(input.comissao_percentual),
+    comissao_produtos_percentual: commission(input.comissao_produtos_percentual),
   }
 }
 
@@ -74,6 +75,7 @@ export async function atualizarBarbeiro(input) {
     p_telefone: payload.telefone,
     p_especialidade: payload.especialidade,
     p_comissao_percentual: payload.comissao_percentual,
+    p_comissao_produtos_percentual: payload.comissao_produtos_percentual,
     p_ativo: input.ativo,
     p_expected_updated_at: input.expectedUpdatedAt,
   })

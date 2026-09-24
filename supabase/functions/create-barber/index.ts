@@ -70,9 +70,13 @@ Deno.serve(async (request) => {
     const telefone = optionalText(input.telefone, 30)
     const especialidade = optionalText(input.especialidade, 100)
     const commissionInput = input.comissao_percentual
+    const productCommissionInput = input.comissao_produtos_percentual
     const comissao = commissionInput === '' || commissionInput === null || commissionInput === undefined
       ? null
       : Number(commissionInput)
+    const comissaoProdutos = productCommissionInput === '' || productCommissionInput === null || productCommissionInput === undefined
+      ? null
+      : Number(productCommissionInput)
 
     if (nome.length < 2 || nome.length > 120) throw new Error('BARBEIROS_NOME_INVALIDO')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new Error('BARBEIROS_EMAIL_INVALIDO')
@@ -80,6 +84,9 @@ Deno.serve(async (request) => {
     if (telefone && telefone.length < 8) throw new Error('BARBEIROS_TELEFONE_INVALIDO')
     if (comissao !== null && (!Number.isFinite(comissao) || comissao < 0 || comissao > 100)) {
       throw new Error('BARBEIROS_COMISSAO_INVALIDA')
+    }
+    if (comissaoProdutos !== null && (!Number.isFinite(comissaoProdutos) || comissaoProdutos < 0 || comissaoProdutos > 100)) {
+      throw new Error('BARBEIROS_COMISSAO_PRODUTOS_INVALIDA')
     }
 
     if (professionalId) {
@@ -138,6 +145,7 @@ Deno.serve(async (request) => {
       telefone,
       especialidade,
       comissao_percentual: comissao,
+      comissao_produtos_percentual: comissaoProdutos,
       ativo: true,
       updated_at: new Date().toISOString(),
     }

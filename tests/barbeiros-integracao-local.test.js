@@ -26,14 +26,17 @@ test('gestão local de barbeiros respeita tenant, versão e papel administrativo
 
     const versionResult = await client.query('SELECT updated_at::text updated_at FROM public.profissionais WHERE id=$1', [professionalId])
     const version = versionResult.rows[0].updated_at
-    await client.query('SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8)', [professionalId, 'Profissional Atualizado', 'Atualizado', '11888888888', 'Degradê', 45, true, version])
+    await client.query('SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8,$9)', [professionalId, 'Profissional Atualizado', 'Atualizado', '11888888888', 'Degradê', 45, 12, true, version])
+    const commissions = await client.query('SELECT comissao_percentual,comissao_produtos_percentual FROM public.profissionais WHERE id=$1', [professionalId])
+    assert.equal(Number(commissions.rows[0].comissao_percentual), 45)
+    assert.equal(Number(commissions.rows[0].comissao_produtos_percentual), 12)
     await assert.rejects(
-      client.query('SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8)', [professionalId, 'Versão antiga', 'Antigo', '11888888888', null, 45, true, version]),
+      client.query('SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8,$9)', [professionalId, 'Versão antiga', 'Antigo', '11888888888', null, 45, 12, true, version]),
       /BARBEIROS_CONFLITO_VERSAO/,
     )
 
     const currentVersion = await client.query('SELECT updated_at::text updated_at FROM public.profissionais WHERE id=$1', [professionalId])
-    await client.query('SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8)', [professionalId, 'Profissional Atualizado', 'Atualizado', '11888888888', 'Degradê', 45, false, currentVersion.rows[0].updated_at])
+    await client.query('SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8,$9)', [professionalId, 'Profissional Atualizado', 'Atualizado', '11888888888', 'Degradê', 45, 12, false, currentVersion.rows[0].updated_at])
     await client.query('UPDATE public.profissionais SET user_id=$1 WHERE id=$2', [adminId, professionalId])
     await client.query("UPDATE public.profiles SET role='barbeiro' WHERE id=$1", [adminId])
     const ownProfessional = await client.query('SELECT public.get_my_profissional_id() id')

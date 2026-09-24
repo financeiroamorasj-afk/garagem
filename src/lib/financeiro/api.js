@@ -22,6 +22,13 @@ export function receberConta({ contaReceberId, contaBancariaId, data, idempotenc
   })
 }
 
+export function estornarCheckout({ fechamentoId, motivo }) {
+  return executarRpc('admin_checkout_estornar', {
+    p_fechamento_id: exigirUuid(fechamentoId, 'Fechamento'),
+    p_motivo: exigirTexto(motivo, 'Motivo', 3, 500),
+  })
+}
+
 export function transferir({ origemId, destinoId, valor, data, idempotencyKey, correlationId }) {
   const valorValidado = arredondarCentavos(exigirValorPositivo(valor, 'Valor da transferência'))
   exigirValorPositivo(valorValidado, 'Valor da transferência')

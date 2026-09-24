@@ -30,6 +30,7 @@ function initialForm(row) {
     telefone: row?.telefone ?? '',
     especialidade: row?.especialidade ?? '',
     comissao_percentual: row?.comissao_percentual ?? '',
+    comissao_produtos_percentual: row?.comissao_produtos_percentual ?? '',
   }
 }
 
@@ -101,11 +102,13 @@ export default function AdminBarbers() {
     const telefone = form.telefone.trim()
     const needsAccess = !formModal?.row?.user_id
     const commission = form.comissao_percentual === '' ? null : Number(form.comissao_percentual)
+    const productCommission = form.comissao_produtos_percentual === '' ? null : Number(form.comissao_produtos_percentual)
     if (nome.length < 2 || nome.length > 120) nextErrors.nome = 'Informe entre 2 e 120 caracteres.'
     if (apelido && (apelido.length < 2 || apelido.length > 60)) nextErrors.apelido = 'Informe entre 2 e 60 caracteres.'
     if (telefone && (telefone.length < 8 || telefone.length > 30)) nextErrors.telefone = 'Informe um telefone válido.'
     if (needsAccess && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = 'Informe o e-mail que o barbeiro usará para entrar.'
     if (commission !== null && (!Number.isFinite(commission) || commission < 0 || commission > 100)) nextErrors.comissao = 'Use um percentual entre 0 e 100.'
+    if (productCommission !== null && (!Number.isFinite(productCommission) || productCommission < 0 || productCommission > 100)) nextErrors.comissaoProdutos = 'Use um percentual entre 0 e 100.'
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -265,7 +268,11 @@ export default function AdminBarbers() {
                   </p>
                   <p className="flex min-w-0 items-center gap-2 text-body-sm text-steel">
                     <Percent size={15} className="shrink-0" aria-hidden="true" />
-                    <span>{barber.comissao_percentual === null ? 'Comissão não definida' : `${Number(barber.comissao_percentual).toLocaleString('pt-BR')}% de comissão`}</span>
+                    <span>{barber.comissao_percentual === null ? 'Serviços: não definida' : `Serviços: ${Number(barber.comissao_percentual).toLocaleString('pt-BR')}%`}</span>
+                  </p>
+                  <p className="flex min-w-0 items-center gap-2 text-body-sm text-steel">
+                    <Percent size={15} className="shrink-0 text-info" aria-hidden="true" />
+                    <span>{barber.comissao_produtos_percentual === null ? 'Produtos: não definida' : `Produtos: ${Number(barber.comissao_produtos_percentual).toLocaleString('pt-BR')}%`}</span>
                   </p>
                 </div>
 
@@ -326,9 +333,13 @@ export default function AdminBarbers() {
               helpText={formModal.row?.user_id ? 'O e-mail pertence ao usuário vinculado e não é alterado nesta tela.' : 'O convite de primeiro acesso será enviado para este endereço.'}
               disabled={submitting || Boolean(formModal.row?.user_id)}
             />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input label="Especialidade" value={form.especialidade} onChange={(event) => setForm({ ...form, especialidade: event.target.value })} maxLength={100} disabled={submitting} />
-              <Input label="Comissão padrão (%)" type="number" inputMode="decimal" min="0" max="100" step="0.01" value={form.comissao_percentual} onChange={(event) => setForm({ ...form, comissao_percentual: event.target.value })} error={errors.comissao} disabled={submitting} />
+            <Input label="Especialidade" value={form.especialidade} onChange={(event) => setForm({ ...form, especialidade: event.target.value })} maxLength={100} disabled={submitting} />
+            <div className="rounded-md border border-line bg-surface-1 p-4">
+              <p className="mb-3 text-label text-copper">COMISSÕES DO BARBEIRO</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input label="Serviços / cortes (%)" type="number" inputMode="decimal" min="0" max="100" step="0.01" value={form.comissao_percentual} onChange={(event) => setForm({ ...form, comissao_percentual: event.target.value })} error={errors.comissao} helpText="Padrão para os serviços sem comissão específica." disabled={submitting} />
+                <Input label="Venda de produtos (%)" type="number" inputMode="decimal" min="0" max="100" step="0.01" value={form.comissao_produtos_percentual} onChange={(event) => setForm({ ...form, comissao_produtos_percentual: event.target.value })} error={errors.comissaoProdutos} helpText="Padrão para os produtos sem comissão específica." disabled={submitting} />
+              </div>
             </div>
           </form>
         </Modal>

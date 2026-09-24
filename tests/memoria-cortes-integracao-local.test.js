@@ -23,14 +23,15 @@ test('conclusão registra memória ativa, arquiva a anterior e atualiza preferê
     await db.query("INSERT INTO public.profissionais(id,barbearia_id,nome,ativo,user_id) VALUES($1,$2,'Barbeiro memória',true,$3)", [professionalId, tenantId, barberUserId])
     await db.query("INSERT INTO public.clientes(id,barbearia_id,nome) VALUES($1,$2,'Cliente memória')", [clientId, tenantId])
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos) VALUES($1,$2,'Corte memória',50,30)", [serviceId, tenantId])
+    await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Caixa principal','corrente',true)", [tenantId])
     await db.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,$5,'2026-10-01 12:00:00+00','em_atendimento'),($6,$2,$3,$4,$5,'2026-10-01 13:00:00+00','em_atendimento')", [firstAppointment, tenantId, professionalId, clientId, serviceId, secondAppointment])
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [barberUserId])
 
-    const first = await db.query("SELECT public.barbeiro_atendimento_concluir($1,'Degradê','0,5 e 2','Navalha','Marcada','Primeiro registro','Não subir a lateral',NULL,NULL,NULL,NULL,NULL) result", [firstAppointment])
-    assert.equal(first.rows[0].result.status, 'concluido')
+    const first = await db.query("SELECT public.barbeiro_checkout_concluir($1,$2::jsonb,'[]'::jsonb,50,0,'pix',0,current_date,$3) result", [firstAppointment, JSON.stringify({ estilo: 'Degradê', pentes: '0,5 e 2', acabamento: 'Navalha', barba: 'Marcada', observacoes: 'Primeiro registro', preferencias_cliente: 'Não subir a lateral' }), crypto.randomUUID()])
+    assert.equal(first.rows[0].result.fechamento.status, 'concluido')
     assert.equal(first.rows[0].result.corte.estilo, 'Degradê')
 
-    const second = await db.query("SELECT public.barbeiro_atendimento_concluir($1,'Social','2 e 3','Tesoura','Não realizada','Mudou o corte','Manter topo longo',NULL,NULL,NULL,NULL,NULL) result", [secondAppointment])
+    const second = await db.query("SELECT public.barbeiro_checkout_concluir($1,$2::jsonb,'[]'::jsonb,50,0,'pix',0,current_date,$3) result", [secondAppointment, JSON.stringify({ estilo: 'Social', pentes: '2 e 3', acabamento: 'Tesoura', barba: 'Não realizada', observacoes: 'Mudou o corte', preferencias_cliente: 'Manter topo longo' }), crypto.randomUUID()])
     assert.equal(second.rows[0].result.corte.estilo, 'Social')
 
     const history = await db.query('SELECT estilo,ativo,arquivado_em FROM public.cliente_cortes WHERE cliente_id=$1 ORDER BY criado_em', [clientId])
@@ -50,6 +51,10 @@ test('conclusão registra memória ativa, arquiva a anterior e atualiza preferê
     assert.equal((await db.query("SELECT public.cliente_corte_ultimo($1) corte", [clientId])).rows[0].corte.estilo, 'Social')
     assert.equal(Number((await db.query("SELECT file_size_limit FROM storage.buckets WHERE id='cortes-clientes'")).rows[0].file_size_limit), 1048576)
   } finally {
+    await db.query('DELETE FROM public.financeiro_movimentacoes WHERE barbearia_id=$1', [tenantId]).catch(() => {})
+    await db.query('DELETE FROM public.financeiro_contas_receber WHERE barbearia_id=$1', [tenantId]).catch(() => {})
+    await db.query('DELETE FROM public.atendimento_fechamentos WHERE barbearia_id=$1', [tenantId]).catch(() => {})
+    await db.query('DELETE FROM public.financeiro_contas_bancarias WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.cliente_cortes WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.agendamentos WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.clientes WHERE barbearia_id=$1', [tenantId]).catch(() => {})

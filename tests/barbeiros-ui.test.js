@@ -24,6 +24,7 @@ test('cadastro cria acesso somente pela função protegida e a rota não é mais
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
   const edge = await readFile(new URL('../supabase/functions/create-barber/index.ts', import.meta.url), 'utf8')
   const migration = await readFile(new URL('../supabase/migrations/20260923150000_barbeiros_acesso_agenda.sql', import.meta.url), 'utf8')
+  const commissionMigration = await readFile(new URL('../supabase/migrations/20260924130000_comissao_produtos_barbeiro.sql', import.meta.url), 'utf8')
   const frontend = `${api}\n${app}`
 
   assert.match(api, /functions\.invoke\(['"]create-barber/)
@@ -35,4 +36,7 @@ test('cadastro cria acesso somente pela função protegida e a rota não é mais
   assert.match(migration, /profissionais_user_id_unique/)
   assert.match(migration, /GRANT EXECUTE.*authenticated/)
   assert.match(migration, /REVOKE ALL.*PUBLIC, anon/)
+  assert.match(api, /p_comissao_produtos_percentual/)
+  assert.match(edge, /comissao_produtos_percentual/)
+  assert.match(commissionMigration, /vendas_produtos_comissao_padrao_trg/)
 })
