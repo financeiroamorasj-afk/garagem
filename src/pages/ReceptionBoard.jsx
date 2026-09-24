@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarDays, CircleDollarSign, Clock3, CreditCard, Headset, LogOut, Package, Phone, RefreshCw, Scissors, Search } from 'lucide-react'
+import { CalendarDays, CircleDollarSign, Clock3, CreditCard, Headset, LogOut, Package, Phone, RefreshCw, RotateCcw, Scissors, Search, ShoppingBag } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
+import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
 import ReceptionCheckoutModal from '../components/ReceptionCheckoutModal'
+import ReceptionProductSaleModal from '../components/ReceptionProductSaleModal'
 import { dataLocalKey, statusAgenda } from '../lib/agenda/ui'
 import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
-import { buscarClientesRecepcao, listarAgendaRecepcao, listarFilaRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
+import { buscarClientesRecepcao, devolverAtendimentoRecepcao, listarAgendaRecepcao, listarFilaRecepcao, mensagemErroRecepcao } from '../lib/recepcao/api'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import { supabase } from '../lib/supabase'
 
@@ -48,6 +50,11 @@ export default function ReceptionBoard() {
   const [searchError, setSearchError] = useState('')
   const [checkoutTarget, setCheckoutTarget] = useState(null)
   const [notice, setNotice] = useState('')
+  const [saleOpen, setSaleOpen] = useState(false)
+  const [returnTarget, setReturnTarget] = useState(null)
+  const [returnReason, setReturnReason] = useState('')
+  const [returning, setReturning] = useState(false)
+  const [returnError, setReturnError] = useState('')
 
   const endDate = view === 'hoje' ? today : addDays(today, 6)
   const load = useCallback(async () => {
@@ -103,6 +110,22 @@ export default function ReceptionBoard() {
     navigate('/login', { replace: true })
   }
 
+  async function returnToBarber() {
+    setReturning(true)
+    setReturnError('')
+    try {
+      await devolverAtendimentoRecepcao({ pendenciaId: returnTarget.pendencia_id, motivo: returnReason, expectedUpdatedAt: returnTarget.updated_at })
+      setReturnTarget(null)
+      setReturnReason('')
+      setNotice('Atendimento devolvido ao barbeiro para correção e novo envio.')
+      await load()
+    } catch (returnFailure) {
+      setReturnError(mensagemErroRecepcao(returnFailure))
+    } finally {
+      setReturning(false)
+    }
+  }
+
   return (
     <div className="min-h-[100dvh] overflow-x-hidden bg-surface-0 text-warm-white">
       <header className="sticky top-0 z-20 border-b border-line bg-surface-1/95 backdrop-blur-md">
@@ -118,7 +141,7 @@ export default function ReceptionBoard() {
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:px-6 sm:py-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><span className="text-label text-copper">VISÃO OPERACIONAL</span><h2 className="mt-2 text-h1 text-warm-white sm:text-display">Agenda da equipe</h2><p className="mt-1 text-body-sm text-steel">Horários e contatos necessários para atender o cliente.</p></div>
-          <div className="grid grid-cols-2 gap-2 rounded-sm border border-line bg-surface-1 p-1"><Button size="sm" variant={view === 'hoje' ? 'primary' : 'ghost'} onClick={() => setView('hoje')}>Hoje</Button><Button size="sm" variant={view === 'semana' ? 'primary' : 'ghost'} onClick={() => setView('semana')}>7 dias</Button></div>
+          <div className="flex flex-col gap-2 sm:items-end"><Button onClick={() => { setNotice(''); setSaleOpen(true) }}><ShoppingBag size={16} /> Venda avulsa</Button><div className="grid grid-cols-2 gap-2 rounded-sm border border-line bg-surface-1 p-1"><Button size="sm" variant={view === 'hoje' ? 'primary' : 'ghost'} onClick={() => setView('hoje')}>Hoje</Button><Button size="sm" variant={view === 'semana' ? 'primary' : 'ghost'} onClick={() => setView('semana')}>7 dias</Button></div></div>
         </div>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Resumo operacional">
@@ -140,7 +163,7 @@ export default function ReceptionBoard() {
                 <Card key={item.pendencia_id} className="border-copper/40 p-4">
                   <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-h3 text-warm-white">{item.cliente_nome}</h3><p className="mt-1 text-body-sm font-semibold text-copper">{item.profissional_nome}</p><p className="mt-2 text-body-sm text-steel">{item.servico_nome}</p></div><Badge variant="warning">Na fila</Badge></div>
                   {item.produtos.length > 0 && <div className="mt-3 space-y-1 border-t border-line pt-3"><p className="flex items-center gap-2 text-label text-steel"><Package size={14} /> PRODUTOS</p>{item.produtos.map((product) => <p key={product.id} className="text-body-sm text-steel">{product.quantidade}× {product.nome}</p>)}</div>}
-                  <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3 sm:flex-row sm:items-end sm:justify-between"><div><span className="block text-label text-steel">Total previsto</span><strong className="text-data-lg text-gold-aged">{formatarBRL(item.valor_total)}</strong></div><Button onClick={() => { setNotice(''); setCheckoutTarget(item) }}><CreditCard size={16} /> Conferir e cobrar</Button></div>
+                  <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3"><div><span className="block text-label text-steel">Total previsto</span><strong className="text-data-lg text-gold-aged">{formatarBRL(item.valor_total)}</strong></div><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><Button variant="secondary" onClick={() => { setNotice(''); setReturnError(''); setReturnReason(''); setReturnTarget(item) }}><RotateCcw size={16} /> Devolver</Button><Button onClick={() => { setNotice(''); setCheckoutTarget(item) }}><CreditCard size={16} /> Conferir e cobrar</Button></div></div>
                 </Card>
               ))}
             </div>
@@ -164,6 +187,10 @@ export default function ReceptionBoard() {
         )}
       </main>
       <ReceptionCheckoutModal open={Boolean(checkoutTarget)} pending={checkoutTarget} onClose={() => setCheckoutTarget(null)} onSuccess={async () => { setCheckoutTarget(null); setNotice('Cobrança confirmada. Estoque e registros do atendimento foram atualizados.'); await load() }} />
+      <ReceptionProductSaleModal open={saleOpen} onClose={() => setSaleOpen(false)} onSuccess={async () => { setSaleOpen(false); setNotice('Venda avulsa concluída e estoque atualizado.'); await load() }} />
+      <Modal open={Boolean(returnTarget)} onClose={() => !returning && setReturnTarget(null)} title="Devolver ao barbeiro" footer={<><Button variant="secondary" disabled={returning} onClick={() => setReturnTarget(null)}>Voltar</Button><Button variant="danger" loading={returning} disabled={returnReason.trim().length < 3} onClick={returnToBarber}><RotateCcw size={16} /> Confirmar devolução</Button></>}>
+        <div className="space-y-4"><p className="text-body text-steel">O atendimento de <strong className="text-warm-white">{returnTarget?.cliente_nome}</strong> sairá da fila e voltará para o barbeiro corrigir. Nenhum estoque será baixado.</p>{returnError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{returnError}</p>}<label className="block text-label text-steel"><span className="mb-2 block">Motivo da devolução</span><textarea value={returnReason} onChange={(event) => setReturnReason(event.target.value)} maxLength={500} rows={4} placeholder="Ex.: produto incorreto ou atendimento ainda não finalizado" className="w-full resize-y rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper" /></label></div>
+      </Modal>
     </div>
   )
 }
