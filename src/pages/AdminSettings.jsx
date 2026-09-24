@@ -4,6 +4,7 @@ import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Spinner from '../components/ui/Spinner'
+import ReceptionUsersPanel from '../components/settings/ReceptionUsersPanel'
 import { definirModuloAtivo, listarModulos, mensagemErroModulo } from '../lib/configuracoes/modulos-api'
 
 function statusBadge(modulo) {
@@ -87,6 +88,8 @@ export default function AdminSettings() {
           </div>
         )}
       </section>
+
+      <ReceptionUsersPanel enabled={modules.some((modulo) => modulo.chave === 'recepcao' && modulo.ativo)} />
     </div>
   )
 }

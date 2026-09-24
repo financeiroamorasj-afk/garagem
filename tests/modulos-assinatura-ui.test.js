@@ -17,7 +17,7 @@ test('configurações administra ativação e rota da recepção exige módulo l
   assert.match(page, /Módulos da assinatura/)
   assert.match(page, /Contratação necessária/)
   assert.doesNotMatch(reception, /MOCK_|Math\.random|Lucas Silva/)
-  assert.match(reception, /Nenhum dado demonstrativo é exibido/)
+  assert.match(reception, /listarAgendaRecepcao/)
   assert.match(gate, /verificarAcessoModulo/)
   assert.match(api, /configuracoes_modulos_listar/)
   assert.match(api, /configuracoes_modulo_definir_ativo/)

@@ -1,20 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShieldX } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import EmptyState from './ui/EmptyState'
 import Spinner from './ui/Spinner'
 import { mensagemErroModulo, verificarAcessoModulo } from '../lib/configuracoes/modulos-api'
 
-export default function ModuleGate({ modulo, children }) {
+export default function ModuleGate({ modulo, allowedRoles, children }) {
   const [state, setState] = useState({ loading: true, allowed: false, error: '' })
 
   useEffect(() => {
     let active = true
-    verificarAcessoModulo(modulo)
-      .then((allowed) => active && setState({ loading: false, allowed, error: '' }))
-      .catch((error) => active && setState({ loading: false, allowed: false, error: mensagemErroModulo(error) }))
+    async function checkAccess() {
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        if (userError || !userData.user) throw userError || new Error('Sessão inválida')
+        const [moduleAllowed, profileResult] = await Promise.all([
+          verificarAcessoModulo(modulo),
+          supabase.from('profiles').select('role').eq('id', userData.user.id).maybeSingle(),
+        ])
+        if (profileResult.error) throw profileResult.error
+        const roleAllowed = !allowedRoles?.length || allowedRoles.includes(profileResult.data?.role)
+        if (active) setState({ loading: false, allowed: moduleAllowed && roleAllowed, error: roleAllowed ? '' : 'Este perfil não pertence à equipe de recepção.' })
+      } catch (error) {
+        if (active) setState({ loading: false, allowed: false, error: mensagemErroModulo(error) })
+      }
+    }
+    checkAccess()
     return () => { active = false }
-  }, [modulo])
+  }, [allowedRoles, modulo])
 
   if (state.loading) {
     return <div className="flex min-h-screen items-center justify-center bg-surface-0 text-steel"><span className="inline-flex items-center gap-3"><Spinner size={24} /> Verificando módulo</span></div>
