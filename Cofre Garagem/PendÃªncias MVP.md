@@ -6,8 +6,8 @@ tags: [checklist, projeto, mvp]
 Esta lista resume as frentes atuais que faltam (baseado na auditoria do fim de agosto/2026):
 
 ## OperaÃ§Ã£o DiÃ¡ria
-- [ ] Criar, editar e cancelar lanÃ§amentos manuais a pagar e a receber.
-- [ ] Regras de tÃ­tulos recorrentes/parcelados.
+- [x] Criar, editar e cancelar lanÃ§amentos manuais a pagar e a receber.
+- [x] Regras de tÃ­tulos recorrentes/parcelados.
 - [ ] Fluxos de estornos auditÃ¡veis para pagamento/recebimento.
 - [ ] Criar Interface de transferÃªncia entre contas usando a RPC jÃ¡ existente.
 - [ ] Lincar a funÃ§Ã£o de "Usar / resgatar envelope" na quitaÃ§Ã£o de um tÃ­tulo.
@@ -51,13 +51,13 @@ Esta lista resume as frentes atuais que faltam (baseado na auditoria do fim de a
 - [ ] Conectar um provedor de pagamento para habilitar pagamento antecipado; contrato e estados ja preparados no banco.
 
 ## P1.7 — Módulo de Recepção (adicional da assinatura)
-- [ ] Modelar o direito comercial do módulo (`entitlement`) separado da ativação feita pelo proprietário na unidade.
-- [ ] Permitir convite e gestão de usuários individuais com papel `recepcao`.
-- [ ] Substituir o painel mockado de recepção por agenda e fila operacionais reais.
-- [ ] Adicionar o estado `aguardando_pagamento` entre o fim técnico do atendimento e sua conclusão financeira.
-- [ ] Permitir que o barbeiro envie serviço e produtos para um carrinho pendente, sem baixa antecipada de estoque.
-- [ ] Permitir que a recepção confira o carrinho, acrescente produtos e faça a cobrança no balcão.
-- [ ] Reutilizar o checkout atômico para efetivar pagamento, comissão, estoque e financeiro somente uma vez.
-- [ ] Restringir contas, saldos, envelopes, margens e repasses ao proprietário.
-- [ ] Cobrir concorrência entre dois caixas, auditoria e recuperação após perda de conexão.
-- [ ] Seguir a especificação e a sequência de [[Módulo de Recepção]].
+- [x] Modelar o direito comercial do módulo (`entitlement`) separado da ativação feita pelo proprietário na unidade.
+- [x] Permitir convite e gestão de usuários individuais com papel `recepcao`.
+- [x] Substituir o painel mockado de recepção por agenda e fila operacionais reais.
+- [x] Adicionar o estado `aguardando_pagamento` entre o fim técnico do atendimento e sua conclusão financeira.
+- [x] Permitir que o barbeiro envie serviço e produtos para um carrinho pendente, sem baixa antecipada de estoque.
+- [x] Permitir que a recepção confira o carrinho, acrescente produtos e faça a cobrança no balcão.
+- [x] Reutilizar o checkout atômico para efetivar pagamento, comissão, estoque e financeiro somente uma vez.
+- [x] Restringir contas, saldos, envelopes, margens e repasses ao proprietário.
+- [x] Cobrir concorrência entre dois caixas, auditoria e recuperação após perda de conexão.
+- [x] Seguir a especificação e a sequência de [[Módulo de Recepção]].
