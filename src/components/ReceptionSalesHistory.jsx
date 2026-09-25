@@ -54,6 +54,7 @@ export default function ReceptionSalesHistory({ sales, onRefund }) {
               <div className="mt-4 grid grid-cols-1 gap-2 border-t border-line pt-3 text-body-sm sm:grid-cols-2">
                 <div><span className="block text-label text-steel">PAGAMENTO</span><span className="text-warm-white">{PAYMENT_LABELS[sale.forma_pagamento] || sale.forma_pagamento}</span></div>
                 <div><span className="block text-label text-steel">RESPONSÁVEL</span><span className="flex items-center gap-2 text-warm-white"><UserRound size={14} /> {sale.profissional_nome || 'Venda direta da recepção'}</span></div>
+                <div className="sm:col-span-2"><span className="block text-label text-steel">CLIENTE</span><span className="text-warm-white">{sale.cliente_nome || 'Não vinculado'}</span></div>
               </div>
 
               {sale.status === 'estornada' ? (
