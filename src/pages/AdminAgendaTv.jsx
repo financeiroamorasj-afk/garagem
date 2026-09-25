@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -31,6 +31,9 @@ const AUTO_REFRESH_MS = 60_000
 const PAGE_ROTATION_MS = 15_000
 const MAX_APPOINTMENTS_PER_COLUMN = 9
 const YOUTUBE_STORAGE_KEY = 'garagem:agenda-tv:youtube'
+const YOUTUBE_MODE_STORAGE_KEY = 'garagem:agenda-tv:youtube-mode'
+const UPCOMING_NOTICE_MINUTES = 10
+const AGENDA_ALERT_MS = 45_000
 
 function pageSizeForViewport() {
   if (typeof window === 'undefined') return 4
@@ -203,8 +206,25 @@ export default function AdminAgendaTv() {
   const [youtubeEmbed, setYoutubeEmbed] = useState(() => {
     try { return youtubeEmbedUrl(localStorage.getItem(YOUTUBE_STORAGE_KEY) || '') } catch { return '' }
   })
+  const [youtubeMode, setYoutubeMode] = useState(() => localStorage.getItem(YOUTUBE_MODE_STORAGE_KEY) || 'split')
+  const [youtubeModeDraft, setYoutubeModeDraft] = useState(() => localStorage.getItem(YOUTUBE_MODE_STORAGE_KEY) || 'split')
+  const [tvFocus, setTvFocus] = useState('video')
+  const [agendaCue, setAgendaCue] = useState('')
   const [youtubeOpen, setYoutubeOpen] = useState(false)
   const [youtubeError, setYoutubeError] = useState('')
+  const agendaReturnTimer = useRef(null)
+  const announcedAppointments = useRef(new Set())
+
+  const showAgendaTemporarily = useCallback((message) => {
+    if (!youtubeEmbed || youtubeMode !== 'smart') return
+    window.clearTimeout(agendaReturnTimer.current)
+    setAgendaCue(message)
+    setTvFocus('agenda')
+    agendaReturnTimer.current = window.setTimeout(() => {
+      setTvFocus('video')
+      setAgendaCue('')
+    }, AGENDA_ALERT_MS)
+  }, [youtubeEmbed, youtubeMode])
 
   const load = useCallback(async ({ quiet = false } = {}) => {
     if (access !== 'allowed') return
@@ -244,14 +264,34 @@ export default function AdminAgendaTv() {
     const refresh = window.setInterval(() => load({ quiet: true }), AUTO_REFRESH_MS)
     const channel = supabase
       .channel('admin-agenda-tv')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos' }, () => load({ quiet: true }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos' }, (change) => {
+        load({ quiet: true })
+        if (change.eventType === 'INSERT') showAgendaTemporarily('Novo agendamento recebido')
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profissionais' }, () => load({ quiet: true }))
       .subscribe()
     return () => {
       window.clearInterval(refresh)
       supabase.removeChannel(channel)
     }
-  }, [access, load])
+  }, [access, load, showAgendaTemporarily])
+
+  useEffect(() => () => window.clearTimeout(agendaReturnTimer.current), [])
+
+  useEffect(() => {
+    if (!youtubeEmbed || youtubeMode !== 'smart') return
+    const upcoming = appointments.find((appointment) => {
+      if (['cancelado', 'concluido', 'em_atendimento'].includes(appointment.status)) return false
+      const minutes = (new Date(appointment.data_hora).getTime() - now.getTime()) / 60_000
+      const noticeKey = `${appointment.id}:${appointment.data_hora}`
+      if (minutes < 0 || minutes > UPCOMING_NOTICE_MINUTES || announcedAppointments.current.has(noticeKey)) return false
+      announcedAppointments.current.add(noticeKey)
+      return true
+    })
+    if (!upcoming) return
+    const minutes = Math.max(1, Math.ceil((new Date(upcoming.data_hora).getTime() - now.getTime()) / 60_000))
+    showAgendaTemporarily(`${nomeClienteProtegido(upcoming.cliente_nome)} em ${minutes} min · ${professionalName(upcoming)}`)
+  }, [appointments, now, showAgendaTemporarily, youtubeEmbed, youtubeMode])
 
   useEffect(() => {
     const resize = () => setPageSize(pageSizeForViewport())
@@ -285,7 +325,11 @@ export default function AdminAgendaTv() {
     return grouped
   }, [appointments, team])
 
-  const displayPageSize = youtubeEmbed ? 1 : pageSize
+  const smartYoutube = Boolean(youtubeEmbed) && youtubeMode === 'smart'
+  const showingSmartAgenda = smartYoutube && tvFocus === 'agenda'
+  const showYoutube = Boolean(youtubeEmbed) && (!smartYoutube || tvFocus === 'video')
+  const showAgenda = !youtubeEmbed || youtubeMode === 'split' || showingSmartAgenda
+  const displayPageSize = youtubeEmbed && youtubeMode === 'split' ? 1 : pageSize
   const pageCount = Math.max(Math.ceil(team.length / displayPageSize), 1)
   const visibleTeam = team.slice(page * displayPageSize, (page + 1) * displayPageSize)
 
@@ -310,7 +354,11 @@ export default function AdminAgendaTv() {
     try {
       const embed = youtubeEmbedUrl(youtubeInput)
       localStorage.setItem(YOUTUBE_STORAGE_KEY, youtubeInput.trim())
+      localStorage.setItem(YOUTUBE_MODE_STORAGE_KEY, youtubeModeDraft)
       setYoutubeEmbed(embed)
+      setYoutubeMode(youtubeModeDraft)
+      setTvFocus('video')
+      setAgendaCue('')
       setYoutubeOpen(false)
       setPage(0)
     } catch (inputError) {
@@ -322,6 +370,8 @@ export default function AdminAgendaTv() {
     localStorage.removeItem(YOUTUBE_STORAGE_KEY)
     setYoutubeInput('')
     setYoutubeEmbed('')
+    setTvFocus('video')
+    setAgendaCue('')
     setYoutubeOpen(false)
     setYoutubeError('')
     setPage(0)
@@ -353,7 +403,8 @@ export default function AdminAgendaTv() {
 
           <div className="flex shrink-0 items-center gap-2">
             <Link to="/admin/agenda" className="hidden h-10 items-center gap-2 rounded-sm border border-line px-3 text-sm font-semibold text-steel hover:border-copper hover:text-copper sm:inline-flex"><ArrowLeft size={17} /> Agenda</Link>
-            <Button size="sm" variant={youtubeEmbed ? 'primary' : 'secondary'} onClick={() => { setYoutubeError(''); setYoutubeOpen(true) }}><Youtube size={17} /><span className="hidden sm:inline">YouTube</span></Button>
+            {smartYoutube && <Button size="sm" variant="secondary" onClick={() => tvFocus === 'video' ? showAgendaTemporarily('Agenda aberta manualmente') : setTvFocus('video')}>{tvFocus === 'video' ? <CalendarDays size={17} /> : <Youtube size={17} />}<span className="hidden sm:inline">{tvFocus === 'video' ? 'Ver agenda' : 'Voltar ao vídeo'}</span></Button>}
+            <Button size="sm" variant={youtubeEmbed ? 'primary' : 'secondary'} onClick={() => { setYoutubeError(''); setYoutubeModeDraft(youtubeMode); setYoutubeOpen(true) }}><Youtube size={17} /><span className="hidden sm:inline">YouTube</span></Button>
             <Button size="sm" variant="secondary" onClick={toggleFullscreen}>{fullscreen ? <Minimize size={17} /> : <Expand size={17} />}<span className="hidden sm:inline">Tela cheia</span></Button>
           </div>
         </div>
@@ -374,9 +425,24 @@ export default function AdminAgendaTv() {
               <div><span className="text-label text-copper">CONTEÚDO DA TV</span><h2 id="youtube-title" className="mt-1 text-h2 text-warm-white">Agenda com YouTube</h2></div>
               <button type="button" aria-label="Fechar" className="flex h-10 w-10 items-center justify-center rounded-sm text-steel hover:bg-surface-2 hover:text-warm-white" onClick={() => setYoutubeOpen(false)}><X size={20} /></button>
             </div>
-            <p className="mt-3 text-body-sm text-steel">Cole o link de um vídeo ou playlist. O conteúdo fica na área principal e os barbeiros alternam automaticamente na lateral.</p>
+            <p className="mt-3 text-body-sm text-steel">Cole o link de um vídeo ou playlist e escolha como a agenda participa da programação da TV.</p>
             <form className="mt-5 space-y-4" onSubmit={startYoutube}>
               <label className="block text-label text-steel"><span className="mb-2 block">LINK DO YOUTUBE</span><input type="url" required value={youtubeInput} onChange={(event) => setYoutubeInput(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="h-11 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper" /></label>
+              <fieldset>
+                <legend className="mb-2 text-label text-steel">COMO EXIBIR</legend>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className={`cursor-pointer rounded-md border p-3 ${youtubeModeDraft === 'split' ? 'border-copper bg-copper/10' : 'border-line bg-surface-0'}`}>
+                    <input type="radio" name="youtube-mode" value="split" checked={youtubeModeDraft === 'split'} onChange={() => setYoutubeModeDraft('split')} className="sr-only" />
+                    <strong className="block text-sm text-warm-white">Tela dividida</strong>
+                    <span className="mt-1 block text-xs leading-relaxed text-steel">Vídeo e agenda permanecem lado a lado.</span>
+                  </label>
+                  <label className={`cursor-pointer rounded-md border p-3 ${youtubeModeDraft === 'smart' ? 'border-copper bg-copper/10' : 'border-line bg-surface-0'}`}>
+                    <input type="radio" name="youtube-mode" value="smart" checked={youtubeModeDraft === 'smart'} onChange={() => setYoutubeModeDraft('smart')} className="sr-only" />
+                    <strong className="block text-sm text-warm-white">Alternância inteligente</strong>
+                    <span className="mt-1 block text-xs leading-relaxed text-steel">Vídeo em destaque; a agenda entra em novos horários e 10 min antes.</span>
+                  </label>
+                </div>
+              </fieldset>
               {youtubeError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{youtubeError}</p>}
               <p className="text-xs leading-relaxed text-steel">O áudio pode exigir o primeiro clique no player. Alguns vídeos não permitem reprodução incorporada por decisão do canal.</p>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -402,22 +468,23 @@ export default function AdminAgendaTv() {
         ) : !error && team.length === 0 ? (
           <div className="flex flex-1 items-center justify-center"><EmptyState icon={Users} title="Nenhum barbeiro ativo" description="Cadastre ou ative a equipe para usar o modo TV." /></div>
         ) : !error && (
-          <div className={`grid min-h-0 flex-1 gap-3 2xl:gap-4 ${youtubeEmbed ? 'lg:grid-cols-[minmax(0,2.15fr)_minmax(340px,.85fr)]' : ''}`}>
+          <div className={`relative grid min-h-0 flex-1 gap-3 2xl:gap-4 ${youtubeEmbed && youtubeMode === 'split' ? 'lg:grid-cols-[minmax(0,2.15fr)_minmax(340px,.85fr)]' : ''}`}>
             {youtubeEmbed && (
-              <section className="min-h-0 overflow-hidden rounded-lg border border-line bg-black shadow-overlay" aria-label="YouTube">
+              <section className={`min-h-0 overflow-hidden rounded-lg border border-line bg-black shadow-overlay ${showYoutube ? '' : 'pointer-events-none absolute inset-0 invisible'}`} aria-label="YouTube" aria-hidden={showYoutube ? undefined : 'true'}>
                 <iframe title="Conteúdo do YouTube da barbearia" src={youtubeEmbed} className="h-full min-h-[240px] w-full" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
               </section>
             )}
-            <div className="grid min-h-0 gap-3 2xl:gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(visibleTeam.length, 1)}, minmax(0, 1fr))` }}>
+            {showAgenda && <div className="grid min-h-0 gap-3 2xl:gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(visibleTeam.length, 1)}, minmax(0, 1fr))` }}>
               {visibleTeam.map((professional) => (
                 <BarberColumn key={professional.id} professional={professional} appointments={appointmentsByProfessional.get(professional.id) ?? []} now={now} />
               ))}
-            </div>
+            </div>}
+            {showingSmartAgenda && agendaCue && <div role="status" className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full border border-copper/50 bg-surface-0/95 px-5 py-2 text-center text-sm font-semibold text-copper shadow-overlay">{agendaCue}<span className="ml-2 text-steel">· vídeo volta em instantes</span></div>}
           </div>
         )}
       </main>
 
-      {pageCount > 1 && (
+      {showAgenda && pageCount > 1 && (
         <footer className="flex shrink-0 items-center justify-center gap-3 border-t border-line bg-surface-1 px-4 py-2">
           <button type="button" aria-label="Grupo anterior" className="flex h-9 w-9 items-center justify-center rounded-sm text-steel hover:bg-surface-2 hover:text-copper" onClick={() => setPage((current) => (current - 1 + pageCount) % pageCount)}><ChevronLeft size={19} /></button>
           <div className="flex items-center gap-2" aria-label={`Grupo ${page + 1} de ${pageCount}`}>
