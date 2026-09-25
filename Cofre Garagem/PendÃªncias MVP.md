@@ -24,7 +24,7 @@ Esta lista resume as frentes atuais que faltam (baseado na auditoria do fim de a
 - [x] Criar agenda individual didÃ¡tica para cada barbeiro, exibindo apenas seus horÃ¡rios, clientes e aÃ§Ãµes autorizadas.
 - [x] Criar agenda geral para o proprietÃ¡rio, com visÃ£o da equipe, filtros por profissional e situaÃ§Ã£o dos atendimentos.
 - [x] Garantir isolamento por barbearia e profissional usando sessÃ£o autenticada e RLS.
-- [ ] Criar o modo TV da agenda da equipe em rota dedicada, somente leitura e tela cheia, com todos os barbeiros, atualização automática, relógio e ocultação de dados sensíveis do cliente.
+- [x] Criar o modo TV da agenda da equipe em rota dedicada, somente leitura e tela cheia, com todos os barbeiros, atualização automática, relógio e ocultação de dados sensíveis do cliente.
 
 ## P1 — Cliente e MemÃ³ria do Corte
 - [x] Criar ficha mobile do cliente com preferÃªncias, barbeiro favorito e observaÃ§Ãµes.

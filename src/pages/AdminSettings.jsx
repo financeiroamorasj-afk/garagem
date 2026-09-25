@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Building2, CheckCircle2, Headset, LockKeyhole, RefreshCw } from 'lucide-react'
+import { Building2, CheckCircle2, Headset, ImagePlus, LockKeyhole, RefreshCw, Trash2 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Spinner from '../components/ui/Spinner'
 import ReceptionUsersPanel from '../components/settings/ReceptionUsersPanel'
 import { definirModuloAtivo, listarModulos, mensagemErroModulo } from '../lib/configuracoes/modulos-api'
+import { carregarIdentidadeBarbearia, mensagemErroIdentidade, removerLogoBarbearia, salvarLogoBarbearia } from '../lib/configuracoes/identidade-api'
+import { compactarImagem, formatarTamanho } from '../lib/clientes/imagem'
+import garagemSymbol from '../assets/brand/garagem-symbol.png'
 
 function statusBadge(modulo) {
   if (modulo.ativo) return { variant: 'success', label: 'Ativo na unidade' }
@@ -25,11 +28,18 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [identity, setIdentity] = useState(null)
+  const [logoBusy, setLogoBusy] = useState(false)
+  const [logoInfo, setLogoInfo] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
-    try { setModules(await listarModulos()) }
+    try {
+      const [nextModules, nextIdentity] = await Promise.all([listarModulos(), carregarIdentidadeBarbearia()])
+      setModules(nextModules)
+      setIdentity(nextIdentity)
+    }
     catch (loadError) { setError(mensagemErroModulo(loadError)) }
     finally { setLoading(false) }
   }, [])
@@ -51,6 +61,43 @@ export default function AdminSettings() {
     }
   }
 
+  async function selectLogo(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setLogoBusy(true)
+    setError('')
+    setNotice('')
+    setLogoInfo('Compactando imagem no aparelho...')
+    try {
+      const image = await compactarImagem(file, { maxDimension: 1200, maxBytes: 500 * 1024 })
+      setLogoInfo(`${formatarTamanho(file.size)} → ${formatarTamanho(image.bytes)}`)
+      setIdentity(await salvarLogoBarbearia(image))
+      setNotice('Logo atualizado no portal e no modo TV.')
+    } catch (logoError) {
+      setLogoInfo('')
+      setError(mensagemErroIdentidade(logoError))
+    } finally {
+      setLogoBusy(false)
+    }
+  }
+
+  async function removeLogo() {
+    if (!window.confirm('Remover o logo personalizado desta barbearia?')) return
+    setLogoBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      setIdentity(await removerLogoBarbearia())
+      setLogoInfo('')
+      setNotice('Logo removido. A marca Garagem será usada como alternativa.')
+    } catch (logoError) {
+      setError(mensagemErroIdentidade(logoError))
+    } finally {
+      setLogoBusy(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8">
       <header>
@@ -61,6 +108,29 @@ export default function AdminSettings() {
 
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-4 text-body-sm text-success">{notice}</div>}
       {error && <div role="alert" className="flex items-center justify-between gap-4 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="danger" onClick={load}><RefreshCw size={15} /> Tentar novamente</Button></div>}
+
+      <section aria-labelledby="identity-title">
+        <div className="mb-4 flex items-center gap-3"><Building2 size={20} className="text-copper" /><div><h2 id="identity-title" className="text-h2 text-warm-white">Identidade da barbearia</h2><p className="text-body-sm text-steel">O logo acompanha o portal do cliente e a agenda exibida na TV.</p></div></div>
+        <Card className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
+          <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-surface-0 p-4">
+            <img src={identity?.logo_url || garagemSymbol} alt={identity?.logo_url ? `Logo de ${identity.nome}` : 'Símbolo Garagem'} className="max-h-full max-w-full object-contain" onError={(event) => { event.currentTarget.src = garagemSymbol }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="text-label text-copper">MARCA DA UNIDADE</span>
+            <h3 className="mt-1 truncate text-h2 text-warm-white">{identity?.nome || 'Sua barbearia'}</h3>
+            <p className="mt-1 text-body-sm text-steel">Portal: /portal/{identity?.slug || 'sua-barbearia'}</p>
+            <p className="mt-3 max-w-xl text-body-sm text-steel">Envie uma imagem quadrada ou horizontal em JPG, PNG, WebP ou HEIC. Ela será redimensionada e compactada antes do upload.</p>
+            {logoInfo && <p className="mt-2 text-label text-success">{logoInfo}</p>}
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+            <label className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-sm bg-linear-135 from-copper to-gold-aged px-5 text-sm font-semibold uppercase tracking-button text-surface-0 ${logoBusy ? 'pointer-events-none opacity-40' : ''}`}>
+              {logoBusy ? <Spinner size={16} /> : <ImagePlus size={17} />} {identity?.logo_url ? 'Trocar logo' : 'Enviar logo'}
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="sr-only" disabled={logoBusy} onChange={selectLogo} />
+            </label>
+            {identity?.logo_url && <Button variant="danger" disabled={logoBusy} onClick={removeLogo}><Trash2 size={16} /> Remover</Button>}
+          </div>
+        </Card>
+      </section>
 
       <section aria-labelledby="modules-title">
         <div className="mb-4 flex items-center gap-3"><Headset size={20} className="text-copper" /><div><h2 id="modules-title" className="text-h2 text-warm-white">Módulos da assinatura</h2><p className="text-body-sm text-steel">Adicionais comerciais liberados pelo Garagem System.</p></div></div>
