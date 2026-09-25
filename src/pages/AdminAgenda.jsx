@@ -11,9 +11,11 @@ import {
   RefreshCw,
   Scissors,
   Search,
+  MonitorUp,
   UserPlus,
   Users,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import Badge from '../components/ui/Badge'
 import AddAppointmentModal from '../components/AddAppointmentModal'
 import WalkInModal from '../components/WalkInModal'
@@ -214,6 +216,7 @@ function EmptyCalendar() {
 }
 
 export default function AdminAgenda() {
+  const navigate = useNavigate()
   const today = dataLocalKey()
   const [selectedDate, setSelectedDate] = useState(today)
   const [view, setView] = useState('semana')
@@ -358,7 +361,8 @@ export default function AdminAgenda() {
           <p className="mt-2 max-w-2xl text-body-sm text-steel sm:text-body">Consulte os horários da equipe por dia, semana ou mês.</p>
         </div>
         <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Button size="sm" variant="secondary" onClick={() => navigate('/admin/agenda/tv')}><MonitorUp size={16} /> Modo TV</Button>
             <Button size="sm" variant="secondary" onClick={() => setWalkInOpen(true)}><UserPlus size={16} /> Encaixe</Button>
             <Button size="sm" variant="secondary" onClick={openExtraHours}><Clock3 size={16} /> Horário extra</Button>
             <Button size="sm" onClick={() => setAppointmentOpen(true)}><Plus size={16} /> Novo corte</Button>

@@ -22,7 +22,7 @@ async function decodeImage(file) {
   }
 }
 
-export async function compactarFotoCorte(file, { maxDimension = 1280, maxBytes = 800 * 1024 } = {}) {
+export async function compactarImagem(file, { maxDimension = 1280, maxBytes = 800 * 1024 } = {}) {
   if (!(file instanceof Blob) || !ACCEPTED.has(file.type)) throw new TypeError('Selecione uma foto JPG, PNG, WebP ou HEIC.')
   if (file.size > 15 * 1024 * 1024) throw new TypeError('A foto original pode ter no máximo 15 MB.')
 
@@ -64,6 +64,8 @@ export async function compactarFotoCorte(file, { maxDimension = 1280, maxBytes =
     decoded.release()
   }
 }
+
+export const compactarFotoCorte = compactarImagem
 
 export function formatarTamanho(bytes) {
   if (!Number.isFinite(bytes)) return ''

@@ -15,6 +15,7 @@ import FinanceEnvelopes from './pages/financeiro/FinanceEnvelopes'
 import MapaBarbearia from './pages/MapaBarbearia'
 import AdminBarbers from './pages/AdminBarbers'
 import AdminAgenda from './pages/AdminAgenda'
+import AdminAgendaTv from './pages/AdminAgendaTv'
 import AdminCatalog from './pages/AdminCatalog'
 import AdminAvailability from './pages/AdminAvailability'
 import AdminClients from './pages/AdminClients'
@@ -41,6 +42,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/barber/dashboard" element={<BarberDashboard />} />
           <Route path="/reception/board" element={<ModuleGate modulo="recepcao" allowedRoles={RECEPTION_ROLES}><ReceptionBoard /></ModuleGate>} />
+          <Route path="/admin/agenda/tv" element={<AdminAgendaTv />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
