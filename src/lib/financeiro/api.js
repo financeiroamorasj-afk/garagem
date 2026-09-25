@@ -161,6 +161,21 @@ export function criarTituloManual({ idempotencyKey, correlationId, ...titulo }) 
   })
 }
 
+export function criarTitulosEmLote({ modalidade, quantidade, idempotencyKey, correlationId, ...titulo }) {
+  const modalidadeValidada = exigirOpcao(modalidade, ['parcelado', 'recorrente'], 'Modalidade')
+  const quantidadeValidada = Number(quantidade)
+  if (!Number.isInteger(quantidadeValidada) || quantidadeValidada < 2 || quantidadeValidada > 60) {
+    throw new TypeError('Quantidade deve estar entre 2 e 60')
+  }
+  return executarRpc('financeiro_criar_titulos_em_lote', {
+    ...normalizarTituloManual(titulo),
+    p_modalidade: modalidadeValidada,
+    p_quantidade: quantidadeValidada,
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
 export function editarTituloManual({ tituloId, expectedUpdatedAt, correlationId, ...titulo }) {
   return executarRpc('financeiro_editar_titulo_manual', {
     ...normalizarTituloManual(titulo),

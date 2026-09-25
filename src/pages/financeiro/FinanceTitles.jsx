@@ -8,7 +8,7 @@ import Label from '../../components/ui/Label'
 import Modal from '../../components/ui/Modal'
 import PeriodSelector from '../../components/ui/PeriodSelector'
 import Tabs from '../../components/ui/Tabs'
-import { cancelarTituloManual, criarTituloManual, editarTituloManual, estornarCheckout, listarCategorias, listarContasBancarias, listarTitulos, pagarConta, receberConta } from '../../lib/financeiro/api'
+import { cancelarTituloManual, criarTituloManual, criarTitulosEmLote, editarTituloManual, estornarCheckout, listarCategorias, listarContasBancarias, listarTitulos, pagarConta, receberConta } from '../../lib/financeiro/api'
 import { dataCompetenciaBrt, periodoMensalBrt } from '../../lib/financeiro/periodo'
 import { formatarBRL } from '../../lib/financeiro/moeda'
 import { settlementKeyFor } from '../../lib/financeiro/settlementIntent'
@@ -105,6 +105,8 @@ export default function FinanceTitles() {
       dataCompetencia: row?.data_competencia ?? dataCompetenciaBrt(),
       metodoPagamento: row?.metodo_pagamento ?? (editorType === 'receber' ? 'pix' : ''),
       categoriaId: row?.categoria_id ?? '',
+      modalidade: 'unico',
+      quantidade: 2,
     })
     setTitleErrors({})
     setFeedback('')
@@ -124,6 +126,11 @@ export default function FinanceTitles() {
     if (!Number.isFinite(titleForm.valor) || titleForm.valor <= 0) nextErrors.valor = 'Informe um valor maior que zero.'
     if (!titleForm.dataEvento) nextErrors.dataEvento = 'Informe a data do título.'
     if (!titleForm.dataCompetencia) nextErrors.dataCompetencia = 'Informe a data de competência.'
+    if (editor.mode === 'create' && titleForm.modalidade !== 'unico') {
+      const quantity = Number(titleForm.quantidade)
+      if (!Number.isInteger(quantity) || quantity < 2 || quantity > 60) nextErrors.quantidade = 'Informe entre 2 e 60.'
+      if (titleForm.modalidade === 'parcelado' && Math.round(titleForm.valor * 100) < quantity) nextErrors.quantidade = 'O total precisa permitir parcelas de pelo menos R$ 0,01.'
+    }
     if (editor.type === 'receber') {
       if (!Number.isFinite(titleForm.taxa) || titleForm.taxa < 0 || titleForm.taxa > titleForm.valor) nextErrors.taxa = 'A taxa deve estar entre zero e o valor bruto.'
       const method = String(titleForm.metodoPagamento ?? '').trim()
@@ -149,9 +156,16 @@ export default function FinanceTitles() {
       categoriaId: titleForm.categoriaId || null,
     }
     try {
-      if (editor.mode === 'create') await criarTituloManual({ ...input, idempotencyKey: createIntentRef.current })
-      else await editarTituloManual({ ...input, tituloId: editor.row.id, expectedUpdatedAt: editor.row.updated_at })
-      setFeedback(`${editor.type === 'pagar' ? 'Conta a pagar' : 'Conta a receber'} ${editor.mode === 'create' ? 'criada' : 'atualizada'} com sucesso.`)
+      if (editor.mode === 'create' && titleForm.modalidade !== 'unico') {
+        const result = await criarTitulosEmLote({ ...input, modalidade: titleForm.modalidade, quantidade: Number(titleForm.quantidade), idempotencyKey: createIntentRef.current })
+        setFeedback(`${result.quantidade} ${titleForm.modalidade === 'parcelado' ? 'parcelas' : 'recorrências mensais'} criadas com sucesso.`)
+      } else if (editor.mode === 'create') {
+        await criarTituloManual({ ...input, idempotencyKey: createIntentRef.current })
+        setFeedback(`${editor.type === 'pagar' ? 'Conta a pagar' : 'Conta a receber'} criada com sucesso.`)
+      } else {
+        await editarTituloManual({ ...input, tituloId: editor.row.id, expectedUpdatedAt: editor.row.updated_at })
+        setFeedback(`${editor.type === 'pagar' ? 'Conta a pagar' : 'Conta a receber'} atualizada com sucesso.`)
+      }
       createIntentRef.current = null
       setEditor(null)
       await loadTitles()
@@ -253,7 +267,7 @@ export default function FinanceTitles() {
   }
 
   const columns = [
-    { key: 'descricao', header: 'Descrição' },
+    { key: 'descricao', header: 'Descrição', render: (value, row) => <div><span className="block">{value}</span>{row.modalidade !== 'unico' && <span className="mt-1 block text-label text-copper">{row.modalidade === 'parcelado' ? 'PARCELA' : 'RECORRÊNCIA'} {row.numero_repeticao}/{row.total_repeticoes}</span>}</div> },
     { key: 'categoria', header: 'Categoria', render: (value) => value || 'Sem categoria' },
     { key: 'contraparte', header: 'Contraparte', render: (value) => value || 'Não informada' },
     { key: 'data_evento', header: type === 'pagar' ? 'Vencimento' : 'Previsão', dataType: true },
@@ -278,7 +292,34 @@ export default function FinanceTitles() {
         {selected && <div className="space-y-4"><p className="text-body text-steel"><strong className="font-semibold text-warm-white">{selected.descricao}</strong><br />Valor: <span className="text-data text-warm-white">{formatarBRL(selected.valor)}</span></p>{accountsError ? <div role="alert" className="space-y-3 rounded-md border border-danger bg-danger/12 p-4 text-body-sm text-danger"><p>{accountsError}</p><Button variant="secondary" size="sm" onClick={loadAccounts}>Tentar novamente</Button></div> : accountsLoading ? <p role="status" className="text-body-sm text-steel">Carregando contas bancárias...</p> : accounts.length === 0 ? <p role="status" className="rounded-md border border-warning bg-warning/12 p-4 text-body-sm text-warning">Cadastre uma conta bancária ativa antes de liquidar este título.</p> : <div className="flex flex-col gap-2"><Label htmlFor="settlement-account">Conta bancária</Label><select id="settlement-account" value={accountId} onChange={(event) => setAccountId(event.target.value)} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white focus:border-copper focus:outline-none focus-visible:ring-2 focus-visible:ring-copper"><option value="">Selecione</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.nome}</option>)}</select></div>}<Input label="Data de liquidação" type="date" value={settlementDate} onChange={(event) => setSettlementDate(event.target.value)} /></div>}
       </Modal>
       <Modal open={Boolean(editor)} onClose={closeEditor} title={editor?.mode === 'edit' ? 'Editar título manual' : editor?.type === 'pagar' ? 'Nova conta a pagar' : 'Nova conta a receber'} className="max-h-screen overflow-y-auto" footer={<><Button variant="secondary" onClick={closeEditor} disabled={submitting}>Cancelar</Button><Button type="submit" form="title-form" loading={submitting}>{editor?.mode === 'edit' ? 'Salvar alterações' : 'Criar título'}</Button></>}>
-        {editor && <form id="title-form" className="space-y-5" onSubmit={submitTitle} noValidate>{titleErrors.submit && <div role="alert" className="rounded-md border border-danger bg-danger/12 p-4 text-body-sm text-danger">{titleErrors.submit}</div>}<Input label="Descrição" value={titleForm.descricao} onChange={(event) => setTitleForm((current) => ({ ...current, descricao: event.target.value }))} error={titleErrors.descricao} maxLength={200} required disabled={submitting} /><CurrencyInput label={editor.type === 'receber' ? 'Valor bruto' : 'Valor'} value={titleForm.valor} onValueChange={(value) => setTitleForm((current) => ({ ...current, valor: value }))} error={titleErrors.valor} disabled={submitting} />{editor.type === 'receber' && <CurrencyInput label="Taxa" value={titleForm.taxa} onValueChange={(value) => setTitleForm((current) => ({ ...current, taxa: value }))} error={titleErrors.taxa} helpText="Informe zero quando não houver taxa." disabled={submitting} />}<div className="grid gap-4 sm:grid-cols-2"><Input label={editor.type === 'pagar' ? 'Vencimento' : 'Previsão de recebimento'} type="date" value={titleForm.dataEvento} onChange={(event) => setTitleForm((current) => ({ ...current, dataEvento: event.target.value }))} error={titleErrors.dataEvento} disabled={submitting} /><Input label="Competência" type="date" value={titleForm.dataCompetencia} onChange={(event) => setTitleForm((current) => ({ ...current, dataCompetencia: event.target.value }))} error={titleErrors.dataCompetencia} disabled={submitting} /></div><div className="flex flex-col gap-2"><Label htmlFor="title-category">Categoria</Label><select id="title-category" value={titleForm.categoriaId} onChange={(event) => setTitleForm((current) => ({ ...current, categoriaId: event.target.value }))} disabled={submitting} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white focus:border-copper focus:outline-none focus-visible:ring-2 focus-visible:ring-copper"><option value="">Sem categoria</option>{categories.filter((category) => category.tipo === 'ambos' || category.tipo === (editor.type === 'pagar' ? 'saida' : 'entrada')).map((category) => <option key={category.id} value={category.id}>{category.nome}</option>)}</select></div>{editor.type === 'receber' && <Input label="Método de pagamento" value={titleForm.metodoPagamento} onChange={(event) => setTitleForm((current) => ({ ...current, metodoPagamento: event.target.value }))} error={titleErrors.metodoPagamento} maxLength={50} disabled={submitting} />}</form>}
+        {editor && (
+          <form id="title-form" className="space-y-5" onSubmit={submitTitle} noValidate>
+            {titleErrors.submit && <div role="alert" className="rounded-md border border-danger bg-danger/12 p-4 text-body-sm text-danger">{titleErrors.submit}</div>}
+            <Input label="Descrição" value={titleForm.descricao} onChange={(event) => setTitleForm((current) => ({ ...current, descricao: event.target.value }))} error={titleErrors.descricao} maxLength={200} required disabled={submitting} />
+            <CurrencyInput label={editor.type === 'receber' ? 'Valor bruto' : 'Valor'} value={titleForm.valor} onValueChange={(value) => setTitleForm((current) => ({ ...current, valor: value }))} error={titleErrors.valor} helpText={editor.mode === 'create' && titleForm.modalidade === 'parcelado' ? 'Informe o total; o sistema fará a divisão exata entre as parcelas.' : editor.mode === 'create' && titleForm.modalidade === 'recorrente' ? 'Este valor será repetido integralmente em cada mês.' : undefined} disabled={submitting} />
+            {editor.type === 'receber' && <CurrencyInput label="Taxa" value={titleForm.taxa} onValueChange={(value) => setTitleForm((current) => ({ ...current, taxa: value }))} error={titleErrors.taxa} helpText={editor.mode === 'create' && titleForm.modalidade === 'parcelado' ? 'A taxa total também será dividida entre as parcelas.' : 'Informe zero quando não houver taxa.'} disabled={submitting} />}
+            {editor.mode === 'create' && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="title-modality">Forma de lançamento</Label>
+                  <select id="title-modality" value={titleForm.modalidade} onChange={(event) => setTitleForm((current) => ({ ...current, modalidade: event.target.value }))} disabled={submitting} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white focus:border-copper focus:outline-none focus-visible:ring-2 focus-visible:ring-copper">
+                    <option value="unico">Lançamento único</option>
+                    <option value="parcelado">Valor parcelado</option>
+                    <option value="recorrente">Recorrência mensal</option>
+                  </select>
+                </div>
+                {titleForm.modalidade !== 'unico' && <Input label={titleForm.modalidade === 'parcelado' ? 'Número de parcelas' : 'Número de meses'} type="number" min="2" max="60" step="1" value={titleForm.quantidade} onChange={(event) => setTitleForm((current) => ({ ...current, quantidade: event.target.value }))} error={titleErrors.quantidade} required disabled={submitting} />}
+              </div>
+            )}
+            {editor.mode === 'edit' && editor.row?.modalidade !== 'unico' && <div className="rounded-sm border border-info/30 bg-info/10 p-3 text-body-sm text-info">Você está editando somente {editor.row.modalidade === 'parcelado' ? 'esta parcela' : 'esta ocorrência'} ({editor.row.numero_repeticao}/{editor.row.total_repeticoes}).</div>}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label={`${editor.mode === 'create' && titleForm.modalidade !== 'unico' ? 'Primeiro ' : ''}${editor.type === 'pagar' ? 'vencimento' : 'previsão de recebimento'}`} type="date" value={titleForm.dataEvento} onChange={(event) => setTitleForm((current) => ({ ...current, dataEvento: event.target.value }))} error={titleErrors.dataEvento} disabled={submitting} />
+              <Input label={`${editor.mode === 'create' && titleForm.modalidade !== 'unico' ? 'Primeira ' : ''}competência`} type="date" value={titleForm.dataCompetencia} onChange={(event) => setTitleForm((current) => ({ ...current, dataCompetencia: event.target.value }))} error={titleErrors.dataCompetencia} disabled={submitting} />
+            </div>
+            <div className="flex flex-col gap-2"><Label htmlFor="title-category">Categoria</Label><select id="title-category" value={titleForm.categoriaId} onChange={(event) => setTitleForm((current) => ({ ...current, categoriaId: event.target.value }))} disabled={submitting} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white focus:border-copper focus:outline-none focus-visible:ring-2 focus-visible:ring-copper"><option value="">Sem categoria</option>{categories.filter((category) => category.tipo === 'ambos' || category.tipo === (editor.type === 'pagar' ? 'saida' : 'entrada')).map((category) => <option key={category.id} value={category.id}>{category.nome}</option>)}</select></div>
+            {editor.type === 'receber' && <Input label="Método de pagamento" value={titleForm.metodoPagamento} onChange={(event) => setTitleForm((current) => ({ ...current, metodoPagamento: event.target.value }))} error={titleErrors.metodoPagamento} maxLength={50} disabled={submitting} />}
+          </form>
+        )}
       </Modal>
       <Modal open={Boolean(cancelTarget)} onClose={closeCancel} title="Cancelar título manual" footer={<><Button variant="secondary" onClick={closeCancel} disabled={submitting}>Voltar</Button><Button variant="danger" type="submit" form="cancel-title-form" loading={submitting}>Cancelar título</Button></>}>
         {cancelTarget && <form id="cancel-title-form" className="space-y-5" onSubmit={confirmCancel} noValidate><p className="text-body text-steel">O lançamento será preservado com status cancelado e ficará disponível na auditoria.</p>{titleErrors.submit && <div role="alert" className="rounded-md border border-danger bg-danger/12 p-4 text-body-sm text-danger">{titleErrors.submit}</div>}<Input label="Motivo do cancelamento" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} error={titleErrors.motivo} maxLength={200} required disabled={submitting} /></form>}
