@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Building2, CheckCircle2, Headset, ImagePlus, LockKeyhole, RefreshCw, Trash2 } from 'lucide-react'
+import { Building2, CheckCircle2, Headset, ImagePlus, LockKeyhole, QrCode, RefreshCw, Save, Trash2 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
+import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
 import ReceptionUsersPanel from '../components/settings/ReceptionUsersPanel'
 import { definirModuloAtivo, listarModulos, mensagemErroModulo } from '../lib/configuracoes/modulos-api'
 import { carregarIdentidadeBarbearia, mensagemErroIdentidade, removerLogoBarbearia, salvarLogoBarbearia } from '../lib/configuracoes/identidade-api'
+import { carregarConfiguracaoPix, mensagemErroPix, removerConfiguracaoPix, salvarConfiguracaoPix } from '../lib/pix/api'
 import { compactarImagem, formatarTamanho } from '../lib/clientes/imagem'
 import garagemSymbol from '../assets/brand/garagem-symbol.png'
 
@@ -31,14 +33,20 @@ export default function AdminSettings() {
   const [identity, setIdentity] = useState(null)
   const [logoBusy, setLogoBusy] = useState(false)
   const [logoInfo, setLogoInfo] = useState('')
+  const [pixConfig, setPixConfig] = useState(null)
+  const [pixForm, setPixForm] = useState({ chave: '', beneficiario: '', cidade: '' })
+  const [pixBusy, setPixBusy] = useState(false)
+  const [pixError, setPixError] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [nextModules, nextIdentity] = await Promise.all([listarModulos(), carregarIdentidadeBarbearia()])
+      const [nextModules, nextIdentity, nextPix] = await Promise.all([listarModulos(), carregarIdentidadeBarbearia(), carregarConfiguracaoPix()])
       setModules(nextModules)
       setIdentity(nextIdentity)
+      setPixConfig(nextPix)
+      setPixForm({ chave: nextPix?.chave ?? '', beneficiario: nextPix?.beneficiario ?? nextIdentity.nome ?? '', cidade: nextPix?.cidade ?? '' })
     }
     catch (loadError) { setError(mensagemErroModulo(loadError)) }
     finally { setLoading(false) }
@@ -98,6 +106,40 @@ export default function AdminSettings() {
     }
   }
 
+  async function savePix(event) {
+    event.preventDefault()
+    setPixBusy(true)
+    setPixError('')
+    setNotice('')
+    try {
+      const nextConfig = await salvarConfiguracaoPix(pixForm)
+      setPixConfig(nextConfig)
+      setPixForm({ chave: nextConfig.chave, beneficiario: nextConfig.beneficiario, cidade: nextConfig.cidade })
+      setNotice('PIX configurado para as cobranças do barbeiro e da recepção.')
+    } catch (pixSaveError) {
+      setPixError(mensagemErroPix(pixSaveError))
+    } finally {
+      setPixBusy(false)
+    }
+  }
+
+  async function removePix() {
+    if (!window.confirm('Remover a chave PIX das cobranças desta barbearia?')) return
+    setPixBusy(true)
+    setPixError('')
+    setNotice('')
+    try {
+      const nextConfig = await removerConfiguracaoPix()
+      setPixConfig(nextConfig)
+      setPixForm({ chave: '', beneficiario: identity?.nome ?? '', cidade: '' })
+      setNotice('Configuração PIX removida.')
+    } catch (pixRemoveError) {
+      setPixError(mensagemErroPix(pixRemoveError))
+    } finally {
+      setPixBusy(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8">
       <header>
@@ -129,6 +171,28 @@ export default function AdminSettings() {
             </label>
             {identity?.logo_url && <Button variant="danger" disabled={logoBusy} onClick={removeLogo}><Trash2 size={16} /> Remover</Button>}
           </div>
+        </Card>
+      </section>
+
+      <section aria-labelledby="pix-title">
+        <div className="mb-4 flex items-center gap-3"><QrCode size={20} className="text-copper" /><div><h2 id="pix-title" className="text-h2 text-warm-white">Cobrança por PIX</h2><p className="text-body-sm text-steel">A chave gera um QR Code com o valor exato no checkout do barbeiro e da recepção.</p></div></div>
+        <Card className="p-5 sm:p-6">
+          <form className="space-y-5" onSubmit={savePix} noValidate>
+            <div className="flex flex-col gap-3 border-b border-line pb-5 sm:flex-row sm:items-start sm:justify-between">
+              <div><span className="text-label text-copper">PIX DA UNIDADE</span><h3 className="mt-1 text-h2 text-warm-white">{pixConfig?.configurado ? 'Pronto para gerar QR Code' : 'Cadastre a chave da barbearia'}</h3><p className="mt-1 max-w-2xl text-body-sm text-steel">O QR Code é estático e inclui o valor da cobrança. O sistema não confirma sozinho se o pagamento chegou; o operador deve conferir antes de concluir.</p></div>
+              <Badge variant={pixConfig?.configurado ? 'success' : 'warning'} className="shrink-0">{pixConfig?.configurado ? 'Configurado' : 'Pendente'}</Badge>
+            </div>
+            {pixError && <div role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{pixError}</div>}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2"><Input label="Chave PIX" value={pixForm.chave} onChange={(event) => setPixForm((current) => ({ ...current, chave: event.target.value }))} placeholder="E-mail, +55..., CPF, CNPJ ou chave aleatória" maxLength={77} required disabled={pixBusy} /></div>
+              <Input label="Nome do beneficiário" value={pixForm.beneficiario} onChange={(event) => setPixForm((current) => ({ ...current, beneficiario: event.target.value }))} helpText="Até 25 caracteres; será normalizado no QR Code." maxLength={25} required disabled={pixBusy} />
+              <Input label="Cidade" value={pixForm.cidade} onChange={(event) => setPixForm((current) => ({ ...current, cidade: event.target.value }))} helpText="Cidade vinculada ao recebedor, com até 15 caracteres." maxLength={15} required disabled={pixBusy} />
+            </div>
+            <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end">
+              {pixConfig?.configurado && <Button type="button" variant="danger" disabled={pixBusy} onClick={removePix}><Trash2 size={16} /> Remover PIX</Button>}
+              <Button type="submit" loading={pixBusy}><Save size={16} /> Salvar PIX</Button>
+            </div>
+          </form>
         </Card>
       </section>
 

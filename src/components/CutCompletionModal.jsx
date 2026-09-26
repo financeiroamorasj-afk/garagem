@@ -5,6 +5,7 @@ import Input from './ui/Input'
 import Label from './ui/Label'
 import Modal from './ui/Modal'
 import Spinner from './ui/Spinner'
+import PixPaymentPanel from './PixPaymentPanel'
 import { concluirCheckoutAtendimento, enviarAtendimentoRecepcao, mensagemErroCorte, obterUrlFotoCorte } from '../lib/clientes/cortes-api'
 import { compactarFotoCorte, formatarTamanho } from '../lib/clientes/imagem'
 import { listarProdutosBarbeiro } from '../lib/produtos/api'
@@ -71,6 +72,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [receptionMode, setReceptionMode] = useState(false)
   const [checkingMode, setCheckingMode] = useState(false)
+  const [pixReady, setPixReady] = useState(false)
 
   useEffect(() => {
     if (!open || !appointment) return
@@ -82,6 +84,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     setPreferences(appointment.cliente_preferencias ?? lastCut?.preferencias_cliente ?? '')
     setPhoto(null)
     setError('')
+    setPixReady(false)
     setProductQuantities({})
     setServiceValue(String(Number(appointment.valor_final ?? 0).toFixed(2)))
     setDiscount('0')
@@ -172,6 +175,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
         const numericFee = Number(fee)
         if (!Number.isFinite(numericDiscount) || numericDiscount < 0 || numericDiscount > grossTotal) throw new TypeError('O desconto não pode ultrapassar o total.')
         if (!Number.isFinite(numericFee) || numericFee < 0 || numericFee > finalTotal) throw new TypeError('A taxa não pode ultrapassar o valor final.')
+        if (paymentMethod === 'pix' && !pixReady) throw new TypeError('Configure e gere o PIX antes de confirmar a cobrança.')
         result = await concluirCheckoutAtendimento({ ...common, desconto: numericDiscount, formaPagamento: paymentMethod, taxa: numericFee, dataRecebimento: receiptDate })
       }
       await onSuccess?.(result)
@@ -192,7 +196,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
       footer={(
         <>
           <Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button>
-          <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || compressing || style.trim().length < 2 || grossTotal <= 0}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
+          <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || compressing || style.trim().length < 2 || grossTotal <= 0 || (!receptionMode && paymentMethod === 'pix' && !pixReady)}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : paymentMethod === 'pix' ? 'Confirmar PIX' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
         </>
       )}
     >
@@ -262,9 +266,10 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
             <Input label="Taxa da operação" type="number" min="0" max={finalTotal} step="0.01" value={fee} onChange={(event) => setFee(event.target.value)} helpText="Ex.: taxa da maquininha" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-label text-steel">Forma de pagamento<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper">{PAYMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-            <Input label="Data prevista para receber" type="date" min={hojeLocal()} value={receiptDate} onChange={(event) => setReceiptDate(event.target.value)} helpText={receiptDate === hojeLocal() ? 'Baixa financeira imediata' : 'Ficará como valor previsto'} />
+            <label className="flex flex-col gap-2 text-label text-steel">Forma de pagamento<select value={paymentMethod} onChange={(event) => { const method = event.target.value; setPaymentMethod(method); if (method === 'pix') setReceiptDate(hojeLocal()) }} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper">{PAYMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <Input label="Data prevista para receber" type="date" min={hojeLocal()} value={receiptDate} onChange={(event) => setReceiptDate(event.target.value)} helpText={paymentMethod === 'pix' ? 'O QR Code representa pagamento imediato' : receiptDate === hojeLocal() ? 'Baixa financeira imediata' : 'Ficará como valor previsto'} disabled={paymentMethod === 'pix'} />
           </div>
+          <PixPaymentPanel active={paymentMethod === 'pix'} amount={finalTotal} onReadyChange={setPixReady} />
           <div className="rounded-md border border-line bg-surface-0 p-4">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-body-sm"><span className="text-steel">Serviço</span><strong className="text-right text-warm-white">{formatarBRL(Number(serviceValue || 0))}</strong><span className="text-steel">Produtos</span><strong className="text-right text-warm-white">{formatarBRL(productsTotal)}</strong><span className="text-steel">Desconto</span><strong className="text-right text-danger">− {formatarBRL(Number(discount || 0))}</strong><span className="border-t border-line pt-3 text-label text-copper">TOTAL COBRADO</span><strong className="border-t border-line pt-3 text-right text-data-lg text-gold-aged">{formatarBRL(finalTotal)}</strong><span className="text-steel">Líquido após taxa</span><strong className="text-right text-success">{formatarBRL(netTotal)}</strong></div>
           </div>
