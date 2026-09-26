@@ -4,6 +4,7 @@ import Button from './ui/Button'
 import Input from './ui/Input'
 import Modal from './ui/Modal'
 import Spinner from './ui/Spinner'
+import PixPaymentPanel from './PixPaymentPanel'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import {
   concluirCobrancaRecepcao,
@@ -32,6 +33,7 @@ export default function ReceptionCheckoutModal({ pending, open, onClose, onSucce
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [pixReady, setPixReady] = useState(false)
 
   useEffect(() => {
     if (!open || !pending) return
@@ -44,6 +46,7 @@ export default function ReceptionCheckoutModal({ pending, open, onClose, onSucce
     setIdempotencyKey(crypto.randomUUID())
     setSavedCartFingerprint('')
     setError('')
+    setPixReady(false)
     setQuantities(Object.fromEntries((pending.produtos ?? []).map((item) => [item.produto_id, Number(item.quantidade)])))
     setLoadingProducts(true)
     listarProdutosRecepcao()
@@ -78,6 +81,7 @@ export default function ReceptionCheckoutModal({ pending, open, onClose, onSucce
       if (!Number.isFinite(numericService) || numericService < 0) throw new TypeError('Revise o valor do serviço.')
       if (!Number.isFinite(numericDiscount) || numericDiscount < 0 || numericDiscount > grossTotal) throw new TypeError('O desconto não pode ultrapassar o total.')
       if (!Number.isFinite(numericFee) || numericFee < 0 || numericFee > finalTotal) throw new TypeError('A taxa não pode ultrapassar o valor cobrado.')
+      if (paymentMethod === 'pix' && !pixReady) throw new TypeError('Configure e gere o PIX antes de confirmar a cobrança.')
       const cartProducts = selectedProducts.map((product) => ({ produtoId: product.id, quantidade: product.quantidade }))
       const cartFingerprint = JSON.stringify({ valorServico: numericService, produtos: cartProducts })
       let checkoutVersion = expectedUpdatedAt
@@ -116,7 +120,7 @@ export default function ReceptionCheckoutModal({ pending, open, onClose, onSucce
       onClose={() => !saving && onClose()}
       title="Conferir e cobrar"
       className="sm:max-w-4xl"
-      footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button><Button type="submit" form="reception-checkout-form" loading={saving} disabled={loadingProducts || grossTotal <= 0}><CheckCircle2 size={17} /> Cobrar {formatarBRL(finalTotal)}</Button></>}
+      footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button><Button type="submit" form="reception-checkout-form" loading={saving} disabled={loadingProducts || grossTotal <= 0 || (paymentMethod === 'pix' && !pixReady)}><CheckCircle2 size={17} /> {paymentMethod === 'pix' ? 'Confirmar PIX' : 'Cobrar'} {formatarBRL(finalTotal)}</Button></>}
     >
       <form id="reception-checkout-form" className="space-y-5" onSubmit={submit}>
         <div className="rounded-sm border border-line bg-surface-1 p-3"><p className="text-label text-copper">ATENDIMENTO</p><p className="mt-1 text-h3 text-warm-white">{pending?.cliente_nome}</p><p className="mt-1 text-body-sm text-steel">{pending?.servico_nome} · {pending?.profissional_nome}</p></div>
@@ -138,7 +142,8 @@ export default function ReceptionCheckoutModal({ pending, open, onClose, onSucce
         <section className="space-y-4 border-t border-line pt-5">
           <div><p className="flex items-center gap-2 text-label text-copper"><CreditCard size={16} /> PAGAMENTO</p><p className="mt-1 text-body-sm text-steel">A confirmação conclui a cobrança e faz a baixa do estoque de uma só vez.</p></div>
           <div className="grid gap-4 sm:grid-cols-2"><Input label="Desconto total" type="number" min="0" max={grossTotal} step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} /><Input label="Taxa da operação" type="number" min="0" max={finalTotal} step="0.01" value={fee} onChange={(event) => setFee(event.target.value)} helpText="Ex.: taxa da maquininha" /></div>
-          <div className="grid gap-4 sm:grid-cols-2"><label className="flex flex-col gap-2 text-label text-steel">Forma de pagamento<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper">{PAYMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><Input label="Data prevista para receber" type="date" min={hojeLocal()} value={receiptDate} onChange={(event) => setReceiptDate(event.target.value)} helpText={receiptDate === hojeLocal() ? 'Baixa financeira imediata' : 'Ficará como valor previsto'} /></div>
+          <div className="grid gap-4 sm:grid-cols-2"><label className="flex flex-col gap-2 text-label text-steel">Forma de pagamento<select value={paymentMethod} onChange={(event) => { const method = event.target.value; setPaymentMethod(method); if (method === 'pix') setReceiptDate(hojeLocal()) }} className="h-10 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper">{PAYMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><Input label="Data prevista para receber" type="date" min={hojeLocal()} value={receiptDate} onChange={(event) => setReceiptDate(event.target.value)} helpText={paymentMethod === 'pix' ? 'O QR Code representa pagamento imediato' : receiptDate === hojeLocal() ? 'Baixa financeira imediata' : 'Ficará como valor previsto'} disabled={paymentMethod === 'pix'} /></div>
+          <PixPaymentPanel active={paymentMethod === 'pix'} amount={finalTotal} onReadyChange={setPixReady} />
           <div className="rounded-md border border-line bg-surface-0 p-4"><div className="grid grid-cols-2 gap-x-4 gap-y-2 text-body-sm"><span className="text-steel">Serviço</span><strong className="text-right text-warm-white">{formatarBRL(Number(serviceValue || 0))}</strong><span className="text-steel">Produtos</span><strong className="text-right text-warm-white">{formatarBRL(productsTotal)}</strong><span className="text-steel">Desconto</span><strong className="text-right text-danger">− {formatarBRL(Number(discount || 0))}</strong><span className="border-t border-line pt-3 text-label text-copper">TOTAL COBRADO</span><strong className="border-t border-line pt-3 text-right text-data-lg text-gold-aged">{formatarBRL(finalTotal)}</strong><span className="text-steel">Líquido após taxa</span><strong className="text-right text-success">{formatarBRL(netTotal)}</strong></div></div>
         </section>
       </form>
