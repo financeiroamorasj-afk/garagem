@@ -25,6 +25,7 @@ Este documento registra as implementações, melhorias e novas funcionalidades i
 - **Primeiro acesso**: O convite leva o profissional ao fluxo seguro de criação da própria senha.
 - **Reenvio controlado**: Adicionada a ação de reenviar o convite somente para barbeiros ainda não confirmados, sem duplicar o cadastro.
 - **Segurança SMTP**: A credencial do Gmail deve ser uma senha de aplicativo mantida exclusivamente no Supabase, nunca no frontend ou no repositório.
+- **Recuperação de senha**: O login passa a oferecer “Esqueci minha senha”, com resposta neutra, link temporário e template visual próprio para o usuário confirmado criar uma nova senha.
 
 ### 3. Financeiro
 - **Títulos e Recorrências**: Implementada a funcionalidade e suporte para registro de títulos parcelados e recorrentes.

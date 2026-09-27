@@ -188,6 +188,15 @@ Status: código e migration prontos localmente. Para funcionar em produção, ai
 
 Status: implementação pronta para revisão e publicação. A ativação final exige configurar o SMTP e copiar o template para o Supabase hospedado; arquivos locais de template não alteram automaticamente o Auth de produção.
 
+### Recuperação de acesso confirmado
+
+- Depois que o profissional aceita o primeiro convite, o Supabase considera o e-mail confirmado e não deve reutilizar o fluxo de convite.
+- Foi adicionada a rota pública `/esqueci-senha`, acessível pelo login, usando `resetPasswordForEmail` do Supabase Auth.
+- A resposta da tela não revela se um endereço está ou não cadastrado.
+- O link retorna para `/definir-senha`, já permitido na configuração de URLs, e a tela reconhece o evento `PASSWORD_RECOVERY`.
+- Foi criado o template `supabase/templates/recovery.html`, com a mesma identidade do convite.
+- Lint, build e 103 testes automatizados passaram.
+
 ## Observação de continuidade
 
 Este snapshot foi criado antes do encerramento da janela de uso semanal e deve ser tratado como a referência mais recente do plano do projeto.

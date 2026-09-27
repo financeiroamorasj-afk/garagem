@@ -4,6 +4,7 @@
 
 - Remetente visível: `Garagem System <systemgaragem@gmail.com>`
 - Assunto do convite: `Seu acesso ao Garagem System`
+- Assunto da recuperação: `Redefina sua senha do Garagem System`
 - Template versionado: `supabase/templates/invite.html`
 - Destino do botão: convite seguro do Supabase para `/definir-senha`
 
@@ -28,6 +29,12 @@ Depois, abrir **Authentication > Email Templates > Invite user**:
 
 1. Usar o assunto `Seu acesso ao Garagem System`.
 2. Copiar integralmente o conteúdo de `supabase/templates/invite.html`.
+3. Salvar o template.
+
+Em **Authentication > Email Templates > Reset password**:
+
+1. Usar o assunto `Redefina sua senha do Garagem System`.
+2. Copiar integralmente o conteúdo de `supabase/templates/recovery.html`.
 3. Salvar o template.
 
 Em **Authentication > URL Configuration**, confirmar:

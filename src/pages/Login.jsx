@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import garagemLogo from '../assets/brand/garagem-logo-full.png'
@@ -109,6 +109,11 @@ export default function Login() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
+                        <div className="flex justify-end">
+                            <Link to="/esqueci-senha" className="inline-flex min-h-11 items-center text-body-sm font-semibold text-copper hover:text-gold-aged focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper">
+                                Esqueci minha senha
+                            </Link>
+                        </div>
                     </div>
 
                     <Button
