@@ -146,9 +146,38 @@ export default function BarberDashboard() {
   useEffect(() => { loadDay() }, [loadDay])
   useEffect(() => { loadSection() }, [loadSection])
   useEffect(() => {
-    const channel = supabase.channel('barbeiro-centro-operacional').on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos' }, () => { loadDay({ quiet: true }); if (section === 'week' || section === 'summary') loadSection() }).subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [loadDay, loadSection, section])
+    if (!context?.id) return undefined
+
+    const channel = supabase
+      .channel(`barbeiro-centro-operacional-${context.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'agendamentos',
+        filter: `profissional_id=eq.${context.id}`,
+      }, (change) => {
+        loadDay({ quiet: true })
+        if (section === 'week' || section === 'summary') loadSection()
+        if (change.eventType === 'INSERT') {
+          setNotice(change.new?.origem === 'portal_cliente'
+            ? 'Novo cliente agendou pelo portal. Sua agenda foi atualizada.'
+            : 'Novo agendamento recebido. Sua agenda foi atualizada.')
+        }
+      })
+      .subscribe()
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      loadDay({ quiet: true })
+      if (section === 'week' || section === 'summary') loadSection()
+    }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      supabase.removeChannel(channel)
+    }
+  }, [context?.id, loadDay, loadSection, section])
 
   const daySummary = useMemo(() => resumoAgenda(appointments), [appointments])
   const isToday = selectedDate === today

@@ -1,0 +1,19 @@
+{
+  "name": "Garagem System",
+  "short_name": "Garagem",
+  "description": "Gestão completa para barbearias.",
+  "id": "/",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080806",
+  "theme_color": "#080806",
+  "icons": [
+    {
+      "src": "/garagem-symbol.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

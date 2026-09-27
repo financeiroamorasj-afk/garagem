@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet } from 'react-router-dom'
 import {
   CalendarDays,
@@ -15,6 +15,7 @@ import {
   Settings,
   ShieldX,
   Tags,
+  BellRing,
   WalletCards,
   Wrench,
   PackageSearch,
@@ -24,6 +25,7 @@ import EmptyState from '../ui/EmptyState'
 import Spinner from '../ui/Spinner'
 import useAdminProfile from '../../hooks/useAdminProfile'
 import { resolveAdminAccess } from '../../lib/auth/adminAccess'
+import { supabase } from '../../lib/supabase'
 import garagemSymbol from '../../assets/brand/garagem-symbol.png'
 
 const navItems = [
@@ -200,6 +202,22 @@ export default function AdminLayout() {
   const access = resolveAdminAccess(auth)
   const [isCollapsed, setCollapsed] = useState(false)
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [appointmentNotice, setAppointmentNotice] = useState('')
+
+  useEffect(() => {
+    if (access !== 'allowed') return undefined
+
+    const channel = supabase
+      .channel('admin-aviso-novos-agendamentos')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agendamentos' }, (change) => {
+        setAppointmentNotice(change.new?.origem === 'portal_cliente'
+          ? 'Novo agendamento feito pelo portal do cliente.'
+          : 'Novo agendamento recebido.')
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [access])
 
   if (access === 'loading') {
     return (
@@ -275,6 +293,18 @@ export default function AdminLayout() {
 
       <MobileBottomNavigation onOpenMenu={() => setMobileMenuOpen(true)} />
       <MobileDrawer open={isMobileMenuOpen} onClose={() => setMobileMenuOpen(false)} userName={userName} />
+      {appointmentNotice && (
+        <div role="status" className="fixed bottom-20 left-4 right-4 z-40 flex items-center gap-3 rounded-md border border-copper/50 bg-surface-2 p-4 shadow-overlay sm:left-auto sm:right-6 sm:max-w-md lg:bottom-6">
+          <BellRing size={20} className="shrink-0 text-copper" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <strong className="block text-body text-warm-white">Agenda atualizada</strong>
+            <span className="block text-body-sm text-steel">{appointmentNotice}</span>
+          </div>
+          <button type="button" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-steel hover:bg-surface-3 hover:text-warm-white" aria-label="Fechar aviso" onClick={() => setAppointmentNotice('')}>
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
