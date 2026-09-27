@@ -9,6 +9,7 @@ import { homeRouteForRole } from '../lib/auth/homeRoute'
 
 export default function SetPassword() {
   const navigate = useNavigate()
+  const [isRecovery, setRecovery] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery')
   const [session, setSession] = useState(null)
   const [checking, setChecking] = useState(true)
   const [password, setPassword] = useState('')
@@ -23,8 +24,9 @@ export default function SetPassword() {
       setSession(data.session)
       setChecking(false)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((authEvent, nextSession) => {
       if (!active) return
+      if (authEvent === 'PASSWORD_RECOVERY') setRecovery(true)
       setSession(nextSession)
       setChecking(false)
     })
@@ -53,7 +55,9 @@ export default function SetPassword() {
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle()
       navigate(homeRouteForRole(profile?.role), { replace: true })
     } catch {
-      setError('Não foi possível definir a senha. Solicite um novo convite ao administrador.')
+      setError(isRecovery
+        ? 'Não foi possível redefinir a senha. Solicite um novo link de recuperação.'
+        : 'Não foi possível definir a senha. Solicite um novo convite ao administrador.')
     } finally {
       setSubmitting(false)
     }
@@ -68,8 +72,8 @@ export default function SetPassword() {
         </div>
 
         <div>
-          <span className="mb-2 flex items-center gap-2 text-label text-copper"><KeyRound size={16} /> PRIMEIRO ACESSO</span>
-          <h1 className="text-h1 text-warm-white">Crie sua senha</h1>
+          <span className="mb-2 flex items-center gap-2 text-label text-copper"><KeyRound size={16} /> {isRecovery ? 'RECUPERAÇÃO DE ACESSO' : 'PRIMEIRO ACESSO'}</span>
+          <h1 className="text-h1 text-warm-white">{isRecovery ? 'Crie uma nova senha' : 'Crie sua senha'}</h1>
           <p className="mt-2 text-body-sm text-steel">Esta senha será pessoal. O administrador da barbearia não terá acesso a ela.</p>
         </div>
 
@@ -78,7 +82,7 @@ export default function SetPassword() {
         ) : !session ? (
           <div className="space-y-4">
             <div role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger">
-              Este convite expirou ou já foi utilizado.
+              {isRecovery ? 'Este link de recuperação expirou ou já foi utilizado.' : 'Este convite expirou ou já foi utilizado.'}
             </div>
             <Link to="/login" className="inline-flex min-h-11 items-center text-body font-semibold text-copper">Voltar ao login</Link>
           </div>

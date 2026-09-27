@@ -24,6 +24,7 @@ import ClientPortal from './pages/ClientPortal'
 import AdminProducts from './pages/AdminProducts'
 import AdminSettings from './pages/AdminSettings'
 import AdminReceptionReport from './pages/AdminReceptionReport'
+import ForgotPassword from './pages/ForgotPassword'
 
 const RECEPTION_ROLES = ['recepcao']
 const ADMIN_ROLES = ['admin', 'master']
@@ -33,6 +34,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/esqueci-senha" element={<ForgotPassword />} />
         <Route path="/definir-senha" element={<SetPassword />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/design-system" element={<DesignSystem />} />
