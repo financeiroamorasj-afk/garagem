@@ -30,6 +30,18 @@ Este documento registra as implementações, melhorias e novas funcionalidades i
 ### 3. Financeiro
 - **Títulos e Recorrências**: Implementada a funcionalidade e suporte para registro de títulos parcelados e recorrentes.
 
+### 4. Auditoria autônoma da jornada do membro fundador
+- **Saúde do projeto**: suíte completa, lint e build executados com sucesso antes das alterações desta rodada.
+- **Teste integrado**: criada uma prova automatizada única ligando portal do cliente, agenda administrativa, agenda do barbeiro, início do atendimento, checkout PIX manual, estoque, comissão, memória do corte e financeiro.
+- **Roteiro manual**: criado o documento `Roteiro de Homologacao — Membro Fundador.md` para orientar a validação posterior no navegador e no celular real.
+- **Produção preservada**: esta auditoria não alterou banco, SMTP, usuários ou dados de produção.
+
+### 5. Pendência temporária do SMTP
+- O pedido de recuperação chegou corretamente ao Supabase, mas o Gmail recusou a autenticação SMTP com o código `535 5.7.8 Username and Password not accepted`.
+- A conta `systemgaragem@gmail.com` ainda não tinha a verificação em duas etapas ativa; por isso o Google não permitiu criar uma senha de aplicativo.
+- Próxima ação: com o celular disponível, ativar a verificação em duas etapas, gerar a senha de aplicativo `Supabase Garagem`, substituir somente a senha nas configurações SMTP e repetir o teste.
+- Não há correção pendente no frontend do fluxo de recuperação.
+
 ---
 *Atualizações extraídas com base no histórico recente de integrações (commits) do sistema.*
 
