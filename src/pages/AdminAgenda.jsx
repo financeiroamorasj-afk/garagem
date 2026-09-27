@@ -275,7 +275,16 @@ export default function AdminAgenda() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profissionais_jornadas' }, () => load({ quiet: true }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profissionais_bloqueios' }, () => load({ quiet: true }))
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') load({ quiet: true })
+    }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      supabase.removeChannel(channel)
+    }
   }, [load])
 
   const visibleAppointments = useMemo(() => {

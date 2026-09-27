@@ -24,6 +24,7 @@ import { listarBarbeiros } from '../lib/barbeiros/api'
 import { obterResumoPeriodo } from '../lib/financeiro/api'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import { periodoMensalBrt } from '../lib/financeiro/periodo'
+import { supabase } from '../lib/supabase'
 
 function formatarHorario(value) {
   return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
@@ -42,8 +43,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true)
     setError('')
     try {
       const now = new Date()
@@ -59,11 +60,30 @@ export default function AdminDashboard() {
     } catch (requestError) {
       setError(requestError.message || 'Não foi possível carregar o painel.')
     } finally {
-      setLoading(false)
+      if (!quiet) setLoading(false)
     }
   }, [today])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-painel-agendamentos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos' }, () => {
+        load({ quiet: true })
+      })
+      .subscribe()
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') load({ quiet: true })
+    }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      supabase.removeChannel(channel)
+    }
+  }, [load])
 
   const finance = summary?.totais ?? { entradas: 0, saidas: 0, resultado: 0 }
   const balance = (summary?.contas ?? []).reduce((total, account) => total + Number(account.saldo_atual), 0)
