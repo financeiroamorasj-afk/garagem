@@ -7,6 +7,7 @@ import {
   Phone,
   Scissors,
   Search,
+  Send,
   UserCheck,
   UserPlus,
   Users,
@@ -19,7 +20,7 @@ import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
-import { atualizarBarbeiro, criarBarbeiroComAcesso, listarBarbeiros } from '../lib/barbeiros/api'
+import { atualizarBarbeiro, criarBarbeiroComAcesso, listarBarbeiros, reenviarConviteBarbeiro } from '../lib/barbeiros/api'
 import { mensagemErroBarbeiro } from '../lib/barbeiros/ui'
 
 function initialForm(row) {
@@ -42,6 +43,7 @@ export default function AdminBarbers() {
   const [barbers, setBarbers] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [invitingId, setInvitingId] = useState(null)
   const [filter, setFilter] = useState('active')
   const [query, setQuery] = useState('')
   const [formModal, setFormModal] = useState(null)
@@ -166,6 +168,20 @@ export default function AdminBarbers() {
     }
   }
 
+  async function resendInvite(barber) {
+    setInvitingId(barber.id)
+    setPageError('')
+    setStatus('')
+    try {
+      await reenviarConviteBarbeiro(barber.id)
+      setStatus(`Novo convite enviado para ${barber.email}.`)
+    } catch (error) {
+      setPageError(mensagemErroBarbeiro(error).message)
+    } finally {
+      setInvitingId(null)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 lg:space-y-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -280,7 +296,12 @@ export default function AdminBarbers() {
                   <Badge variant={barber.user_id ? 'info' : 'warning'}>
                     {barber.user_id ? 'Acesso vinculado' : 'Acesso pendente'}
                   </Badge>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {barber.user_id && barber.email && (
+                      <Button size="sm" variant="ghost" loading={invitingId === barber.id} disabled={Boolean(invitingId)} onClick={() => resendInvite(barber)}>
+                        <Send size={15} aria-hidden="true" /> Reenviar convite
+                      </Button>
+                    )}
                     <Button size="sm" variant="ghost" onClick={() => openForm(barber)}>
                       <Pencil size={15} aria-hidden="true" /> {barber.user_id ? 'Editar' : 'Criar acesso'}
                     </Button>

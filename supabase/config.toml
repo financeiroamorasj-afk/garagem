@@ -245,10 +245,11 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Convite de primeiro acesso da equipe. Em produção, mantenha o mesmo assunto e
+# conteúdo na seção Authentication > Email Templates do painel Supabase.
+[auth.email.template.invite]
+subject = "Seu acesso ao Garagem System"
+content_path = "./supabase/templates/invite.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

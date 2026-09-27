@@ -40,3 +40,18 @@ test('cadastro cria acesso somente pela função protegida e a rota não é mais
   assert.match(edge, /comissao_produtos_percentual/)
   assert.match(commissionMigration, /vendas_produtos_comissao_padrao_trg/)
 })
+
+test('administrador pode reenviar convite somente ao barbeiro ainda não confirmado', async () => {
+  const [page, api, edge] = await Promise.all([
+    readFile(new URL('../src/pages/AdminBarbers.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/lib/barbeiros/api.js', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/functions/resend-barber-invite/index.ts', import.meta.url), 'utf8'),
+  ])
+
+  assert.match(page, /Reenviar convite/)
+  assert.match(api, /functions\.invoke\(['"]resend-barber-invite/)
+  assert.match(edge, /getUser\(accessToken\)/)
+  assert.match(edge, /\.eq\('barbearia_id', adminProfile\.barbearia_id\)/)
+  assert.match(edge, /email_confirmed_at.*confirmed_at/s)
+  assert.match(edge, /inviteUserByEmail/)
+})

@@ -64,6 +64,15 @@ export async function criarBarbeiroComAcesso(input) {
   return data
 }
 
+export async function reenviarConviteBarbeiro(profissionalId) {
+  if (!profissionalId) throw new TypeError('Cadastro de barbeiro inválido')
+  const { data, error } = await supabase.functions.invoke('resend-barber-invite', {
+    body: { profissional_id: profissionalId },
+  })
+  if (error) throw new Error((await functionErrorCode(error)) || 'BARBEIROS_CONVITE_FALHOU')
+  return data
+}
+
 export async function atualizarBarbeiro(input) {
   const payload = barberPayload(input)
   if (!input.id || !input.expectedUpdatedAt || typeof input.ativo !== 'boolean') throw new TypeError('Cadastro de barbeiro inválido')

@@ -11,6 +11,8 @@ const messages = {
   BARBEIROS_EMAIL_EM_USO: 'Este e-mail já está vinculado a outro usuário.',
   BARBEIROS_ACESSO_JA_CRIADO: 'Este barbeiro já possui um usuário de acesso.',
   BARBEIROS_CONVITE_FALHOU: 'Não foi possível enviar o convite de acesso. Tente novamente.',
+  BARBEIROS_ACESSO_CONFIRMADO: 'Este barbeiro já confirmou o acesso e pode entrar com a própria senha.',
+  BARBEIROS_ACESSO_INATIVO: 'Reative o barbeiro antes de reenviar o convite.',
   BARBEIROS_CADASTRO_FALHOU: 'Não foi possível concluir o cadastro do barbeiro.',
   BARBEIROS_NAO_ENCONTRADO: 'O cadastro não foi encontrado ou foi removido.',
   BARBEIROS_CONFLITO_VERSAO: 'Este cadastro foi alterado em outra sessão. Recarregue antes de tentar novamente.',
