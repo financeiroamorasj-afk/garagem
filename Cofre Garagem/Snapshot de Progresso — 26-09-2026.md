@@ -175,6 +175,19 @@ Status: alteração do ícone pronta localmente; falta publicar o frontend para 
 
 Status: código e migration prontos localmente. Para funcionar em produção, ainda é necessário publicar o frontend e aplicar a migration no Supabase vinculado. Notificações com o navegador totalmente fechado exigirão uma etapa futura de Web Push/PWA ou integração com WhatsApp; o MVP atual cobre aviso dentro do sistema aberto.
 
+## Padronização dos e-mails de acesso
+
+- O convite de barbeiros e recepção já usa o Supabase Auth por `inviteUserByEmail`.
+- Foi criado um template oficial escuro, responsivo e alinhado à identidade do Garagem, com o assunto `Seu acesso ao Garagem System` e botão para criação da senha.
+- O remetente aprovado é `Garagem System <systemgaragem@gmail.com>`.
+- O SMTP de produção depende de uma senha de aplicativo do Google, guardada somente no painel do Supabase.
+- Foi preparada a ação **Reenviar convite** para barbeiros já cadastrados que ainda não confirmaram o acesso.
+- A Edge Function de reenvio valida administrador, barbearia, vínculo profissional, estado ativo e confirmação do usuário antes de emitir um novo convite.
+- O procedimento operacional está documentado em `docs/operacao/EMAILS-AUTENTICACAO.md`.
+- Build, lint e 102 testes automatizados passaram.
+
+Status: implementação pronta para revisão e publicação. A ativação final exige configurar o SMTP e copiar o template para o Supabase hospedado; arquivos locais de template não alteram automaticamente o Auth de produção.
+
 ## Observação de continuidade
 
 Este snapshot foi criado antes do encerramento da janela de uso semanal e deve ser tratado como a referência mais recente do plano do projeto.

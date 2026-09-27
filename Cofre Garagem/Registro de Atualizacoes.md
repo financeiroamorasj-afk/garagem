@@ -20,6 +20,12 @@ Este documento registra as implementações, melhorias e novas funcionalidades i
 - **Retorno ao aplicativo**: Ao reabrir a aba no celular, agenda administrativa e agenda do barbeiro buscam novamente os dados para recuperar eventos que o navegador possa ter suspendido em segundo plano.
 - **Refinamento de UI/UX**: Alinhamento do scrollbar ao tema visual padrão da aplicação (Copper).
 
+### 2.1. Acesso da equipe por e-mail
+- **Identidade do convite**: Definido o padrão `Garagem System <systemgaragem@gmail.com>` com assunto em português e template visual oficial.
+- **Primeiro acesso**: O convite leva o profissional ao fluxo seguro de criação da própria senha.
+- **Reenvio controlado**: Adicionada a ação de reenviar o convite somente para barbeiros ainda não confirmados, sem duplicar o cadastro.
+- **Segurança SMTP**: A credencial do Gmail deve ser uma senha de aplicativo mantida exclusivamente no Supabase, nunca no frontend ou no repositório.
+
 ### 3. Financeiro
 - **Títulos e Recorrências**: Implementada a funcionalidade e suporte para registro de títulos parcelados e recorrentes.
 

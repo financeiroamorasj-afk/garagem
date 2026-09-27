@@ -23,6 +23,7 @@ test('recepção devolve atendimento com histórico e conclui venda avulsa atôm
   const saleKey = crypto.randomUUID()
   await db.connect()
   try {
+    await db.query("SET TIME ZONE 'America/Sao_Paulo'")
     await db.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Balcão teste',$2),($3,'Balcão externo',$4)", [tenantId, `balcao-${tenantId}`, otherTenantId, `balcao-${otherTenantId}`])
     await db.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now()),($3,'authenticated','authenticated',$4,now(),now()),($5,'authenticated','authenticated',$6,now(),now())", [barberUserId, `barber-${barberUserId}@local.test`, receptionUserId, `recepcao-${receptionUserId}@local.test`, otherReceptionId, `recepcao-${otherReceptionId}@local.test`])
     await db.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email,ativo) VALUES($1,$2,'barbeiro','Barbeiro balcão',$3,true),($4,$2,'recepcao','Recepção balcão',$5,true),($6,$7,'recepcao','Recepção externa',$8,true)", [barberUserId, tenantId, `barber-${barberUserId}@local.test`, receptionUserId, `recepcao-${receptionUserId}@local.test`, otherReceptionId, otherTenantId, `recepcao-${otherReceptionId}@local.test`])
