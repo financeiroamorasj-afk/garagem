@@ -18,20 +18,27 @@ test('painel do barbeiro isola agenda e venda baixa estoque uma única vez', asy
   const idempotencyKey = crypto.randomUUID()
   await client.connect()
   try {
+    const period = await client.query(`
+      SELECT
+        date_trunc('week', timezone('America/Sao_Paulo', now()))::date AS data_inicial,
+        (date_trunc('week', timezone('America/Sao_Paulo', now()))::date + 6) AS data_final
+    `)
+    const { data_inicial: startDate, data_final: endDate } = period.rows[0]
+
     await client.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant varejo',$2)", [tenantId, `varejo-${tenantId}`])
     await client.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now()),($3,'authenticated','authenticated',$4,now(),now())", [adminUserId, `admin-${adminUserId}@local.test`, barberUserId, `barber-${barberUserId}@local.test`])
     await client.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin varejo',$3),($4,$2,'barbeiro','Barbeiro varejo',$5)", [adminUserId, tenantId, `admin-${adminUserId}@local.test`, barberUserId, `barber-${barberUserId}@local.test`])
     await client.query("INSERT INTO public.profissionais(id,barbearia_id,nome,ativo,user_id,comissao_percentual,comissao_produtos_percentual) VALUES($1,$2,'Barbeiro Varejo',true,$3,40,12)", [barberId, tenantId, barberUserId])
     await client.query("INSERT INTO public.clientes(id,barbearia_id,nome) VALUES($1,$2,'Cliente Varejo')", [customerId, tenantId])
     await client.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,comissao_percentual) VALUES($1,$2,'Corte Varejo',50,30,50)", [serviceId, tenantId])
-    await client.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status,valor_final) VALUES($1,$2,$3,$4,$5,'2026-09-24 13:00:00+00','concluido',50)", [appointmentId, tenantId, barberId, customerId, serviceId])
+    await client.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status,valor_final) VALUES($1,$2,$3,$4,$5,($6::date + time '13:00') AT TIME ZONE 'America/Sao_Paulo','concluido',50)", [appointmentId, tenantId, barberId, customerId, serviceId, startDate])
 
     await client.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminUserId])
     const created = await client.query("SELECT public.produto_catalogo_criar('Pomada teste','POM-1','Finalização',NULL,30,10,5,2,NULL) result")
     const productId = created.rows[0].result.id
 
     await client.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [barberUserId])
-    const weekly = await client.query("SELECT * FROM public.barbeiro_agenda_listar_periodo('2026-09-21','2026-09-27')")
+    const weekly = await client.query('SELECT * FROM public.barbeiro_agenda_listar_periodo($1,$2)', [startDate, endDate])
     assert.equal(weekly.rows.length, 1)
     assert.equal(weekly.rows[0].id, appointmentId)
 
@@ -48,7 +55,7 @@ test('painel do barbeiro isola agenda e venda baixa estoque uma única vez', asy
 
     const stock = await client.query('SELECT estoque_quantidade FROM public.produtos WHERE id=$1', [productId])
     assert.equal(stock.rows[0].estoque_quantidade, 3)
-    const summary = await client.query("SELECT public.barbeiro_painel_resumo('2026-09-21','2026-09-27') result")
+    const summary = await client.query('SELECT public.barbeiro_painel_resumo($1,$2) result', [startDate, endDate])
     assert.equal(summary.rows[0].result.atendimentos, 1)
     assert.equal(Number(summary.rows[0].result.valor_servicos), 50)
     assert.equal(Number(summary.rows[0].result.comissao_servicos), 25)

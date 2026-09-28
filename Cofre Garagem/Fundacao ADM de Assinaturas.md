@@ -1,7 +1,7 @@
 # Fundação do ADM de Assinaturas
 
-Data: 27/09/2026
-Status: schema e regras centrais preparados; interface e Asaas pendentes
+Data: 27/09/2026 — validado em 28/09/2026
+Status: fundação aplicada em produção e validada localmente; interface e Asaas pendentes
 
 ## Entregue sem depender do proprietário
 
@@ -14,6 +14,16 @@ Status: schema e regras centrais preparados; interface e Asaas pendentes
 - provisionamento retomável por etapas;
 - integração dos módulos contratados com o entitlement de recepção;
 - bloqueio completo das tabelas SaaS para usuários comuns das barbearias.
+
+## Validação de 28/09/2026
+
+- migration `20260927120000` aplicada em produção e confirmada no histórico remoto;
+- acesso anônimo às tabelas da plataforma bloqueado com resposta HTTP 401;
+- banco local reconstruído integralmente desde a baseline, com 48 migrations em sequência;
+- snapshot emergencial de recuperação preservado em `supabase/repairs/` e retirado do caminho de instalações limpas;
+- suíte completa aprovada: 110 testes, sem falhas;
+- lint e build de produção aprovados;
+- usuário local `admin@teste.local` validado como administrador da barbearia e `super_admin` da plataforma.
 
 ## Decisões preservadas
 
