@@ -4,6 +4,23 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 export type Plan = { id: string; codigo: string; nome: string; status: string; preco_mensal: number | null; preco_anual: number | null; dias_trial: number; limite_usuarios: number | null };
 export type Barbershop = { id: string; nome: string; slug: string; criado_em: string };
 export type Subscription = { id: string; barbearia_id: string; plano_id: string; status: string; ciclo: string; preco_final: number; membro_fundador: boolean; created_at: string };
+export type PlatformModule = { id: string; codigo: string; nome: string; descricao: string | null; entitlement_codigo: string | null; status: string; preco_mensal: number | null; configuracao: Record<string, unknown> };
+export type PlatformIntegration = {
+  id: string;
+  categoria: string;
+  codigo: string;
+  nome: string;
+  provider: string;
+  ambiente: string;
+  status: string;
+  principal: boolean;
+  base_url: string | null;
+  credencial_ref: string | null;
+  webhook_secret_ref: string | null;
+  configuracao_publica: Record<string, unknown>;
+  ultimo_teste_em: string | null;
+  ultima_falha_codigo: string | null;
+};
 
 export async function dashboardData() {
   const supabase = createAdminSupabase();
@@ -59,5 +76,42 @@ export async function listSubscriptions() {
     rows,
     shops: new Map((shops.data ?? []).map((item) => [item.id, item])),
     plans: new Map((plans.data ?? []).map((item) => [item.id, item])),
+  };
+}
+
+export async function platformSettings() {
+  const supabase = createAdminSupabase();
+  const { data: product, error: productError } = await supabase
+    .from("plataforma_produtos")
+    .select("id,codigo,nome")
+    .eq("codigo", "garagem")
+    .single();
+  if (productError || !product) throw new Error("Não foi possível localizar o produto Garagem.");
+
+  const [modulesResult, integrationsResult] = await Promise.all([
+    supabase
+      .from("saas_modulos")
+      .select("id,codigo,nome,descricao,entitlement_codigo,status,preco_mensal,configuracao")
+      .eq("produto_id", product.id)
+      .order("ordem")
+      .order("nome"),
+    supabase
+      .from("plataforma_integracoes")
+      .select("id,categoria,codigo,nome,provider,ambiente,status,principal,base_url,credencial_ref,webhook_secret_ref,configuracao_publica,ultimo_teste_em,ultima_falha_codigo")
+      .eq("produto_id", product.id)
+      .order("categoria")
+      .order("nome"),
+  ]);
+  if (modulesResult.error || integrationsResult.error) throw new Error("Não foi possível carregar as configurações da plataforma.");
+
+  const integrations = (integrationsResult.data ?? []) as PlatformIntegration[];
+  return {
+    product,
+    modules: (modulesResult.data ?? []) as PlatformModule[],
+    integrations: integrations.map((integration) => ({
+      ...integration,
+      credentialConfigured: integration.credencial_ref ? Boolean(process.env[integration.credencial_ref]) : true,
+      webhookSecretConfigured: integration.webhook_secret_ref ? Boolean(process.env[integration.webhook_secret_ref]) : true,
+    })),
   };
 }

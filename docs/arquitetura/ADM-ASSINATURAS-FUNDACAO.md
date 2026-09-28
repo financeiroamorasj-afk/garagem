@@ -39,6 +39,21 @@ Não foram copiados:
 - `saas_provisionamento_etapas`: retomada idempotente do onboarding.
 - `saas_gateway_eventos`: inbox de webhooks separada por ambiente e produto.
 - `saas_auditoria`: trilha real das ações do backoffice.
+- `plataforma_integracoes`: adaptadores configuráveis de gateway e APIs. Guarda somente metadados e referências de segredo.
+
+## Gateways, módulos e APIs futuras
+
+O Asaas é o provedor inicial do gateway de assinaturas, não uma dependência do
+modelo. Checkouts, assinaturas e eventos aceitam um código de provedor validado,
+permitindo trocar o adaptador sem reescrever o histórico comercial.
+
+As credenciais ficam no ambiente seguro do servidor. O banco registra nomes como
+`ASAAS_API_KEY`, `ASAAS_WEBHOOK_SECRET` e `OPENAI_API_KEY`, mas nunca os valores.
+O ADM pode, portanto, indicar se uma integração está pronta sem expor o segredo.
+
+Os módulos `ia_gestao` e `ia_atendimento_whatsapp` nascem em rascunho. Eles não
+habilitam IA nem geram cobrança até que preço, provedor, modelo, limites de uso e
+canal oficial do WhatsApp sejam definidos e ativados conscientemente.
 
 ## Operação sem gateway
 
@@ -90,8 +105,8 @@ Cancelado e expirado são terminais. Reativação futura deverá criar uma nova 
 
 ## Próximas fatias
 
-1. Criar o projeto Next.js separado do ADM com autenticação e middleware.
-2. Construir telas de planos, barbearias e assinaturas usando somente dados reais.
+1. Publicar o projeto Next.js separado do ADM com autenticação e autorização por papel.
+2. Transformar as telas de planos, módulos e integrações em operações auditadas.
 3. Implementar ativação manual do membro fundador.
 4. Definir preços e descontos com o proprietário antes de ativar qualquer plano.
 5. Adicionar checkout público e provisionamento idempotente.

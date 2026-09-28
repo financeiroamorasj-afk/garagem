@@ -45,9 +45,20 @@ Status: fundação aplicada em produção e validada localmente; interface inici
 - aplicação responsiva e alinhada à identidade visual cobre/preta do Garagem;
 - testes específicos, lint e build de produção aprovados.
 
+## Configurações e integrações — 28/09/2026
+
+- adicionada ao ADM a área central de configurações da plataforma;
+- Asaas definido como gateway inicial de assinaturas, sem acoplamento definitivo ao provedor;
+- catálogo de integrações separado por produto, categoria, provedor e ambiente;
+- chaves de API nunca são persistidas no banco: somente o nome da variável segura e seu estado são exibidos;
+- controle central de módulos passa a exibir status, entitlement e preço adicional ainda não definido;
+- registrados em rascunho os complementos `IA para gestão` e `IA para atendimento no WhatsApp`;
+- cada IA possui configuração independente de provedor, endpoint, modelo e limites futuros;
+- pendências preservadas: edição auditada, teste de conexão, consumo por assinatura, canal oficial do WhatsApp e definição comercial.
+
 ## Próximo passo autônomo
 
-Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativação manual do membro fundador e gestão de módulos contratados.
+Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativação manual do membro fundador, gestão de módulos contratados e edição/teste das integrações.
 
 ## Próximo passo de infraestrutura
 

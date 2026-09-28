@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CreditCard, LayoutDashboard, PackageOpen } from "lucide-react";
+import { Building2, CreditCard, LayoutDashboard, PackageOpen, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout } from "@/app/actions/auth";
 import type { PlatformRole } from "@/lib/auth";
@@ -13,6 +13,7 @@ const links = [
   { href: "/planos", label: "Planos", icon: PackageOpen, roles: ["super_admin", "financeiro"] },
   { href: "/barbearias", label: "Barbearias", icon: Building2, roles: ["super_admin", "financeiro", "suporte"] },
   { href: "/assinaturas", label: "Assinaturas", icon: CreditCard, roles: ["super_admin", "financeiro"] },
+  { href: "/configuracoes", label: "Configurações", icon: Settings, roles: ["super_admin"] },
 ];
 
 export function AdminShell({ children, email, role }: { children: ReactNode; email: string; role: PlatformRole }) {

@@ -125,3 +125,11 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - A chave administrativa do Supabase permanece restrita ao servidor e não é exposta ao navegador.
 - O primeiro corte é deliberadamente somente leitura: preços, gateway Asaas e ações comerciais continuam pendentes de decisão e implementação auditada.
 - Próxima etapa após a publicação: ativação manual do membro fundador e gestão dos módulos contratados.
+
+# 28/09/2026 — Configurações futuras preservadas no ADM
+
+- Criada uma área única para gateway de assinaturas, módulos comerciais e APIs externas.
+- O Asaas é o primeiro adaptador, mas deixou de ser uma restrição fixa no modelo do banco.
+- As credenciais ficam exclusivamente nas variáveis seguras do servidor; o banco guarda apenas referências.
+- Os complementos de IA para gestão e atendimento via WhatsApp foram registrados como módulos em rascunho.
+- Ficaram explicitamente anotados para as próximas etapas: provedor/modelo de IA, limite mensal, medição de consumo, integração oficial do WhatsApp, teste de conexão e preço por complemento.
