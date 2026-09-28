@@ -1,7 +1,7 @@
 # Fundação do ADM de Assinaturas
 
 Data: 27/09/2026 — validado em 28/09/2026
-Status: fundação aplicada em produção e validada localmente; interface e Asaas pendentes
+Status: fundação aplicada em produção e validada localmente; interface inicial pronta para revisão; Asaas pendente
 
 ## Entregue sem depender do proprietário
 
@@ -34,9 +34,35 @@ Status: fundação aplicada em produção e validada localmente; interface e Asa
 - uma mesma conta Asaas pode atender Rebip e Garagem usando namespaces separados;
 - IA e CRM permanecem depois do ADM mínimo.
 
+## Interface inicial — 28/09/2026
+
+- criada uma aplicação Next.js separada em `apps/adm`, preparada para publicação independente em `adm.garagemsystembarber.com.br`;
+- autenticação SSR por cookies conectada ao Supabase, com validação de usuário e papel de plataforma no servidor;
+- controle de acesso por função para `super_admin`, `financeiro` e `suporte`;
+- painel inicial conectado aos dados reais de planos, barbearias, assinaturas e checkouts;
+- telas somente leitura de planos, barbearias e assinaturas, sem preços fictícios e sem operações comerciais simuladas;
+- chave `service_role` isolada no servidor e documentada como variável exclusiva do projeto ADM;
+- aplicação responsiva e alinhada à identidade visual cobre/preta do Garagem;
+- testes específicos, lint e build de produção aprovados.
+
+## Configurações e integrações — 28/09/2026
+
+- adicionada ao ADM a área central de configurações da plataforma;
+- Asaas definido como gateway inicial de assinaturas, sem acoplamento definitivo ao provedor;
+- catálogo de integrações separado por produto, categoria, provedor e ambiente;
+- chaves de API nunca são persistidas no banco: somente o nome da variável segura e seu estado são exibidos;
+- controle central de módulos passa a exibir status, entitlement e preço adicional ainda não definido;
+- registrados em rascunho os complementos `IA para gestão` e `IA para atendimento no WhatsApp`;
+- cada IA possui configuração independente de provedor, endpoint, modelo e limites futuros;
+- pendências preservadas: edição auditada, teste de conexão, consumo por assinatura, canal oficial do WhatsApp e definição comercial.
+
 ## Próximo passo autônomo
 
-Criar a aplicação separada `adm.garagemsystembarber.com.br` e implementar login, catálogo de planos e gestão manual das assinaturas.
+Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativação manual do membro fundador, gestão de módulos contratados e edição/teste das integrações.
+
+## Próximo passo de infraestrutura
+
+Criar um projeto separado na Vercel com diretório raiz `apps/adm`, configurar as variáveis seguras e apontar o domínio `adm.garagemsystembarber.com.br`.
 
 ## Próximo passo com Rafa
 
