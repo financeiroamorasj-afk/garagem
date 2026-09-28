@@ -107,3 +107,12 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Financeiro histórico, fotos e histórico de cortes ficam em migração assistida.
 - Documento técnico: `docs/produto/MIGRACAO-DE-DADOS.md`.
 - Registro executivo: `Cofre Garagem/Plano de Migração de Dados.md`.
+
+# 28/09/2026 — Fundação do ADM validada
+
+- A migration da fundação de assinaturas foi aplicada em produção e confirmada no histórico remoto.
+- As tabelas comerciais do ADM permanecem inacessíveis pela chave anônima do app.
+- O banco local foi reconstruído desde a baseline com todas as 48 migrations.
+- O snapshot usado no reparo emergencial de produção foi preservado em `supabase/repairs/` e sua migration virou um no-op documentado para não duplicar objetos em instalações novas.
+- A suíte completa terminou com 110/110 testes aprovados; lint e build também passaram.
+- Foi criado o acesso local de desenvolvimento `admin@teste.local`, com perfil operacional de administrador e papel de plataforma `super_admin`.
