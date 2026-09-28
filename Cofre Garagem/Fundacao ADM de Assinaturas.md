@@ -1,7 +1,7 @@
 # Fundação do ADM de Assinaturas
 
 Data: 27/09/2026 — validado em 28/09/2026
-Status: fundação aplicada em produção; interface inicial publicada na Vercel; domínio próprio, acesso super_admin e Asaas pendentes
+Status: fundação aplicada em produção; interface inicial publicada com domínio próprio e HTTPS; acesso super_admin e Asaas pendentes
 
 ## Entregue sem depender do proprietário
 
@@ -66,7 +66,7 @@ Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativa�
 - variáveis de produção do Supabase configuradas no projeto independente;
 - build Next.js validado e rotas `/` e `/login` verificadas em produção;
 - PR 22 criada para versionar o `vercel.json` específico de `apps/adm` e impedir a herança da saída `dist` do frontend Vite;
-- domínio `adm.garagemsystem.com.br` cadastrado no projeto Vercel; pendente criar no Registro.br o registro A `adm.garagemsystem.com.br -> 76.76.21.21` e aguardar a validação/SSL;
+- domínio `adm.garagemsystem.com.br` configurado no Registro.br com registro A para `76.76.21.21`, validado na Vercel e protegido por certificado SSL com renovação automática;
 - pendente vincular o usuário de produção escolhido à tabela `plataforma_admins` como `super_admin`.
 
 ## Próximo passo com Rafa
