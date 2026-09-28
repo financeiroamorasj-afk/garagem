@@ -98,3 +98,12 @@ Este documento registra as implementações, melhorias e novas funcionalidades i
 ### Observação sobre o checklist antigo
 
 O checklist original deste documento foi substituído pela **Ordem oficial de execução** acima. Algumas linhas antigas já não representam o estado atual do produto — por exemplo, catálogo, vendas, estoque, comissões básicas, recepção, Modo TV e QR Code PIX já foram implementados. A cobrança automática por atendimento e a IA foram deliberadamente adiadas para depois do MVP mínimo.
+
+# 27/09/2026 — Migração de dados projetada
+
+- Definido o fluxo ponta a ponta para migração de barbearias vindas de outros sistemas.
+- Criado template Excel v1 com clientes, profissionais, recepção, serviços, produtos/estoque, jornadas, bloqueios, materiais e agenda futura.
+- Congeladas as decisões de staging obrigatório, prévia, idempotência, auditoria, convites sem senha, proteção de CPF e reversão condicionada.
+- Financeiro histórico, fotos e histórico de cortes ficam em migração assistida.
+- Documento técnico: `docs/produto/MIGRACAO-DE-DADOS.md`.
+- Registro executivo: `Cofre Garagem/Plano de Migração de Dados.md`.
