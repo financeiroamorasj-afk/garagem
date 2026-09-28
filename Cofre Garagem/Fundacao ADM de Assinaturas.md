@@ -1,7 +1,7 @@
 # Fundação do ADM de Assinaturas
 
 Data: 27/09/2026 — validado em 28/09/2026
-Status: fundação aplicada em produção e validada localmente; interface inicial pronta para revisão; Asaas pendente
+Status: fundação aplicada em produção; interface inicial publicada na Vercel; domínio próprio, acesso super_admin e Asaas pendentes
 
 ## Entregue sem depender do proprietário
 
@@ -36,7 +36,7 @@ Status: fundação aplicada em produção e validada localmente; interface inici
 
 ## Interface inicial — 28/09/2026
 
-- criada uma aplicação Next.js separada em `apps/adm`, preparada para publicação independente em `adm.garagemsystembarber.com.br`;
+- criada uma aplicação Next.js separada em `apps/adm`, publicada separadamente e preparada para o domínio `adm.garagemsystem.com.br`;
 - autenticação SSR por cookies conectada ao Supabase, com validação de usuário e papel de plataforma no servidor;
 - controle de acesso por função para `super_admin`, `financeiro` e `suporte`;
 - painel inicial conectado aos dados reais de planos, barbearias, assinaturas e checkouts;
@@ -62,7 +62,12 @@ Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativa�
 
 ## Próximo passo de infraestrutura
 
-Criar um projeto separado na Vercel com diretório raiz `apps/adm`, configurar as variáveis seguras e apontar o domínio `adm.garagemsystembarber.com.br`.
+- projeto separado `garagem-adm` criado na Vercel e publicado em `https://garagem-adm.vercel.app`;
+- variáveis de produção do Supabase configuradas no projeto independente;
+- build Next.js validado e rotas `/` e `/login` verificadas em produção;
+- PR 22 criada para versionar o `vercel.json` específico de `apps/adm` e impedir a herança da saída `dist` do frontend Vite;
+- domínio `adm.garagemsystem.com.br` cadastrado no projeto Vercel; pendente criar no Registro.br o registro A `adm.garagemsystem.com.br -> 76.76.21.21` e aguardar a validação/SSL;
+- pendente vincular o usuário de produção escolhido à tabela `plataforma_admins` como `super_admin`.
 
 ## Próximo passo com Rafa
 

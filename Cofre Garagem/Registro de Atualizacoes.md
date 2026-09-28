@@ -133,3 +133,14 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - As credenciais ficam exclusivamente nas variáveis seguras do servidor; o banco guarda apenas referências.
 - Os complementos de IA para gestão e atendimento via WhatsApp foram registrados como módulos em rascunho.
 - Ficaram explicitamente anotados para as próximas etapas: provedor/modelo de IA, limite mensal, medição de consumo, integração oficial do WhatsApp, teste de conexão e preço por complemento.
+
+# 28/09/2026 — ADM publicado na Vercel
+
+- Criado o projeto independente `garagem-adm` na equipe Garagem System da Vercel.
+- Configuradas as variáveis seguras de produção do Supabase, sem expor a chave administrativa ao frontend ou ao repositório.
+- Corrigida a configuração de build para Next.js, isolando-a do `vercel.json` Vite da aplicação principal.
+- Deploy de produção concluído em `https://garagem-adm.vercel.app`.
+- Validado que `/login` responde HTTP 200 e que `/` encaminha usuários sem sessão para o login.
+- PR 22 aberta para versionar a configuração de deploy do ADM.
+- O domínio `adm.garagemsystem.com.br` foi cadastrado no projeto; falta criar no Registro.br o registro A para `76.76.21.21` e aguardar a validação automática/SSL.
+- Antes da operação real ainda faltam: cadastrar o usuário de produção como `super_admin` e validar o primeiro login.
