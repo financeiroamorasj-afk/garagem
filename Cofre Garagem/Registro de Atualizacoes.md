@@ -116,3 +116,12 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O snapshot usado no reparo emergencial de produção foi preservado em `supabase/repairs/` e sua migration virou um no-op documentado para não duplicar objetos em instalações novas.
 - A suíte completa terminou com 110/110 testes aprovados; lint e build também passaram.
 - Foi criado o acesso local de desenvolvimento `admin@teste.local`, com perfil operacional de administrador e papel de plataforma `super_admin`.
+
+# 28/09/2026 — Interface inicial do ADM
+
+- Criada a aplicação independente `apps/adm`, destinada ao futuro domínio `adm.garagemsystembarber.com.br`.
+- Implementados login SSR, sessão por cookies e autorização por papel da plataforma no servidor.
+- Criadas as visões iniciais de painel, planos, barbearias e assinaturas, todas consultando os dados reais da fundação SaaS.
+- A chave administrativa do Supabase permanece restrita ao servidor e não é exposta ao navegador.
+- O primeiro corte é deliberadamente somente leitura: preços, gateway Asaas e ações comerciais continuam pendentes de decisão e implementação auditada.
+- Próxima etapa após a publicação: ativação manual do membro fundador e gestão dos módulos contratados.

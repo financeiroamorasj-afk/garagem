@@ -1,7 +1,7 @@
 # Fundação do ADM de Assinaturas
 
 Data: 27/09/2026 — validado em 28/09/2026
-Status: fundação aplicada em produção e validada localmente; interface e Asaas pendentes
+Status: fundação aplicada em produção e validada localmente; interface inicial pronta para revisão; Asaas pendente
 
 ## Entregue sem depender do proprietário
 
@@ -34,9 +34,24 @@ Status: fundação aplicada em produção e validada localmente; interface e Asa
 - uma mesma conta Asaas pode atender Rebip e Garagem usando namespaces separados;
 - IA e CRM permanecem depois do ADM mínimo.
 
+## Interface inicial — 28/09/2026
+
+- criada uma aplicação Next.js separada em `apps/adm`, preparada para publicação independente em `adm.garagemsystembarber.com.br`;
+- autenticação SSR por cookies conectada ao Supabase, com validação de usuário e papel de plataforma no servidor;
+- controle de acesso por função para `super_admin`, `financeiro` e `suporte`;
+- painel inicial conectado aos dados reais de planos, barbearias, assinaturas e checkouts;
+- telas somente leitura de planos, barbearias e assinaturas, sem preços fictícios e sem operações comerciais simuladas;
+- chave `service_role` isolada no servidor e documentada como variável exclusiva do projeto ADM;
+- aplicação responsiva e alinhada à identidade visual cobre/preta do Garagem;
+- testes específicos, lint e build de produção aprovados.
+
 ## Próximo passo autônomo
 
-Criar a aplicação separada `adm.garagemsystembarber.com.br` e implementar login, catálogo de planos e gestão manual das assinaturas.
+Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativação manual do membro fundador e gestão de módulos contratados.
+
+## Próximo passo de infraestrutura
+
+Criar um projeto separado na Vercel com diretório raiz `apps/adm`, configurar as variáveis seguras e apontar o domínio `adm.garagemsystembarber.com.br`.
 
 ## Próximo passo com Rafa
 
