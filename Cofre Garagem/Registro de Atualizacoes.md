@@ -142,5 +142,5 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Deploy de produção concluído em `https://garagem-adm.vercel.app`.
 - Validado que `/login` responde HTTP 200 e que `/` encaminha usuários sem sessão para o login.
 - PR 22 aberta para versionar a configuração de deploy do ADM.
-- O domínio `adm.garagemsystem.com.br` foi cadastrado no projeto; falta criar no Registro.br o registro A para `76.76.21.21` e aguardar a validação automática/SSL.
-- Antes da operação real ainda faltam: cadastrar o usuário de produção como `super_admin` e validar o primeiro login.
+- O domínio `adm.garagemsystem.com.br` foi configurado no Registro.br com registro A para `76.76.21.21`, validado na Vercel e recebeu certificado SSL com renovação automática.
+- O usuário `systemgaragem@gmail.com` foi vinculado em produção como `super_admin` ativo; falta validar o primeiro acesso funcional pelo navegador.

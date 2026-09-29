@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, NavLink, Outlet } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
   CalendarClock,
@@ -9,6 +9,7 @@ import {
   Home,
   Headset,
   Landmark,
+  LogOut,
   Menu,
   Radar,
   Scissors,
@@ -126,7 +127,7 @@ function DesktopSidebar({ isCollapsed }) {
   )
 }
 
-function MobileDrawer({ open, onClose, userName }) {
+function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
   if (!open) return null
 
   return (
@@ -156,6 +157,17 @@ function MobileDrawer({ open, onClose, userName }) {
           </button>
         </div>
         <Navigation onNavigate={onClose} />
+        <div className="shrink-0 border-t border-line p-4">
+          <button
+            type="button"
+            onClick={onSignOut}
+            disabled={signingOut}
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-sm border border-copper px-4 text-body-sm font-semibold text-copper transition-colors hover:bg-copper/10 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"
+          >
+            <LogOut size={19} aria-hidden="true" />
+            {signingOut ? 'Saindo...' : 'Sair do aplicativo'}
+          </button>
+        </div>
       </aside>
     </div>
   )
@@ -198,11 +210,30 @@ function MobileBottomNavigation({ onOpenMenu }) {
 }
 
 export default function AdminLayout() {
+  const navigate = useNavigate()
   const auth = useAdminProfile()
   const access = resolveAdminAccess(auth)
   const [isCollapsed, setCollapsed] = useState(false)
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [appointmentNotice, setAppointmentNotice] = useState('')
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+
+  async function handleSignOut() {
+    if (signingOut) return
+
+    setSigningOut(true)
+    setSignOutError('')
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      setSignOutError('Não foi possível sair agora. Tente novamente.')
+      setSigningOut(false)
+      return
+    }
+
+    navigate('/login', { replace: true })
+  }
 
   useEffect(() => {
     if (access !== 'allowed') return undefined
@@ -237,12 +268,14 @@ export default function AdminLayout() {
           title="Acesso administrativo negado"
           description="Seu perfil não possui autorização administrativa ou não pôde ser validado."
           action={
-            <Link
-              to="/login"
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
               className="rounded-sm border border-copper px-5 py-3 text-body font-semibold text-copper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"
             >
-              Voltar ao login
-            </Link>
+              {signingOut ? 'Saindo...' : 'Sair e voltar ao login'}
+            </button>
           }
         />
       </div>
@@ -283,7 +316,18 @@ export default function AdminLayout() {
           <div className="flex h-9 w-9 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-body-sm font-bold text-copper lg:hidden">
             {userName.charAt(0).toUpperCase()}
           </div>
-          <span className="hidden text-body-sm text-steel lg:block">{userName}</span>
+          <div className="hidden items-center gap-4 lg:flex">
+            <span className="text-body-sm text-steel">{userName}</span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-line px-4 text-body-sm font-semibold text-steel transition-colors hover:border-copper hover:bg-copper/10 hover:text-copper disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"
+            >
+              <LogOut size={18} aria-hidden="true" />
+              {signingOut ? 'Saindo...' : 'Sair'}
+            </button>
+          </div>
         </header>
 
         <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24 pt-5 sm:px-6 lg:p-6">
@@ -292,7 +336,18 @@ export default function AdminLayout() {
       </div>
 
       <MobileBottomNavigation onOpenMenu={() => setMobileMenuOpen(true)} />
-      <MobileDrawer open={isMobileMenuOpen} onClose={() => setMobileMenuOpen(false)} userName={userName} />
+      <MobileDrawer
+        open={isMobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        onSignOut={handleSignOut}
+        signingOut={signingOut}
+        userName={userName}
+      />
+      {signOutError && (
+        <div role="alert" className="fixed left-4 right-4 top-20 z-[60] rounded-md border border-danger/50 bg-surface-2 p-4 text-body-sm text-danger shadow-overlay sm:left-auto sm:right-6 sm:max-w-md">
+          {signOutError}
+        </div>
+      )}
       {appointmentNotice && (
         <div role="status" className="fixed bottom-20 left-4 right-4 z-40 flex items-center gap-3 rounded-md border border-copper/50 bg-surface-2 p-4 shadow-overlay sm:left-auto sm:right-6 sm:max-w-md lg:bottom-6">
           <BellRing size={20} className="shrink-0 text-copper" aria-hidden="true" />
