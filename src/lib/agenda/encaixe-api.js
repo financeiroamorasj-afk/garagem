@@ -17,7 +17,7 @@ export async function carregarCatalogoEncaixe() {
   }
 }
 
-export async function listarHorariosLivres({ servicoId, dataInicial, profissionalId = null, dias = 14, limite = 18 }) {
+export async function listarHorariosLivres({ servicoId, dataInicial, profissionalId = null, dias = 1, limite = 18 }) {
   if (!servicoId || !DATE_KEY.test(String(dataInicial ?? ''))) throw new TypeError('Selecione o serviço e a data inicial.')
   const rows = await rpc('agenda_horarios_livres', {
     p_servico_id: servicoId,
@@ -52,6 +52,7 @@ const ERRORS = {
   AGENDA_ENCAIXE_NAO_AUTORIZADO: 'Seu usuário não pode criar encaixes.',
   AGENDA_BARBEIRO_INATIVO_OU_NAO_VINCULADO: 'O acesso deste barbeiro está inativo ou sem vínculo.',
   AGENDA_ENCAIXE_FILTRO_INVALIDO: 'Revise o serviço e o período da busca.',
+  AGENDA_ENCAIXE_SOMENTE_HOJE: 'Encaixes são atendimentos para hoje. Para outro dia, use o agendamento normal.',
   AGENDA_SERVICO_INVALIDO: 'Selecione um serviço ativo.',
   AGENDA_PROFISSIONAL_INVALIDO: 'Selecione um barbeiro ativo.',
   AGENDA_CLIENTE_INVALIDO: 'Selecione ou cadastre o cliente.',

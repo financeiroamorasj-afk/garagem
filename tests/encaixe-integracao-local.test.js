@@ -6,7 +6,7 @@ import pg from 'pg'
 const { Client } = pg
 const connectionString = process.env.SUPABASE_LOCAL_DB_URL || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres'
 
-test('motor de encaixe respeita jornada, bloqueios, ocupação e isolamento do tenant', async () => {
+test('motor de encaixe respeita jornada, bloqueios, ocupação, dia corrente e isolamento do tenant', async () => {
   const client = new Client({ connectionString })
   const tenantId = crypto.randomUUID()
   const otherTenantId = crypto.randomUUID()
@@ -19,11 +19,28 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação e isolamento do t
   await client.connect()
 
   try {
-    const target = await client.query("SELECT to_char(current_date + 7,'YYYY-MM-DD') data, extract(dow FROM current_date + 7)::smallint dow")
+    const target = await client.query(`
+      WITH zones(zone) AS (
+        VALUES ('UTC'), ('Etc/GMT-6'), ('Etc/GMT-12'), ('Etc/GMT+6')
+      ), candidates AS (
+        SELECT zone, now() AT TIME ZONE zone AS local_now
+        FROM zones
+      )
+      SELECT
+        zone,
+        to_char(local_now, 'YYYY-MM-DD') data,
+        extract(dow FROM local_now)::smallint dow
+      FROM candidates
+      WHERE local_now::time >= time '08:00'
+        AND local_now::time < time '14:00'
+      LIMIT 1
+    `)
     const targetDate = target.rows[0].data
     const dayOfWeek = target.rows[0].dow
+    const operationalZone = target.rows[0].zone
 
     await client.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant encaixe',$2),($3,'Outro encaixe',$4)", [tenantId, `walk-in-${tenantId}`, otherTenantId, `walk-in-other-${otherTenantId}`])
+    await client.query('UPDATE public.barbearias SET fuso_horario=$2 WHERE id=$1', [tenantId, operationalZone])
     await client.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [adminId, `walk-in-${adminId}@local.test`])
     await client.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin encaixe',$3)", [adminId, tenantId, `walk-in-${adminId}@local.test`])
     await client.query("INSERT INTO public.profissionais(id,barbearia_id,nome,apelido,ativo) VALUES($1,$2,'Ana Profissional','Ana',true),($3,$2,'Bia Profissional','Bia',true)", [professionalA, tenantId, professionalB])
@@ -41,7 +58,7 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação e isolamento do t
     const availability = await client.query('SELECT * FROM public.agenda_horarios_livres($1,$2,NULL,1,50)', [serviceId, targetDate])
     assert.ok(availability.rows.length > 0)
     const localMinutes = (row) => {
-      const parts = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Sao_Paulo' }).formatToParts(new Date(row.inicio))
+      const parts = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: operationalZone }).formatToParts(new Date(row.inicio))
       return Number(parts.find((part) => part.type === 'hour').value) * 60 + Number(parts.find((part) => part.type === 'minute').value)
     }
     assert.ok(availability.rows.filter((row) => row.profissional_id === professionalA).every((row) => localMinutes(row) >= 10 * 60))
@@ -54,6 +71,11 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação e isolamento do t
     assert.equal(persisted.rows[0].status, 'encaixe')
     assert.equal(persisted.rows[0].duracao_minutos_snapshot, 30)
     assert.equal(persisted.rows[0].duracao.minutes, 30)
+
+    await assert.rejects(
+      client.query("SELECT public.agenda_encaixe_criar($1,$2,$3,$4::timestamptz + interval '7 days',44)", [clientId, serviceId, chosen.profissional_id, chosen.inicio]),
+      /AGENDA_ENCAIXE_SOMENTE_HOJE/,
+    )
 
     await assert.rejects(
       client.query('SELECT public.agenda_encaixe_criar($1,$2,$3,$4,44)', [clientId, serviceId, chosen.profissional_id, chosen.inicio]),

@@ -494,7 +494,6 @@ export default function AdminAgenda() {
       <WalkInModal
         open={walkInOpen}
         onClose={() => setWalkInOpen(false)}
-        initialDate={selectedDate >= today ? selectedDate : today}
         onSuccess={async (_result, slot) => {
           const slotDay = dataHoraLocalKey(slot.inicio)
           setSelectedDate(slotDay)

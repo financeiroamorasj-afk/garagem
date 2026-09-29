@@ -33,9 +33,8 @@ function formatarHora(value) {
   return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
-export default function WalkInModal({ open, onClose, onSuccess, initialDate = null }) {
+export default function WalkInModal({ open, onClose, onSuccess }) {
   const today = dataLocalKey()
-  const initialSafeDate = initialDate && initialDate >= today ? initialDate : today
   const searchSequence = useRef(0)
   const [catalog, setCatalog] = useState({ servicos: [], clientes: [], profissionais: [] })
   const [catalogLoading, setCatalogLoading] = useState(false)
@@ -43,7 +42,6 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
   const [phone, setPhone] = useState('')
   const [serviceId, setServiceId] = useState('')
   const [professionalId, setProfessionalId] = useState('')
-  const [startDate, setStartDate] = useState(initialSafeDate)
   const [price, setPrice] = useState(null)
   const [slots, setSlots] = useState([])
   const [selectedSlot, setSelectedSlot] = useState(null)
@@ -57,7 +55,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
   )
 
   const searchSlots = useCallback(async ({ quiet = false } = {}) => {
-    if (!serviceId || !startDate) {
+    if (!serviceId) {
       setSlots([])
       setSelectedSlot(null)
       return
@@ -68,9 +66,9 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
     try {
       const rows = await listarHorariosLivres({
         servicoId: serviceId,
-        dataInicial: startDate,
+        dataInicial: today,
         profissionalId: professionalId || null,
-        dias: 14,
+        dias: 1,
         limite: 18,
       })
       if (sequence !== searchSequence.current) return
@@ -86,7 +84,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
     } finally {
       if (sequence === searchSequence.current) setSlotsLoading(false)
     }
-  }, [professionalId, serviceId, startDate])
+  }, [professionalId, serviceId, today])
 
   useEffect(() => {
     if (!open) return
@@ -107,10 +105,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
   }, [open, searchSlots])
 
   useEffect(() => {
-    if (open) {
-      setStartDate(initialSafeDate)
-      return
-    }
+    if (open) return
     searchSequence.current += 1
     setSelectedClient(null)
     setPhone('')
@@ -120,7 +115,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
     setSlots([])
     setSelectedSlot(null)
     setError('')
-  }, [initialSafeDate, open])
+  }, [open])
 
   function handleServiceChange(event) {
     const nextId = event.target.value
@@ -166,7 +161,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
     <Modal
       open={open}
       onClose={() => !saving && onClose()}
-      title="Encaixe sem horário"
+      title="Encaixe de hoje"
       className="sm:max-w-3xl"
       footer={(
         <>
@@ -176,7 +171,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
       )}
     >
       <form id="walk-in-form" className="space-y-5" onSubmit={handleSubmit}>
-        <p className="text-body-sm text-steel">Informe o serviço e veja, em tempo real, o próximo espaço disponível de toda a equipe.</p>
+        <p className="text-body-sm text-steel">Para o cliente que chegou sem agendamento: informe o serviço e encontre o próximo espaço livre de hoje em toda a equipe.</p>
 
         {error && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{error}</p>}
 
@@ -206,14 +201,18 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
                   {catalog.profissionais.map((professional) => <option key={professional.id} value={professional.id}>{nomeProfissional(professional)}</option>)}
                 </select>
               </label>
-              <Input label="Buscar a partir de" type="date" min={today} value={startDate} onChange={(event) => { setStartDate(event.target.value); setSelectedSlot(null) }} />
+              <div className="rounded-sm border border-line-strong bg-surface-2 px-3 py-2">
+                <span className="flex items-center gap-2 text-label text-steel"><CalendarClock size={14} /> Dia do encaixe</span>
+                <strong className="mt-1 block text-body capitalize text-warm-white">Hoje · {formatarDia(`${today}T12:00:00`)}</strong>
+                <span className="mt-1 block text-xs text-steel">Para outro dia, use o agendamento normal.</span>
+              </div>
               <CurrencyInput label="Valor do atendimento" value={price} onValueChange={setPrice} disabled={!selectedService} helpText={selectedService ? `Valor sugerido para ${selectedService.nome}.` : 'Selecione primeiro o serviço.'} />
             </div>
 
             <section aria-label="Próximos horários livres">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-h3 text-warm-white">Próximos horários livres</h3>
+                  <h3 className="text-h3 text-warm-white">Próximos horários livres hoje</h3>
                   <p className="mt-1 text-body-sm text-steel">A agenda, pausas, bloqueios e atendimentos já marcados são respeitados.</p>
                 </div>
                 <Button size="sm" variant="ghost" disabled={!serviceId || slotsLoading} onClick={() => searchSlots()} aria-label="Atualizar horários"><RefreshCw size={16} /></Button>
@@ -224,7 +223,7 @@ export default function WalkInModal({ open, onClose, onSuccess, initialDate = nu
               ) : !serviceId ? (
                 <EmptyState icon={Scissors} className="py-10" title="Selecione o serviço" description="A duração do serviço define quais espaços podem receber o cliente." />
               ) : slots.length === 0 ? (
-                <EmptyState icon={CalendarClock} className="py-10" title="Nenhum horário disponível" description="Tente outra data ou confira a jornada da equipe em Disponibilidade." />
+                <EmptyState icon={CalendarClock} className="py-10" title="Nenhum encaixe disponível hoje" description="Para outro dia, crie um agendamento normal ou confira a jornada da equipe em Disponibilidade." />
               ) : (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {slots.map((slot) => {
