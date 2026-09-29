@@ -46,10 +46,15 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação, dia corrente e i
     await client.query("INSERT INTO public.profissionais(id,barbearia_id,nome,apelido,ativo) VALUES($1,$2,'Ana Profissional','Ana',true),($3,$2,'Bia Profissional','Bia',true)", [professionalA, tenantId, professionalB])
     await client.query("INSERT INTO public.clientes(id,barbearia_id,nome,telefone) VALUES($1,$2,'Cliente Encaixe','11999999999')", [clientId, tenantId])
     await client.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,ativo) VALUES($1,$2,'Corte 30',45,30,true),($3,$4,'Serviço de fora',100,30,true)", [serviceId, tenantId, otherServiceId, otherTenantId])
-    await client.query("INSERT INTO public.profissionais_jornadas(barbearia_id,profissional_id,dia_semana,ativo,hora_inicio,hora_fim) VALUES($1,$2,$4,true,'09:00','12:00'),($1,$3,$4,true,'09:00','12:00')", [tenantId, professionalA, professionalB, dayOfWeek])
+    await client.query("INSERT INTO public.profissionais_jornadas(barbearia_id,profissional_id,dia_semana,ativo,hora_inicio,hora_fim) VALUES($1,$2,$4,true,'09:00','18:00'),($1,$3,$4,true,'09:00','18:00')", [tenantId, professionalA, professionalB, dayOfWeek])
     await client.query("INSERT INTO public.profissionais_bloqueios(barbearia_id,profissional_id,inicio,fim,motivo) VALUES($1,$2,($3||' 09:00:00-03')::timestamptz,($3||' 10:00:00-03')::timestamptz,'Bloqueio teste')", [tenantId, professionalA, targetDate])
     await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5||' 09:00:00-03')::timestamptz,'confirmado')", [tenantId, professionalB, clientId, serviceId, targetDate])
     await client.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId])
+
+    await assert.rejects(
+      client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5||' 08:30:00-03')::timestamptz,'confirmado')", [tenantId, professionalB, clientId, serviceId, targetDate]),
+      /AGENDA_HORARIO_OCUPADO/,
+    )
 
     const catalog = await client.query('SELECT public.agenda_encaixe_catalogo() catalogo')
     assert.equal(catalog.rows[0].catalogo.servicos.length, 1)
@@ -62,15 +67,17 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação, dia corrente e i
       return Number(parts.find((part) => part.type === 'hour').value) * 60 + Number(parts.find((part) => part.type === 'minute').value)
     }
     assert.ok(availability.rows.filter((row) => row.profissional_id === professionalA).every((row) => localMinutes(row) >= 10 * 60))
-    assert.ok(availability.rows.filter((row) => row.profissional_id === professionalB).every((row) => localMinutes(row) >= 9 * 60 + 30))
+    assert.ok(availability.rows.filter((row) => row.profissional_id === professionalB).every((row) => localMinutes(row) >= 9 * 60 + 45))
 
     const chosen = availability.rows[0]
     const created = await client.query('SELECT public.agenda_encaixe_criar($1,$2,$3,$4,44) result', [clientId, serviceId, chosen.profissional_id, chosen.inicio])
     assert.equal(created.rows[0].result.status, 'encaixe')
-    const persisted = await client.query('SELECT status,duracao_minutos_snapshot,data_fim-data_hora duracao FROM public.agendamentos WHERE id=$1', [created.rows[0].result.id])
+    const persisted = await client.query('SELECT status,duracao_minutos_snapshot,margem_minutos_snapshot,data_fim-data_hora duracao,ocupacao_fim-data_hora ocupacao FROM public.agendamentos WHERE id=$1', [created.rows[0].result.id])
     assert.equal(persisted.rows[0].status, 'encaixe')
     assert.equal(persisted.rows[0].duracao_minutos_snapshot, 30)
+    assert.equal(persisted.rows[0].margem_minutos_snapshot, 5)
     assert.equal(persisted.rows[0].duracao.minutes, 30)
+    assert.equal(persisted.rows[0].ocupacao.minutes, 35)
 
     await assert.rejects(
       client.query("SELECT public.agenda_encaixe_criar($1,$2,$3,$4::timestamptz + interval '7 days',44)", [clientId, serviceId, chosen.profissional_id, chosen.inicio]),
@@ -85,6 +92,10 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação, dia corrente e i
       client.query('SELECT * FROM public.agenda_horarios_livres($1,$2,NULL,1,10)', [otherServiceId, targetDate]),
       /AGENDA_SERVICO_INVALIDO/,
     )
+
+    await client.query("UPDATE public.agendamentos SET status='concluido' WHERE barbearia_id=$1 AND profissional_id=$2 AND data_hora=($3||' 09:00:00-03')::timestamptz", [tenantId, professionalB, targetDate])
+    const released = await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5||' 08:30:00-03')::timestamptz,'confirmado') RETURNING ocupacao_fim-data_hora ocupacao", [tenantId, professionalB, clientId, serviceId, targetDate])
+    assert.equal(released.rows[0].ocupacao.minutes, 35)
   } finally {
     await client.query('DELETE FROM public.agendamentos WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
     await client.query('DELETE FROM public.profissionais_bloqueios WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})

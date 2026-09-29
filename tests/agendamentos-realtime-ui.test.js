@@ -19,5 +19,7 @@ test('agendamentos atualizam dono e barbeiro em tempo real com aviso visual', as
   assert.match(agenda, /admin-agenda-geral/)
   assert.match(barber, /filter: `profissional_id=eq\.\$\{context\.id\}`/)
   assert.match(barber, /Novo cliente agendou pelo portal/)
+  assert.match(barber, /NOVO HORÁRIO NA SUA AGENDA/)
+  assert.match(barber, /aria-live="assertive"/)
   assert.match(barber, /visibilitychange/)
 })

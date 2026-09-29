@@ -122,13 +122,16 @@ function AgendaItem({ appointment }) {
 }
 
 function CompactAppointment({ appointment }) {
+  const status = statusAgenda(appointment.status)
+  const cancelled = appointment.status === 'cancelado'
   return (
-    <div className={`rounded-sm border bg-surface-0 p-2 ${appointment.status === 'em_atendimento' ? 'border-copper' : 'border-line'}`}>
+    <div className={`rounded-sm border p-2 ${appointment.status === 'em_atendimento' ? 'border-copper bg-surface-0' : cancelled ? 'border-danger/40 bg-danger/5' : 'border-line bg-surface-0'}`}>
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 shrink-0 rounded-full ${corStatus(appointment.status)}`} aria-hidden="true" />
-        <time className="shrink-0 text-data text-copper" dateTime={appointment.data_hora}>{formatarHorario(appointment.data_hora)}</time>
+        <time className={`shrink-0 text-data ${cancelled ? 'text-danger line-through' : 'text-copper'}`} dateTime={appointment.data_hora}>{formatarHorario(appointment.data_hora)}</time>
+        {cancelled && <Badge variant={status.variant} className="ml-auto shrink-0">{status.label}</Badge>}
       </div>
-      <p className="mt-1 truncate text-body-sm font-semibold text-warm-white">{appointment.cliente_nome}</p>
+      <p className={`mt-1 truncate text-body-sm font-semibold ${cancelled ? 'text-steel line-through' : 'text-warm-white'}`}>{appointment.cliente_nome}</p>
       <p className="truncate text-[11px] text-steel">{nomeProfissional(appointment)}</p>
     </div>
   )
