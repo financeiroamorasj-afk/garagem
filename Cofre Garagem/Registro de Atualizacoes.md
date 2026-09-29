@@ -159,3 +159,14 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - A interface deixou de oferecer datas futuras e pesquisa somente os horários restantes de hoje.
 - O banco rejeita encaixes fora do dia corrente no fuso da barbearia; horários futuros permanecem no fluxo normal de agendamento.
 - A regra foi validada no Supabase local com isolamento por barbearia, jornada, bloqueios, choque de horários e 117 testes aprovados.
+
+# 29/09/2026 — Margem operacional e leitura da agenda
+
+- Todo novo horário passa a reservar a duração real do serviço mais 5 minutos de margem operacional.
+- A duração continua registrada separadamente; a margem não aumenta artificialmente o tempo exibido do serviço.
+- A mesma proteção vale para agendamentos do portal, lançamentos do ADM e encaixes, inclusive sob concorrência no banco.
+- Ao concluir ou cancelar um atendimento, ele deixa de ocupar a agenda; um encaixe só reaparece quando serviço e margem cabem integralmente antes do próximo compromisso ativo.
+- Conflitos de horário agora são explicados em linguagem operacional no formulário do ADM.
+- Horários cancelados ganharam identificação textual e tratamento visual explícito na visão semanal.
+- O barbeiro recebe novos agendamentos em um aviso flutuante de alta visibilidade, com atualização automática da própria agenda.
+- Validação local concluída com 118 testes aprovados, lint, build e lint do schema sem novos alertas.

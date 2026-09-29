@@ -51,9 +51,11 @@ test('portal cria sessão segura, cadastra cliente e agenda sem choque de horár
     )
 
     await db.query('RESET ROLE')
-    const stored = await db.query('SELECT origem,pagamento_status FROM public.agendamentos WHERE id=$1', [created.rows[0].result.id])
+    const stored = await db.query('SELECT origem,pagamento_status,margem_minutos_snapshot,ocupacao_fim-data_hora ocupacao FROM public.agendamentos WHERE id=$1', [created.rows[0].result.id])
     assert.equal(stored.rows[0].origem, 'portal_cliente')
     assert.equal(stored.rows[0].pagamento_status, 'nao_solicitado')
+    assert.equal(stored.rows[0].margem_minutos_snapshot, 5)
+    assert.equal(stored.rows[0].ocupacao.minutes, 35)
     const protectedCpf = await db.query('SELECT cpf_hash,cpf_final FROM public.clientes WHERE barbearia_id=$1', [tenantId])
     assert.equal(protectedCpf.rows[0].cpf_hash.length, 64)
     assert.notEqual(protectedCpf.rows[0].cpf_hash, '52998224725')

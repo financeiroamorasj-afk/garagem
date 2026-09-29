@@ -7,7 +7,7 @@ import Button from './ui/Button'
 import Label from './ui/Label'
 import CurrencyInput from './ui/CurrencyInput'
 import ClientSearch from './ClientSearch'
-import { dataLocalKey } from '../lib/agenda/ui'
+import { dataLocalKey, mensagemErroAgenda } from '../lib/agenda/ui'
 
 function todayDateString() {
     return dataLocalKey()
@@ -162,7 +162,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
             onClose()
         } catch (err) {
             console.error(err)
-            setError(err.message)
+            setError(mensagemErroAgenda(err))
         } finally {
             setLoading(false)
         }
@@ -235,6 +235,11 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                     {!loadingOptions && servicos.length === 0 && (
                         <p className="text-body-sm text-steel">
                             Nenhum serviço cadastrado ainda para esta barbearia.
+                        </p>
+                    )}
+                    {servicoId && (
+                        <p className="text-body-sm text-steel">
+                            A agenda reserva a duração do serviço mais 5 minutos de margem operacional.
                         </p>
                     )}
                 </section>

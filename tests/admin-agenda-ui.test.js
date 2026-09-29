@@ -25,6 +25,8 @@ test('agenda geral está conectada ao menu, à rota e aos contratos administrati
   assert.match(page, /Encaixe/)
   assert.match(page, /WalkInModal/)
   assert.match(page, /AddAppointmentModal/)
+  assert.match(page, /statusAgenda.*cancelled/s)
+  assert.match(page, /line-through/)
   assert.match(extraApi, /admin_horario_extra_criar/)
   assert.match(extraApi, /admin_horarios_extras_listar/)
   assert.match(migration, /get_my_role\(\).*NOT IN \('admin', 'master'\)/s)

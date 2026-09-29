@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
+  BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
   DollarSign, LogOut, PackageSearch, Phone, Play, RefreshCw, Scissors,
-  ShoppingBag, UserPlus, UserRound, XCircle,
+  ShoppingBag, UserPlus, UserRound, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
@@ -109,6 +109,7 @@ export default function BarberDashboard() {
   const [busyId, setBusyId] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [incomingNotice, setIncomingNotice] = useState('')
   const [cancelTarget, setCancelTarget] = useState(null)
   const [walkInOpen, setWalkInOpen] = useState(false)
   const [completionTarget, setCompletionTarget] = useState(null)
@@ -159,7 +160,7 @@ export default function BarberDashboard() {
         loadDay({ quiet: true })
         if (section === 'week' || section === 'summary') loadSection()
         if (change.eventType === 'INSERT') {
-          setNotice(change.new?.origem === 'portal_cliente'
+          setIncomingNotice(change.new?.origem === 'portal_cliente'
             ? 'Novo cliente agendou pelo portal. Sua agenda foi atualizada.'
             : 'Novo agendamento recebido. Sua agenda foi atualizada.')
         }
@@ -217,6 +218,19 @@ export default function BarberDashboard() {
       if (value !== 'week') setSelectedDate(today)
       setSection(value); setError(''); setNotice('')
     }} />
+    {incomingNotice && (
+      <div role="alert" aria-live="assertive" className="fixed inset-x-3 top-20 z-50 mx-auto max-w-lg rounded-md border-2 border-copper bg-surface-1 p-4 shadow-2xl shadow-black/70 sm:right-5 sm:left-auto sm:top-5 sm:w-[420px]">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-copper/15 text-copper"><BellRing size={23} aria-hidden="true" /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-label text-copper">NOVO HORÁRIO NA SUA AGENDA</p>
+            <p className="mt-1 text-body font-semibold text-warm-white">{incomingNotice}</p>
+            <p className="mt-1 text-body-sm text-steel">Confira os dados do cliente e do serviço abaixo.</p>
+          </div>
+          <button type="button" onClick={() => setIncomingNotice('')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-steel hover:bg-surface-2 hover:text-warm-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" aria-label="Fechar aviso de novo agendamento"><X size={19} /></button>
+        </div>
+      </div>
+    )}
     <main className="mx-auto w-full max-w-5xl space-y-5 px-4 py-5">
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-3 text-body-sm text-success">{notice}</div>}
       {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => section === 'today' ? loadDay() : loadSection()}><RefreshCw size={15} /> Recarregar</Button></div>}
