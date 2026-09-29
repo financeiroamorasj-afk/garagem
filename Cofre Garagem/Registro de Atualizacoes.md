@@ -144,3 +144,18 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - PR 22 aberta para versionar a configuração de deploy do ADM.
 - O domínio `adm.garagemsystem.com.br` foi configurado no Registro.br com registro A para `76.76.21.21`, validado na Vercel e recebeu certificado SSL com renovação automática.
 - O usuário `systemgaragem@gmail.com` foi vinculado em produção como `super_admin` ativo; falta validar o primeiro acesso funcional pelo navegador.
+
+# 29/09/2026 — SMTP validado em produção
+
+- O SMTP personalizado do Gmail foi autenticado com senha de aplicativo e passou a enviar os e-mails oficiais do Garagem System.
+- O fluxo de recuperação foi validado de ponta a ponta para um barbeiro confirmado, incluindo template, remetente, link e resposta HTTP 200 do Supabase Auth.
+- A primeira mensagem foi classificada como spam pelo Gmail destinatário; portanto, o SMTP está funcional, mas a entregabilidade com remetente Gmail permanece provisória para o MVP.
+- Antes de escalar os convites, deve-se migrar para um serviço transacional com domínio autenticado e revisar SPF, DKIM e DMARC.
+
+# 29/09/2026 — Encaixe separado do agendamento
+
+- Encaixe passa a representar exclusivamente o cliente que chegou sem agendamento e precisa do próximo espaço livre do dia.
+- Dono e barbeiros continuam podendo consultar toda a equipe e encaminhar o cliente ao profissional disponível da mesma barbearia.
+- A interface deixou de oferecer datas futuras e pesquisa somente os horários restantes de hoje.
+- O banco rejeita encaixes fora do dia corrente no fuso da barbearia; horários futuros permanecem no fluxo normal de agendamento.
+- A regra foi validada no Supabase local com isolamento por barbearia, jornada, bloqueios, choque de horários e 117 testes aprovados.
