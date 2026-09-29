@@ -170,3 +170,11 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Horários cancelados ganharam identificação textual e tratamento visual explícito na visão semanal.
 - O barbeiro recebe novos agendamentos em um aviso flutuante de alta visibilidade, com atualização automática da própria agenda.
 - Validação local concluída com 118 testes aprovados, lint, build e lint do schema sem novos alertas.
+
+# 29/09/2026 — Calendário priorizado no ADM
+
+- A Agenda geral passou a abrir diretamente no calendário, que agora ocupa a posição principal da tela.
+- Disponibilidade, conflitos, folgas, bloqueios e horários extras foram agrupados em uma aba secundária de consulta no mesmo menu.
+- Os filtros mudam conforme a aba: cliente e situação permanecem no calendário; disponibilidade mantém apenas o filtro de barbeiro.
+- O status cancelado deixou de disputar a mesma linha do horário e ganhou uma faixa própria dentro do cartão compacto.
+- A reorganização preserva as visualizações de dia, semana e mês, além dos fluxos de novo corte, encaixe, horário extra e Modo TV.
