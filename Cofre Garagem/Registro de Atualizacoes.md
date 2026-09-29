@@ -99,6 +99,14 @@ Este documento registra as implementações, melhorias e novas funcionalidades i
 
 O checklist original deste documento foi substituído pela **Ordem oficial de execução** acima. Algumas linhas antigas já não representam o estado atual do produto — por exemplo, catálogo, vendas, estoque, comissões básicas, recepção, Modo TV e QR Code PIX já foram implementados. A cobrança automática por atendimento e a IA foram deliberadamente adiadas para depois do MVP mínimo.
 
+### Ideia futura — inteligência de duração dos serviços
+
+- Registrada a proposta de comparar o tempo cadastrado com o tempo técnico realmente realizado por serviço e por barbeiro.
+- A solução começa por instrumentação confiável de início e término técnico; hoje o status final sozinho não oferece uma medição segura.
+- A primeira versão será estatística e explicável, com mediana, percentis, tamanho da amostra e revisão humana.
+- O sistema não alterará automaticamente a agenda nem usará a métrica isoladamente para avaliar profissionais.
+- Especificação: `docs/produto/ANALISE-DURACAO-SERVICOS.md`.
+
 # 27/09/2026 — Migração de dados projetada
 
 - Definido o fluxo ponta a ponta para migração de barbearias vindas de outros sistemas.
