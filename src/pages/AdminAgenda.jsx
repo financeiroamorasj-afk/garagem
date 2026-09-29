@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  CalendarClock,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -56,6 +57,11 @@ const VIEW_OPTIONS = [
   ['dia', 'Dia'],
   ['semana', 'Semana'],
   ['mes', 'Mês'],
+]
+
+const AREA_OPTIONS = [
+  ['calendario', 'Calendário'],
+  ['disponibilidade', 'Disponibilidade'],
 ]
 
 const WEEKDAYS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM']
@@ -129,8 +135,8 @@ function CompactAppointment({ appointment }) {
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 shrink-0 rounded-full ${corStatus(appointment.status)}`} aria-hidden="true" />
         <time className={`shrink-0 text-data ${cancelled ? 'text-danger line-through' : 'text-copper'}`} dateTime={appointment.data_hora}>{formatarHorario(appointment.data_hora)}</time>
-        {cancelled && <Badge variant={status.variant} className="ml-auto shrink-0">{status.label}</Badge>}
       </div>
+      {cancelled && <Badge variant={status.variant} className="mt-2 flex w-full justify-center">{status.label}</Badge>}
       <p className={`mt-1 truncate text-body-sm font-semibold ${cancelled ? 'text-steel line-through' : 'text-warm-white'}`}>{appointment.cliente_nome}</p>
       <p className="truncate text-[11px] text-steel">{nomeProfissional(appointment)}</p>
     </div>
@@ -221,6 +227,7 @@ function EmptyCalendar() {
 export default function AdminAgenda() {
   const navigate = useNavigate()
   const today = dataLocalKey()
+  const [activeArea, setActiveArea] = useState('calendario')
   const [selectedDate, setSelectedDate] = useState(today)
   const [view, setView] = useState('semana')
   const [professionalFilter, setProfessionalFilter] = useState('todos')
@@ -379,13 +386,26 @@ export default function AdminAgenda() {
             <Button size="sm" variant="secondary" onClick={openExtraHours}><Clock3 size={16} /> Horário extra</Button>
             <Button size="sm" onClick={() => setAppointmentOpen(true)}><Plus size={16} /> Novo corte</Button>
           </div>
-          <div className="grid grid-cols-3 gap-1 rounded-md border border-line bg-surface-1 p-1" aria-label="Visualização da agenda">
-            {VIEW_OPTIONS.map(([value, label]) => (
-              <Button key={value} size="sm" variant={view === value ? 'secondary' : 'ghost'} aria-pressed={view === value} onClick={() => setView(value)}>{label}</Button>
-            ))}
-          </div>
+          {activeArea === 'calendario' && (
+            <div className="grid grid-cols-3 gap-1 rounded-md border border-line bg-surface-1 p-1" aria-label="Visualização da agenda">
+              {VIEW_OPTIONS.map(([value, label]) => (
+                <Button key={value} size="sm" variant={view === value ? 'secondary' : 'ghost'} aria-pressed={view === value} onClick={() => setView(value)}>{label}</Button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
+
+      <nav className="grid grid-cols-2 gap-1 rounded-md border border-line bg-surface-1 p-1" aria-label="Áreas da agenda">
+        {AREA_OPTIONS.map(([value, label]) => {
+          const active = activeArea === value
+          return (
+            <button key={value} type="button" aria-current={active ? 'page' : undefined} onClick={() => setActiveArea(value)} className={`flex min-h-12 items-center justify-center gap-2 rounded-sm px-3 text-body-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper ${active ? 'bg-copper/15 text-copper' : 'text-steel hover:bg-surface-2 hover:text-warm-white'}`}>
+              {value === 'calendario' ? <CalendarDays size={18} aria-hidden="true" /> : <CalendarClock size={18} aria-hidden="true" />} {label}
+            </button>
+          )
+        })}
+      </nav>
 
       {notice && (
         <div role="status" className="flex items-center justify-between gap-3 rounded-md border border-success/40 bg-success/10 p-4 text-body-sm text-success">
@@ -411,7 +431,7 @@ export default function AdminAgenda() {
         <Button size="sm" variant="ghost" className="w-full sm:w-auto" disabled={selectedDate === today} onClick={() => setSelectedDate(today)}>Hoje</Button>
       </section>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4" aria-label="Resumo da agenda">
+      {activeArea === 'calendario' && <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4" aria-label="Resumo da agenda">
         {[
           ['Horários', summary.total, <CalendarDays size={17} className="mb-2 text-copper" aria-hidden="true" />],
           ['Aguardando', summary.waiting, <Clock3 size={17} className="mb-2 text-warning" aria-hidden="true" />],
@@ -424,10 +444,10 @@ export default function AdminAgenda() {
             <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-steel sm:text-label">{label}</span>
           </Card>
         ))}
-      </section>
+      </section>}
 
-      <section className="grid grid-cols-1 gap-3 rounded-md border border-line bg-surface-1 p-4 md:grid-cols-3" aria-label="Filtros da agenda">
-        <Input label="Buscar cliente" icon={Search} type="search" value={clientQuery} onChange={(event) => setClientQuery(event.target.value)} placeholder="Nome ou telefone" />
+      <section className={`grid grid-cols-1 gap-3 rounded-md border border-line bg-surface-1 p-4 ${activeArea === 'calendario' ? 'md:grid-cols-3' : ''}`} aria-label={activeArea === 'calendario' ? 'Filtros da agenda' : 'Filtro de disponibilidade'}>
+        {activeArea === 'calendario' && <Input label="Buscar cliente" icon={Search} type="search" value={clientQuery} onChange={(event) => setClientQuery(event.target.value)} placeholder="Nome ou telefone" />}
         <label className="min-w-0 text-label text-steel">
           <span className="mb-2 flex items-center gap-2"><Filter size={14} /> Barbeiro</span>
           <select value={professionalFilter} onChange={(event) => setProfessionalFilter(event.target.value)} className="h-10 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white focus:border-copper focus:outline-none focus-visible:ring-2 focus-visible:ring-copper">
@@ -435,17 +455,13 @@ export default function AdminAgenda() {
             {professionals.map((professional) => <option key={professional.id} value={professional.id}>{professional.apelido || professional.nome}</option>)}
           </select>
         </label>
-        <label className="min-w-0 text-label text-steel">
+        {activeArea === 'calendario' && <label className="min-w-0 text-label text-steel">
           <span className="mb-2 flex items-center gap-2"><Filter size={14} /> Situação</span>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-10 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white focus:border-copper focus:outline-none focus-visible:ring-2 focus-visible:ring-copper">
             {STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
-        </label>
+        </label>}
       </section>
-
-      {!loading && !error && (
-        <AvailabilityOverview rows={visibleAvailability} title="Disponibilidade e conflitos da equipe" />
-      )}
 
       {error && (
         <div role="alert" className="flex flex-col gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger sm:flex-row sm:items-center sm:justify-between">
@@ -454,7 +470,23 @@ export default function AdminAgenda() {
         </div>
       )}
 
-      {!loading && !error && visibleExtraHours.length > 0 && (
+      {activeArea === 'calendario' && <section aria-label="Calendário da equipe">
+        {loading ? (
+          <Card className="flex min-h-64 items-center justify-center gap-3 text-body text-steel"><Spinner size={24} /> Carregando calendário</Card>
+        ) : error ? null : view === 'dia' ? (
+          <DayView appointments={appointmentsByDay.get(selectedDate) ?? []} />
+        ) : view === 'semana' ? (
+          <WeekView days={range.days} appointmentsByDay={appointmentsByDay} today={today} />
+        ) : (
+          <MonthView days={range.days} selectedDate={selectedDate} appointmentsByDay={appointmentsByDay} today={today} onOpenDay={openDay} />
+        )}
+      </section>}
+
+      {activeArea === 'disponibilidade' && !loading && !error && (
+        <AvailabilityOverview rows={visibleAvailability} title="Disponibilidade e conflitos da equipe" />
+      )}
+
+      {activeArea === 'disponibilidade' && !loading && !error && visibleExtraHours.length > 0 && (
         <Card className="p-4 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <Clock3 size={18} className="text-copper" aria-hidden="true" />
@@ -472,23 +504,12 @@ export default function AdminAgenda() {
         </Card>
       )}
 
-      <section aria-label="Calendário da equipe">
-        {loading ? (
-          <Card className="flex min-h-64 items-center justify-center gap-3 text-body text-steel"><Spinner size={24} /> Carregando calendário</Card>
-        ) : error ? null : view === 'dia' ? (
-          <DayView appointments={appointmentsByDay.get(selectedDate) ?? []} />
-        ) : view === 'semana' ? (
-          <WeekView days={range.days} appointmentsByDay={appointmentsByDay} today={today} />
-        ) : (
-          <MonthView days={range.days} selectedDate={selectedDate} appointmentsByDay={appointmentsByDay} today={today} onOpenDay={openDay} />
-        )}
-      </section>
-
       <AddAppointmentModal
         isOpen={appointmentOpen}
         onClose={() => setAppointmentOpen(false)}
         initialDate={selectedDate}
         onSuccess={async () => {
+          setActiveArea('calendario')
           setNotice('Novo corte incluído na agenda.')
           await load({ quiet: true })
         }}
@@ -499,6 +520,7 @@ export default function AdminAgenda() {
         onClose={() => setWalkInOpen(false)}
         onSuccess={async (_result, slot) => {
           const slotDay = dataHoraLocalKey(slot.inicio)
+          setActiveArea('calendario')
           setSelectedDate(slotDay)
           setView('dia')
           setNotice(`Encaixe confirmado para ${nomeProfissional(slot)} às ${formatarHorario(slot.inicio)}.`)
