@@ -30,6 +30,8 @@ test('painéis mostram disponibilidade e conclusão registra memória com foto c
   assert.match(image, /image\/webp/)
   assert.match(image, /maxBytes = 800 \* 1024/)
   assert.match(cutApi, /barbeiro_checkout_concluir/)
+  assert.match(cutApi, /barbeiro_checkout_concluir_com_materiais/)
+  assert.match(cutApi, /barbeiro_atendimento_materiais_listar/)
   assert.match(migration, /file_size_limit=EXCLUDED\.file_size_limit/)
   assert.match(migration, /cliente_cortes_um_ativo_idx/)
   assert.match(availabilityMigration, /Fora da disponibilidade/)

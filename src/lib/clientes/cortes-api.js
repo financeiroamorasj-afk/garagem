@@ -44,6 +44,13 @@ export async function obterUrlFotoCorte(path, expiresIn = 900) {
   return data?.signedUrl ?? null
 }
 
+export async function listarMateriaisUsoAtendimento(appointmentId) {
+  if (!appointmentId) throw new TypeError('Atendimento inválido.')
+  const { data, error } = await supabase.rpc('barbeiro_atendimento_materiais_listar', { p_agendamento_id: appointmentId })
+  if (error) throw error
+  return data ?? []
+}
+
 export async function atualizarFotoMemoriaCorte({ corteId, clienteId, imagem }) {
   if (!corteId || !clienteId || !imagem?.blob || !imagem?.mime) throw new TypeError('Foto inválida.')
   let uploadedPath = null
@@ -109,6 +116,7 @@ export async function concluirCheckoutAtendimento({
   taxa = 0,
   dataRecebimento,
   chaveIdempotencia,
+  materiaisAjustes = [],
 }) {
   if (!appointmentId || String(estilo ?? '').trim().length < 2) throw new TypeError('Informe como o corte foi realizado.')
   if (!['dinheiro', 'pix', 'debito', 'credito', 'outro'].includes(formaPagamento)) throw new TypeError('Selecione a forma de pagamento.')
@@ -117,7 +125,7 @@ export async function concluirCheckoutAtendimento({
   try {
     if (foto) uploadedPath = await enviarFotoCorte({ clienteId: foto.clienteId, imagem: foto.imagem })
     const memoria = montarMemoria({ estilo, pentes, acabamento, barba, observacoes, preferencias, foto, uploadedPath })
-    return await rpc('barbeiro_checkout_concluir', {
+    return await rpc('barbeiro_checkout_concluir_com_materiais', {
       p_agendamento_id: appointmentId,
       p_memoria: memoria,
       p_produtos: produtos.map(({ produtoId, quantidade }) => ({ produto_id: produtoId, quantidade: Number(quantidade) })),
@@ -127,6 +135,7 @@ export async function concluirCheckoutAtendimento({
       p_taxa: Number(taxa),
       p_data_recebimento: dataRecebimento,
       p_chave_idempotencia: chaveIdempotencia,
+      p_materiais_ajustes: materiaisAjustes.map(({ materialId, quantidade }) => ({ material_id: materialId, quantidade: Number(quantidade) })),
     })
   } catch (error) {
     if (uploadedPath) await removerFotoCorte(uploadedPath).catch(() => {})
@@ -136,7 +145,7 @@ export async function concluirCheckoutAtendimento({
 
 export async function enviarAtendimentoRecepcao({
   appointmentId, estilo, pentes, acabamento, barba, observacoes, preferencias,
-  foto, produtos = [], valorServico, chaveIdempotencia,
+  foto, produtos = [], valorServico, chaveIdempotencia, materiaisAjustes = [],
 }) {
   if (!appointmentId || String(estilo ?? '').trim().length < 2) throw new TypeError('Informe como o corte foi realizado.')
   if (!chaveIdempotencia) throw new TypeError('Revise os dados do atendimento.')
@@ -144,12 +153,13 @@ export async function enviarAtendimentoRecepcao({
   try {
     if (foto) uploadedPath = await enviarFotoCorte({ clienteId: foto.clienteId, imagem: foto.imagem })
     const memoria = montarMemoria({ estilo, pentes, acabamento, barba, observacoes, preferencias, foto, uploadedPath })
-    const result = await rpc('barbeiro_atendimento_enviar_recepcao', {
+    const result = await rpc('barbeiro_atendimento_enviar_recepcao_com_materiais', {
       p_agendamento_id: appointmentId,
       p_memoria: memoria,
       p_produtos: produtos.map(({ produtoId, quantidade }) => ({ produto_id: produtoId, quantidade: Number(quantidade) })),
       p_valor_servico: Number(valorServico),
       p_chave_idempotencia: chaveIdempotencia,
+      p_materiais_ajustes: materiaisAjustes.map(({ materialId, quantidade }) => ({ material_id: materialId, quantidade: Number(quantidade) })),
     })
     if (uploadedPath && result?.idempotente) await removerFotoCorte(uploadedPath).catch(() => {})
     return result
@@ -191,6 +201,11 @@ const ERRORS = {
   FILA_RECEPCAO_VALOR_INVALIDO: 'Revise o valor do serviço.',
   FILA_RECEPCAO_ESTOQUE_INSUFICIENTE: 'Um dos produtos não possui estoque suficiente.',
   FILA_RECEPCAO_PRODUTO_NAO_ENCONTRADO: 'Um dos produtos não está mais disponível.',
+  MATERIAIS_USO_NAO_AUTORIZADO: 'Seu usuário não pode registrar materiais deste atendimento.',
+  MATERIAIS_USO_ATENDIMENTO_NAO_ENCONTRADO: 'Não foi possível localizar os materiais deste atendimento.',
+  MATERIAIS_USO_AJUSTES_INVALIDOS: 'Revise as quantidades de materiais utilizadas.',
+  MATERIAIS_USO_AJUSTES_DUPLICADOS: 'Há um material repetido no consumo informado.',
+  MATERIAIS_USO_MATERIAL_INVALIDO: 'Um material não pertence mais a este serviço. Reabra o atendimento.',
   CORTE_FOTO_NAO_AUTORIZADA: 'Somente o barbeiro responsável pode alterar esta foto.',
   CORTE_FOTO_NAO_ENCONTRADA: 'Esta memória de corte não está mais disponível.',
   CORTE_FOTO_ARQUIVO_NAO_ENCONTRADO: 'O arquivo enviado não foi encontrado. Tente selecionar a foto novamente.',
