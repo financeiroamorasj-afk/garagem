@@ -3,12 +3,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 test('central de clientes está roteada e não expõe CPF completo', async () => {
-  const [app, layout, page, api, migration] = await Promise.all([
+  const [app, layout, page, api, migration, recoveryMigration] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/layout/AdminLayout.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/AdminClients.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/clientes/api.js', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20260923220000_central_clientes.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/migrations/20261001003000_corrige_central_clientes_unaccent.sql', import.meta.url), 'utf8'),
   ])
   assert.match(app, /path="clientes" element={<AdminClients/)
   assert.match(layout, /Clientes.*\/admin\/clientes/s)
@@ -25,4 +26,6 @@ test('central de clientes está roteada e não expõe CPF completo', async () =>
   assert.match(migration, /extensions\.hmac/)
   assert.match(migration, /clientes_cpf_tenant_uidx/)
   assert.doesNotMatch(migration, /ADD COLUMN IF NOT EXISTS cpf\s/)
+  assert.match(recoveryMigration, /CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA extensions/)
+  assert.match(recoveryMigration, /extensions\.unaccent\(c\.nome\)/)
 })
