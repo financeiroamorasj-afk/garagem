@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Camera, ImagePlus, Scissors, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
+import CutPhotoViewer from './CutPhotoViewer'
 import {
   atualizarFotoMemoriaCorte, excluirFotoMemoriaCorte, mensagemErroCorte, obterUrlFotoCorte,
 } from '../lib/clientes/cortes-api'
@@ -61,7 +62,7 @@ export default function LastCutSummary({ cut, canManage = false, onPhotoChanged 
   return (
     <div className="mt-3 rounded-sm border border-info/30 bg-info/5 p-3">
       <div className="flex gap-3">
-        {photoUrl ? <img src={photoUrl} alt="Último corte do cliente" className="h-16 w-16 shrink-0 rounded-sm object-cover" /> : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-sm bg-surface-2 text-info"><Scissors size={18} /></div>}
+        {photoUrl ? <CutPhotoViewer src={photoUrl} alt="Último corte do cliente" thumbnailClassName="h-16 w-16" /> : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-sm bg-surface-2 text-info"><Scissors size={18} /></div>}
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 text-label text-info">ÚLTIMO CORTE {cut.foto_path && <Camera size={13} />}</p>
           <p className="mt-1 truncate text-body-sm font-semibold text-warm-white">{cut.estilo}</p>

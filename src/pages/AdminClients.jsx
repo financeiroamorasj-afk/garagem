@@ -8,6 +8,7 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
 import LastCutSummary from '../components/LastCutSummary'
+import CutPhotoViewer from '../components/CutPhotoViewer'
 import { listarBarbeiros } from '../lib/barbeiros/api'
 import { carregarFichaCliente, listarClientes, mensagemErroCliente, salvarCliente } from '../lib/clientes/api'
 import { obterUrlFotoCorte } from '../lib/clientes/cortes-api'
@@ -48,7 +49,7 @@ function CutHistoryCard({ cut }) {
   return (
     <article className={`rounded-md border p-4 ${cut.ativo ? 'border-copper bg-copper/5' : 'border-line bg-surface-1'}`}>
       <div className="flex gap-3">
-        {photoUrl ? <img src={photoUrl} alt={`Resultado do corte ${cut.estilo}`} className="h-24 w-24 shrink-0 rounded-sm object-cover" /> : <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm bg-surface-2 text-steel"><Scissors size={19} /></div>}
+        {photoUrl ? <CutPhotoViewer src={photoUrl} alt={`Resultado do corte ${cut.estilo}`} thumbnailClassName="h-24 w-24" /> : <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm bg-surface-2 text-steel"><Scissors size={19} /></div>}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2"><h4 className="text-h3 text-warm-white">{cut.estilo}</h4>{cut.ativo && <Badge variant="success">Atual</Badge>}</div>
           <p className="mt-1 text-body-sm text-steel">{dateOnly(cut.criado_em)} · {cut.profissional_nome}</p>

@@ -178,3 +178,20 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Os filtros mudam conforme a aba: cliente e situação permanecem no calendário; disponibilidade mantém apenas o filtro de barbeiro.
 - O status cancelado deixou de disputar a mesma linha do horário e ganhou uma faixa própria dentro do cartão compacto.
 - A reorganização preserva as visualizações de dia, semana e mês, além dos fluxos de novo corte, encaixe, horário extra e Modo TV.
+
+# 01/10/2026 — Fotos ampliadas e materiais iniciais
+
+- As fotos da memória de corte podem ser abertas em tamanho ampliado pelo administrador, pelo barbeiro e pelo próprio cliente.
+- O portal mantém o bucket privado: cada abertura valida a sessão do cliente e gera um endereço temporário de cinco minutos somente para uma foto pertencente a ele.
+- O catálogo ganhou uma seleção inicial de insumos e ferramentas comuns de barbearia, baseada em referências da Anvisa e do Senac.
+- Unidades existentes recebem apenas os itens ausentes; materiais já cadastrados ou desativados não são duplicados.
+- Novas barbearias passam a receber o catálogo inicial automaticamente e continuam podendo editar, desativar ou reativar cada item.
+- Serviços podem receber modelos editáveis de consumo em um clique: Corte, Barba, Corte + barba, Acabamento e Lavagem/finalização.
+- Cada modelo preenche materiais e quantidades sugeridas, mas o proprietário confirma ou ajusta o padrão operacional antes de salvar.
+
+# Fila comercial — módulo fiscal
+
+- Reservar o módulo fiscal como adicional contratável e como componente de pacotes anuais com desconto.
+- O catálogo do ADM já registra o entitlement `fiscal` em rascunho, sem acoplá-lo antecipadamente a um provedor.
+- Antes da implementação: definir município/abrangência, tipo de documento, provedor fiscal, certificados, dados obrigatórios, contingência, cancelamento e armazenamento dos documentos.
+- A oferta anual deve usar os recursos já previstos de preço anual, ofertas, desconto congelado no checkout e módulos incluídos no plano ou na assinatura.

@@ -6,6 +6,7 @@ const migrationUrl = new URL('../supabase/migrations/20260928143000_adm_integrac
 const dataUrl = new URL('../apps/adm/src/lib/data.ts', import.meta.url)
 const pageUrl = new URL('../apps/adm/src/app/(protected)/configuracoes/page.tsx', import.meta.url)
 const shellUrl = new URL('../apps/adm/src/components/admin-shell.tsx', import.meta.url)
+const fiscalMigrationUrl = new URL('../supabase/migrations/20261001143000_modulo_fiscal_fila.sql', import.meta.url)
 
 test('integrações são configuráveis por provedor sem persistir segredos', async () => {
   const sql = await readFile(migrationUrl, 'utf8')
@@ -42,4 +43,15 @@ test('ADM expõe configurações apenas ao super admin e lê módulos reais', as
   assert.match(page, /Gateway de assinaturas/)
   assert.match(page, /APIs e inteligências artificiais/)
   assert.match(shell, /href: "\/configuracoes"/)
+})
+
+test('módulo fiscal fica reservado para oferta anual sem escolher provedor antes da hora', async () => {
+  const sql = await readFile(fiscalMigrationUrl, 'utf8')
+
+  assert.match(sql, /'fiscal'/)
+  assert.match(sql, /'Módulo fiscal'/)
+  assert.match(sql, /'ciclo', 'anual'/)
+  assert.match(sql, /'permite_desconto', true/)
+  assert.match(sql, /'provedor', NULL/)
+  assert.match(sql, /'rascunho'/)
 })
