@@ -44,6 +44,36 @@ export async function obterUrlFotoCorte(path, expiresIn = 900) {
   return data?.signedUrl ?? null
 }
 
+export async function atualizarFotoMemoriaCorte({ corteId, clienteId, imagem }) {
+  if (!corteId || !clienteId || !imagem?.blob || !imagem?.mime) throw new TypeError('Foto inválida.')
+  let uploadedPath = null
+  try {
+    uploadedPath = await enviarFotoCorte({ clienteId, imagem })
+    const result = await rpc('cliente_corte_foto_atualizar', {
+      p_corte_id: corteId,
+      p_foto_path: uploadedPath,
+      p_foto_mime: imagem.mime,
+      p_foto_bytes: imagem.bytes,
+      p_foto_largura: imagem.width,
+      p_foto_altura: imagem.height,
+    })
+    if (result?.foto_anterior_path && result.foto_anterior_path !== uploadedPath) {
+      await removerFotoCorte(result.foto_anterior_path).catch(() => {})
+    }
+    return result?.corte ?? null
+  } catch (error) {
+    if (uploadedPath) await removerFotoCorte(uploadedPath).catch(() => {})
+    throw error
+  }
+}
+
+export async function excluirFotoMemoriaCorte(corteId) {
+  if (!corteId) throw new TypeError('Foto inválida.')
+  const result = await rpc('cliente_corte_foto_remover', { p_corte_id: corteId })
+  if (result?.foto_removida_path) await removerFotoCorte(result.foto_removida_path).catch(() => {})
+  return result?.corte ?? null
+}
+
 function montarMemoria({ estilo, pentes, acabamento, barba, observacoes, preferencias, foto, uploadedPath }) {
   const memoria = {
     estilo: String(estilo).trim(),
@@ -161,6 +191,9 @@ const ERRORS = {
   FILA_RECEPCAO_VALOR_INVALIDO: 'Revise o valor do serviço.',
   FILA_RECEPCAO_ESTOQUE_INSUFICIENTE: 'Um dos produtos não possui estoque suficiente.',
   FILA_RECEPCAO_PRODUTO_NAO_ENCONTRADO: 'Um dos produtos não está mais disponível.',
+  CORTE_FOTO_NAO_AUTORIZADA: 'Somente o barbeiro responsável pode alterar esta foto.',
+  CORTE_FOTO_NAO_ENCONTRADA: 'Esta memória de corte não está mais disponível.',
+  CORTE_FOTO_ARQUIVO_NAO_ENCONTRADO: 'O arquivo enviado não foi encontrado. Tente selecionar a foto novamente.',
 }
 
 export function mensagemErroCorte(error) {
@@ -169,5 +202,5 @@ export function mensagemErroCorte(error) {
   if (code) return ERRORS[code]
   if (error instanceof TypeError) return error.message
   if (/storage|bucket|mime|payload|file size/i.test(detail)) return 'Não foi possível enviar a foto compactada. Tente novamente.'
-  return 'Não foi possível concluir o checkout. Nenhuma baixa foi realizada.'
+  return 'Não foi possível salvar os dados do corte. Tente novamente.'
 }

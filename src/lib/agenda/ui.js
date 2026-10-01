@@ -6,6 +6,7 @@ const STATUS = {
   aguardando_pagamento: { label: 'Aguardando cobrança', variant: 'info' },
   concluido: { label: 'Concluído', variant: 'success' },
   cancelado: { label: 'Cancelado', variant: 'danger' },
+  nao_compareceu: { label: 'Não compareceu', variant: 'danger' },
 }
 
 const ERROR_MESSAGES = {
@@ -17,6 +18,8 @@ const ERROR_MESSAGES = {
   AGENDA_AGENDAMENTO_NAO_ENCONTRADO: 'Este horário não foi encontrado na sua agenda.',
   AGENDA_STATUS_ALTERADO: 'O atendimento foi atualizado em outro dispositivo. A agenda será recarregada.',
   AGENDA_TRANSICAO_INVALIDA: 'Esta ação não está disponível para o estado atual do atendimento.',
+  AGENDA_ATENDIMENTO_EM_ANDAMENTO: 'Conclua o atendimento atual antes de iniciar outro cliente.',
+  AGENDA_AUSENCIA_ANTES_DO_PRAZO: 'A ausência só pode ser registrada após 10 minutos de tolerância.',
   AGENDA_DATA_INVALIDA: 'Não foi possível abrir essa data.',
   AGENDA_PERIODO_INVALIDO: 'Não foi possível abrir esse período.',
   AGENDA_PERIODO_MUITO_LONGO: 'O período solicitado é maior que o limite da agenda.',
@@ -118,10 +121,19 @@ export function acaoPrincipalAgenda(status) {
   return null
 }
 
+export function atrasoAtendimentoMinutos(dataHora, agora = new Date()) {
+  const diferenca = Math.floor((agora.getTime() - new Date(dataHora).getTime()) / 60000)
+  return Math.max(0, diferenca)
+}
+
+export function podeMarcarNaoCompareceu(dataHora, agora = new Date()) {
+  return atrasoAtendimentoMinutos(dataHora, agora) >= 10
+}
+
 export function resumoAgenda(rows) {
   return {
-    total: rows.filter((row) => row.status !== 'cancelado').length,
-    restantes: rows.filter((row) => !['aguardando_pagamento', 'concluido', 'cancelado'].includes(row.status)).length,
+    total: rows.filter((row) => !['cancelado', 'nao_compareceu'].includes(row.status)).length,
+    restantes: rows.filter((row) => !['aguardando_pagamento', 'concluido', 'cancelado', 'nao_compareceu'].includes(row.status)).length,
     concluidos: rows.filter((row) => row.status === 'concluido').length,
   }
 }
@@ -129,5 +141,5 @@ export function resumoAgenda(rows) {
 export function mensagemErroAgenda(error) {
   const detail = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ')
   const code = Object.keys(ERROR_MESSAGES).find((key) => detail.includes(key))
-  return ERROR_MESSAGES[code] ?? 'Não foi possível carregar a agenda. Verifique sua conexão e tente novamente.'
+  return ERROR_MESSAGES[code] ?? 'Não foi possível concluir a operação na agenda. Verifique sua conexão e tente novamente.'
 }

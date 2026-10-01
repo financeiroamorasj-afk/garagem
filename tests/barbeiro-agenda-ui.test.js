@@ -3,11 +3,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import {
   acaoPrincipalAgenda,
+  atrasoAtendimentoMinutos,
   dataLocalKey,
   deslocarDataKey,
   deslocarVisualizacao,
   intervaloAgenda,
   mensagemErroAgenda,
+  podeMarcarNaoCompareceu,
   resumoAgenda,
   statusAgenda,
 } from '../src/lib/agenda/ui.js'
@@ -35,6 +37,14 @@ test('agenda oferece somente as ações válidas em cada estado', () => {
   assert.deepEqual(acaoPrincipalAgenda('em_atendimento'), { label: 'Concluir atendimento', nextStatus: 'concluido' })
   assert.equal(acaoPrincipalAgenda('concluido'), null)
   assert.equal(statusAgenda('cancelado').variant, 'danger')
+  assert.equal(statusAgenda('nao_compareceu').label, 'Não compareceu')
+})
+
+test('agenda informa atraso e respeita dez minutos de tolerância para ausência', () => {
+  const scheduled = '2026-09-29T18:30:00.000Z'
+  assert.equal(atrasoAtendimentoMinutos(scheduled, new Date('2026-09-29T18:40:00.000Z')), 10)
+  assert.equal(podeMarcarNaoCompareceu(scheduled, new Date('2026-09-29T18:39:59.000Z')), false)
+  assert.equal(podeMarcarNaoCompareceu(scheduled, new Date('2026-09-29T18:40:00.000Z')), true)
 })
 
 test('resumo desconsidera cancelados e conta o andamento do dia', () => {
@@ -43,6 +53,7 @@ test('resumo desconsidera cancelados e conta o andamento do dia', () => {
     { status: 'em_atendimento' },
     { status: 'concluido' },
     { status: 'cancelado' },
+    { status: 'nao_compareceu' },
   ])
   assert.deepEqual(result, { total: 3, restantes: 2, concluidos: 1 })
 })

@@ -281,7 +281,7 @@ export default function AdminAgendaTv() {
   useEffect(() => {
     if (!youtubeEmbed || youtubeMode !== 'smart') return
     const upcoming = appointments.find((appointment) => {
-      if (['cancelado', 'concluido', 'em_atendimento'].includes(appointment.status)) return false
+      if (['cancelado', 'nao_compareceu', 'concluido', 'em_atendimento'].includes(appointment.status)) return false
       const minutes = (new Date(appointment.data_hora).getTime() - now.getTime()) / 60_000
       const noticeKey = `${appointment.id}:${appointment.data_hora}`
       if (minutes < 0 || minutes > UPCOMING_NOTICE_MINUTES || announcedAppointments.current.has(noticeKey)) return false

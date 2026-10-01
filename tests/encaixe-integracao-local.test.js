@@ -47,12 +47,12 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação, dia corrente e i
     await client.query("INSERT INTO public.clientes(id,barbearia_id,nome,telefone) VALUES($1,$2,'Cliente Encaixe','11999999999')", [clientId, tenantId])
     await client.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,ativo) VALUES($1,$2,'Corte 30',45,30,true),($3,$4,'Serviço de fora',100,30,true)", [serviceId, tenantId, otherServiceId, otherTenantId])
     await client.query("INSERT INTO public.profissionais_jornadas(barbearia_id,profissional_id,dia_semana,ativo,hora_inicio,hora_fim) VALUES($1,$2,$4,true,'09:00','18:00'),($1,$3,$4,true,'09:00','18:00')", [tenantId, professionalA, professionalB, dayOfWeek])
-    await client.query("INSERT INTO public.profissionais_bloqueios(barbearia_id,profissional_id,inicio,fim,motivo) VALUES($1,$2,($3||' 09:00:00-03')::timestamptz,($3||' 10:00:00-03')::timestamptz,'Bloqueio teste')", [tenantId, professionalA, targetDate])
-    await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5||' 09:00:00-03')::timestamptz,'confirmado')", [tenantId, professionalB, clientId, serviceId, targetDate])
+    await client.query("INSERT INTO public.profissionais_bloqueios(barbearia_id,profissional_id,inicio,fim,motivo) VALUES($1,$2,($3::date+time '09:00') AT TIME ZONE $4,($3::date+time '10:00') AT TIME ZONE $4,'Bloqueio teste')", [tenantId, professionalA, targetDate, operationalZone])
+    await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5::date+time '09:00') AT TIME ZONE $6,'confirmado')", [tenantId, professionalB, clientId, serviceId, targetDate, operationalZone])
     await client.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId])
 
     await assert.rejects(
-      client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5||' 08:30:00-03')::timestamptz,'confirmado')", [tenantId, professionalB, clientId, serviceId, targetDate]),
+      client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5::date+time '08:30') AT TIME ZONE $6,'confirmado')", [tenantId, professionalB, clientId, serviceId, targetDate, operationalZone]),
       /AGENDA_HORARIO_OCUPADO/,
     )
 
@@ -93,8 +93,8 @@ test('motor de encaixe respeita jornada, bloqueios, ocupação, dia corrente e i
       /AGENDA_SERVICO_INVALIDO/,
     )
 
-    await client.query("UPDATE public.agendamentos SET status='concluido' WHERE barbearia_id=$1 AND profissional_id=$2 AND data_hora=($3||' 09:00:00-03')::timestamptz", [tenantId, professionalB, targetDate])
-    const released = await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5||' 08:30:00-03')::timestamptz,'confirmado') RETURNING ocupacao_fim-data_hora ocupacao", [tenantId, professionalB, clientId, serviceId, targetDate])
+    await client.query("UPDATE public.agendamentos SET status='concluido' WHERE barbearia_id=$1 AND profissional_id=$2 AND data_hora=($3::date+time '09:00') AT TIME ZONE $4", [tenantId, professionalB, targetDate, operationalZone])
+    const released = await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5::date+time '08:30') AT TIME ZONE $6,'confirmado') RETURNING ocupacao_fim-data_hora ocupacao", [tenantId, professionalB, clientId, serviceId, targetDate, operationalZone])
     assert.equal(released.rows[0].ocupacao.minutes, 35)
   } finally {
     await client.query('DELETE FROM public.agendamentos WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})

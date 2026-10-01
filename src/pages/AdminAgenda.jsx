@@ -50,6 +50,7 @@ const STATUS_OPTIONS = [
   ['aguardando_pagamento', 'Aguardando cobrança'],
   ['concluido', 'Concluídos'],
   ['cancelado', 'Cancelados'],
+  ['nao_compareceu', 'Não compareceram'],
   ['encaixe', 'Encaixes'],
 ]
 
@@ -89,7 +90,7 @@ function numeroDia(data) {
 
 function corStatus(status) {
   if (status === 'concluido') return 'bg-success'
-  if (status === 'cancelado') return 'bg-danger'
+  if (['cancelado', 'nao_compareceu'].includes(status)) return 'bg-danger'
   if (status === 'em_atendimento') return 'bg-copper'
   if (status === 'confirmado') return 'bg-info'
   return 'bg-warning'
@@ -129,7 +130,7 @@ function AgendaItem({ appointment }) {
 
 function CompactAppointment({ appointment }) {
   const status = statusAgenda(appointment.status)
-  const cancelled = appointment.status === 'cancelado'
+  const cancelled = ['cancelado', 'nao_compareceu'].includes(appointment.status)
   return (
     <div className={`rounded-sm border p-2 ${appointment.status === 'em_atendimento' ? 'border-copper bg-surface-0' : cancelled ? 'border-danger/40 bg-danger/5' : 'border-line bg-surface-0'}`}>
       <div className="flex items-center gap-2">
@@ -316,7 +317,7 @@ export default function AdminAgenda() {
   }, [range.days, visibleAppointments])
 
   const summary = useMemo(() => ({
-    total: visibleAppointments.filter((row) => row.status !== 'cancelado').length,
+    total: visibleAppointments.filter((row) => !['cancelado', 'nao_compareceu'].includes(row.status)).length,
     waiting: visibleAppointments.filter((row) => ['pendente', 'confirmado', 'encaixe'].includes(row.status)).length,
     active: visibleAppointments.filter((row) => row.status === 'em_atendimento').length,
     done: visibleAppointments.filter((row) => row.status === 'concluido').length,
