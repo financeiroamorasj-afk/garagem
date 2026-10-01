@@ -25,6 +25,8 @@ test('checkout é atômico, idempotente e estorno recompõe estoque e financeiro
     await db.query("INSERT INTO public.profissionais(id,barbearia_id,nome,ativo,user_id,comissao_percentual) VALUES($1,$2,'Barbeiro checkout',true,$3,40)", [professionalId, tenantId, barberUserId])
     await db.query("INSERT INTO public.clientes(id,barbearia_id,nome) VALUES($1,$2,'Cliente checkout')", [clientId, tenantId])
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,comissao_percentual) VALUES($1,$2,'Corte completo',80,45,50)", [serviceId, tenantId])
+    const materialId = (await db.query("SELECT id FROM public.materiais_servico WHERE barbearia_id=$1 AND nome='Lâmina descartável'", [tenantId])).rows[0].id
+    await db.query('INSERT INTO public.servicos_materiais(barbearia_id,servico_id,material_id,quantidade) VALUES($1,$2,$3,1)', [tenantId, serviceId, materialId])
     await db.query("INSERT INTO public.produtos(id,barbearia_id,nome,preco_venda,preco_custo,estoque_quantidade,comissao_percentual) VALUES($1,$2,'Pomada checkout',30,10,5,10)", [productId, tenantId])
     await db.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status,valor_final) VALUES($1,$2,$3,$4,$5,now(),'em_atendimento',80)", [appointmentId, tenantId, professionalId, clientId, serviceId])
     await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Caixa principal','corrente',true)", [tenantId])
@@ -36,9 +38,10 @@ test('checkout é atômico, idempotente e estorno recompõe estoque e financeiro
       JSON.stringify({ estilo: 'Degradê baixo', acabamento: 'Navalha', preferencias_cliente: 'Manter topo' }),
       JSON.stringify([{ produto_id: productId, quantidade: 1 }]),
       checkoutKey,
+      JSON.stringify([{ material_id: materialId, quantidade: 2 }]),
     ]
-    const first = await db.query("SELECT public.barbeiro_checkout_concluir($1,$2::jsonb,$3::jsonb,80,11,'credito',4.95,current_date,$4) result", args)
-    const repeated = await db.query("SELECT public.barbeiro_checkout_concluir($1,$2::jsonb,$3::jsonb,80,11,'credito',4.95,current_date,$4) result", args)
+    const first = await db.query("SELECT public.barbeiro_checkout_concluir_com_materiais($1,$2::jsonb,$3::jsonb,80,11,'credito',4.95,current_date,$4,$5::jsonb) result", args)
+    const repeated = await db.query("SELECT public.barbeiro_checkout_concluir_com_materiais($1,$2::jsonb,$3::jsonb,80,11,'credito',4.95,current_date,$4,$5::jsonb) result", args)
     const closure = first.rows[0].result.fechamento
     assert.equal(repeated.rows[0].result.idempotente, true)
     assert.equal(repeated.rows[0].result.fechamento.id, closure.id)
@@ -66,6 +69,11 @@ test('checkout é atômico, idempotente e estorno recompõe estoque e financeiro
     assert.ok(receivables.rows.every((row) => row.status === 'liquidado'))
     assert.equal(Number((await db.query("SELECT COALESCE(sum(CASE WHEN direcao='entrada' THEN valor ELSE -valor END),0) saldo FROM public.financeiro_movimentacoes WHERE fechamento_id=$1", [closure.id])).rows[0].saldo), 94.05)
     assert.equal((await db.query('SELECT count(*)::int total FROM public.estoque_movimentacoes WHERE fechamento_id=$1', [closure.id])).rows[0].total, 1)
+    const materialUse = await db.query('SELECT quantidade_prevista,quantidade_utilizada,ajustado FROM public.atendimento_materiais_uso WHERE agendamento_id=$1', [appointmentId])
+    assert.equal(materialUse.rows.length, 1)
+    assert.equal(Number(materialUse.rows[0].quantidade_prevista), 1)
+    assert.equal(Number(materialUse.rows[0].quantidade_utilizada), 2)
+    assert.equal(materialUse.rows[0].ajustado, true)
 
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminUserId])
     const titleList = await db.query("SELECT public.financeiro_listar_titulos('receber',current_date,current_date,NULL,'data','asc',1,100) result")

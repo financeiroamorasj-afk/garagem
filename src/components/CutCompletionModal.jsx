@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, CreditCard, ImagePlus, Minus, PackagePlus, Plus, Sparkles } from 'lucide-react'
+import { CheckCircle2, CreditCard, ImagePlus, Minus, PackageCheck, PackagePlus, Plus, RotateCcw, Sparkles } from 'lucide-react'
 import Button from './ui/Button'
 import CutPhotoViewer from './CutPhotoViewer'
 import Input from './ui/Input'
@@ -7,7 +7,7 @@ import Label from './ui/Label'
 import Modal from './ui/Modal'
 import Spinner from './ui/Spinner'
 import PixPaymentPanel from './PixPaymentPanel'
-import { concluirCheckoutAtendimento, enviarAtendimentoRecepcao, mensagemErroCorte, obterUrlFotoCorte } from '../lib/clientes/cortes-api'
+import { concluirCheckoutAtendimento, enviarAtendimentoRecepcao, listarMateriaisUsoAtendimento, mensagemErroCorte, obterUrlFotoCorte } from '../lib/clientes/cortes-api'
 import { compactarFotoCorte, formatarTamanho } from '../lib/clientes/imagem'
 import { listarProdutosBarbeiro } from '../lib/produtos/api'
 import { formatarBRL } from '../lib/financeiro/moeda'
@@ -65,6 +65,9 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
   const [products, setProducts] = useState([])
   const [productQuantities, setProductQuantities] = useState({})
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [materials, setMaterials] = useState([])
+  const [materialQuantities, setMaterialQuantities] = useState({})
+  const [loadingMaterials, setLoadingMaterials] = useState(false)
   const [serviceValue, setServiceValue] = useState('')
   const [discount, setDiscount] = useState('0')
   const [fee, setFee] = useState('0')
@@ -87,6 +90,8 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     setError('')
     setPixReady(false)
     setProductQuantities({})
+    setMaterials([])
+    setMaterialQuantities({})
     setServiceValue(String(Number(appointment.valor_final ?? 0).toFixed(2)))
     setDiscount('0')
     setFee('0')
@@ -103,6 +108,14 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
       .then((rows) => setProducts(rows ?? []))
       .catch(() => setProducts([]))
       .finally(() => setLoadingProducts(false))
+    setLoadingMaterials(true)
+    listarMateriaisUsoAtendimento(appointment.id)
+      .then((rows) => {
+        setMaterials(rows ?? [])
+        setMaterialQuantities(Object.fromEntries((rows ?? []).map((item) => [item.material_id, Number(item.quantidade_prevista)])))
+      })
+      .catch(() => setMaterials([]))
+      .finally(() => setLoadingMaterials(false))
   }, [appointment, lastCut, open])
 
   useEffect(() => {
@@ -124,12 +137,24 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
   const grossTotal = Number(serviceValue || 0) + productsTotal
   const finalTotal = Math.max(0, grossTotal - Number(discount || 0))
   const netTotal = Math.max(0, finalTotal - Number(fee || 0))
+  const adjustedMaterials = useMemo(() => materials.filter((material) => Number(materialQuantities[material.material_id] ?? 0) !== Number(material.quantidade_prevista)), [materialQuantities, materials])
 
   function changeProduct(product, delta) {
     setProductQuantities((current) => {
       const next = Math.max(0, Math.min(product.estoque_quantidade, Number(current[product.id] ?? 0) + delta))
       return { ...current, [product.id]: next }
     })
+  }
+
+  function changeMaterial(material, delta) {
+    setMaterialQuantities((current) => ({
+      ...current,
+      [material.material_id]: Math.max(0, Math.round((Number(current[material.material_id] ?? material.quantidade_prevista) + delta) * 1000) / 1000),
+    }))
+  }
+
+  function resetMaterials() {
+    setMaterialQuantities(Object.fromEntries(materials.map((item) => [item.material_id, Number(item.quantidade_prevista)])))
   }
 
   async function selectPhoto(event) {
@@ -167,6 +192,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
         produtos: selectedProducts.map((product) => ({ produtoId: product.id, quantidade: product.quantidade })),
         valorServico: numericService,
         chaveIdempotencia: idempotencyKey,
+        materiaisAjustes: adjustedMaterials.map((material) => ({ materialId: material.material_id, quantidade: Number(materialQuantities[material.material_id]) })),
       }
       let result
       if (receptionMode) {
@@ -197,7 +223,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
       footer={(
         <>
           <Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button>
-          <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || compressing || style.trim().length < 2 || grossTotal <= 0 || (!receptionMode && paymentMethod === 'pix' && !pixReady)}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : paymentMethod === 'pix' ? 'Confirmar PIX' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
+          <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || loadingMaterials || compressing || style.trim().length < 2 || grossTotal <= 0 || (!receptionMode && paymentMethod === 'pix' && !pixReady)}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : paymentMethod === 'pix' ? 'Confirmar PIX' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
         </>
       )}
     >
@@ -236,6 +262,22 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
           <span className="mb-2 block">Preferências permanentes do cliente</span>
           <textarea value={preferences} onChange={(event) => setPreferences(event.target.value)} maxLength={1000} rows={3} placeholder="Ex.: não subir muito a lateral; prefere acabamento natural" className="w-full resize-y rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper focus-visible:ring-2 focus-visible:ring-copper" />
         </label>
+
+        <section className="space-y-3 border-t border-line pt-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><p className="flex items-center gap-2 text-label text-copper"><PackageCheck size={16} /> MATERIAIS DO SERVIÇO</p><p className="mt-1 text-body-sm text-steel">Se o padrão estiver correto, não faça nada. Ajuste somente o que mudou neste atendimento.</p></div>
+            {adjustedMaterials.length > 0 && <Button type="button" size="sm" variant="ghost" disabled={saving} onClick={resetMaterials}><RotateCcw size={14} /> Usar padrão</Button>}
+          </div>
+          {loadingMaterials ? <p className="text-body-sm text-steel">Carregando o padrão do serviço...</p> : materials.length === 0 ? <div className="rounded-sm border border-line bg-surface-1 p-3 text-body-sm text-steel">Nenhum material foi vinculado a este serviço. O atendimento pode ser concluído normalmente.</div> : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {materials.map((material) => {
+                const current = Number(materialQuantities[material.material_id] ?? material.quantidade_prevista)
+                const changed = current !== Number(material.quantidade_prevista)
+                return <div key={material.material_id} className={`flex items-center justify-between gap-3 rounded-sm border p-3 ${changed ? 'border-copper bg-copper/5' : 'border-line bg-surface-1'}`}><div className="min-w-0"><p className="truncate font-semibold text-warm-white">{material.nome}</p><p className="mt-1 text-body-sm text-steel">Padrão: {Number(material.quantidade_prevista).toLocaleString('pt-BR')} {material.unidade}{changed ? ' · ajustado' : ''}</p></div><div className="flex shrink-0 items-center gap-2"><button type="button" aria-label={`Reduzir uso de ${material.nome}`} disabled={current <= 0 || saving} onClick={() => changeMaterial(material, -1)} className="grid h-10 w-10 place-items-center rounded-sm border border-line text-steel disabled:opacity-30"><Minus size={16} /></button><span className="min-w-12 text-center text-data text-warm-white">{current.toLocaleString('pt-BR')}</span><button type="button" aria-label={`Aumentar uso de ${material.nome}`} disabled={saving} onClick={() => changeMaterial(material, 1)} className="grid h-10 w-10 place-items-center rounded-sm border border-copper text-copper disabled:opacity-30"><Plus size={16} /></button></div></div>
+              })}
+            </div>
+          )}
+        </section>
 
         <section className="space-y-3 border-t border-line pt-5">
           <div>

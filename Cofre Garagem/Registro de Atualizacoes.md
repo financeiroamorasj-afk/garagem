@@ -188,6 +188,8 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Novas barbearias passam a receber o catálogo inicial automaticamente e continuam podendo editar, desativar ou reativar cada item.
 - Serviços podem receber modelos editáveis de consumo em um clique: Corte, Barba, Corte + barba, Acabamento e Lavagem/finalização.
 - Cada modelo preenche materiais e quantidades sugeridas, mas o proprietário confirma ou ajusta o padrão operacional antes de salvar.
+- Na conclusão, o barbeiro recebe esse padrão já confirmado e só usa `–` ou `+` quando o consumo real foi diferente; seguir sem tocar registra exatamente o padrão.
+- O ajuste fica no atendimento e não altera o catálogo nem os próximos serviços da equipe.
 
 # Fila comercial — módulo fiscal
 
