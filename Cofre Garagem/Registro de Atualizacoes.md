@@ -178,3 +178,11 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Os filtros mudam conforme a aba: cliente e situação permanecem no calendário; disponibilidade mantém apenas o filtro de barbeiro.
 - O status cancelado deixou de disputar a mesma linha do horário e ganhou uma faixa própria dentro do cartão compacto.
 - A reorganização preserva as visualizações de dia, semana e mês, além dos fluxos de novo corte, encaixe, horário extra e Modo TV.
+
+# 01/10/2026 — Fotos ampliadas e materiais iniciais
+
+- As fotos da memória de corte podem ser abertas em tamanho ampliado pelo administrador, pelo barbeiro e pelo próprio cliente.
+- O portal mantém o bucket privado: cada abertura valida a sessão do cliente e gera um endereço temporário de cinco minutos somente para uma foto pertencente a ele.
+- O catálogo ganhou uma seleção inicial de insumos e ferramentas comuns de barbearia, baseada em referências da Anvisa e do Senac.
+- Unidades existentes recebem apenas os itens ausentes; materiais já cadastrados ou desativados não são duplicados.
+- Novas barbearias passam a receber o catálogo inicial automaticamente e continuam podendo editar, desativar ou reativar cada item.

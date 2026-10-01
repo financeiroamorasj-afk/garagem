@@ -14,12 +14,16 @@ test('catálogo local persiste duração e materiais com isolamento e concorrên
   await client.connect()
   try {
     await client.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant catálogo',$2),($3,'Outro catálogo',$4)", [tenantId, `catalog-${tenantId}`, otherTenantId, `catalog-other-${otherTenantId}`])
+    const defaults = await client.query('SELECT nome,tipo,unidade FROM public.materiais_servico WHERE barbearia_id=$1 ORDER BY nome', [tenantId])
+    assert.ok(defaults.rows.length >= 20)
+    assert.ok(defaults.rows.some((row) => row.nome === 'Lâmina descartável' && row.tipo === 'insumo'))
+    assert.ok(defaults.rows.some((row) => row.nome === 'Máquina de corte' && row.tipo === 'ferramenta'))
     await client.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [adminId, `catalog-${adminId}@local.test`])
     await client.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin catálogo',$3)", [adminId, tenantId, `catalog-${adminId}@local.test`])
     await client.query("INSERT INTO public.servicos(barbearia_id,nome,preco,duracao_minutos) VALUES($1,'Serviço externo',99,30)", [otherTenantId])
     await client.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId])
 
-    const materialResult = await client.query("SELECT public.material_catalogo_criar('Lâmina descartável','insumo','unidade') result")
+    const materialResult = await client.query("SELECT public.material_catalogo_criar('Creme especial de teste','insumo','ml') result")
     const materialId = materialResult.rows[0].result.id
     const links = JSON.stringify([{ material_id: materialId, quantidade: 1, observacao: 'Uma por cliente' }])
     const serviceResult = await client.query("SELECT public.servico_catalogo_criar('Corte completo',55,45,'Corte com acabamento',40,$1::jsonb) result", [links])

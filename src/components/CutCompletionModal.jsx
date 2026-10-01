@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, CreditCard, ImagePlus, Minus, PackagePlus, Plus, Sparkles } from 'lucide-react'
 import Button from './ui/Button'
+import CutPhotoViewer from './CutPhotoViewer'
 import Input from './ui/Input'
 import Label from './ui/Label'
 import Modal from './ui/Modal'
@@ -45,7 +46,7 @@ function PreviousPhoto({ path }) {
     return () => { active = false }
   }, [path])
   if (!url) return null
-  return <img src={url} alt="Foto do último corte" className="h-24 w-24 shrink-0 rounded-sm border border-line object-cover" />
+  return <CutPhotoViewer src={url} alt="Foto do último corte" thumbnailClassName="h-24 w-24" />
 }
 
 export default function CutCompletionModal({ appointment, open, onClose, onSuccess }) {

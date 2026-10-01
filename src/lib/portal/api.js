@@ -43,6 +43,15 @@ export function carregarDadosPortal(token) {
   return rpc('portal_dados', { p_token: token })
 }
 
+export async function obterFotoCortePortal(token, corteId) {
+  const { data, error } = await portalSupabase.functions.invoke('portal-cut-photo', {
+    body: { token, corte_id: corteId },
+  })
+  if (error) throw error
+  if (!data?.signed_url) throw new Error('PORTAL_FOTO_NAO_ENCONTRADA')
+  return data.signed_url
+}
+
 export function listarHorariosPortal({ token, servicoId, dataInicial, profissionalId = null, dias = 14 }) {
   return rpc('portal_horarios_livres', {
     p_token: token,
