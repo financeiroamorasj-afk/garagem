@@ -10,7 +10,9 @@ test('conclusão registra memória ativa, arquiva a anterior e atualiza preferê
   const db = new Client({ connectionString })
   const tenantId = crypto.randomUUID()
   const barberUserId = crypto.randomUUID()
+  const otherBarberUserId = crypto.randomUUID()
   const professionalId = crypto.randomUUID()
+  const otherProfessionalId = crypto.randomUUID()
   const clientId = crypto.randomUUID()
   const serviceId = crypto.randomUUID()
   const firstAppointment = crypto.randomUUID()
@@ -18,9 +20,9 @@ test('conclusão registra memória ativa, arquiva a anterior e atualiza preferê
   await db.connect()
   try {
     await db.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Memória cortes',$2)", [tenantId, `cut-memory-${tenantId}`])
-    await db.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [barberUserId, `cut-memory-${barberUserId}@local.test`])
-    await db.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'barbeiro','Barbeiro memória',$3)", [barberUserId, tenantId, `cut-memory-${barberUserId}@local.test`])
-    await db.query("INSERT INTO public.profissionais(id,barbearia_id,nome,ativo,user_id) VALUES($1,$2,'Barbeiro memória',true,$3)", [professionalId, tenantId, barberUserId])
+    await db.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now()),($3,'authenticated','authenticated',$4,now(),now())", [barberUserId, `cut-memory-${barberUserId}@local.test`, otherBarberUserId, `cut-memory-${otherBarberUserId}@local.test`])
+    await db.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'barbeiro','Barbeiro memória',$3),($4,$2,'barbeiro','Outro barbeiro',$5)", [barberUserId, tenantId, `cut-memory-${barberUserId}@local.test`, otherBarberUserId, `cut-memory-${otherBarberUserId}@local.test`])
+    await db.query("INSERT INTO public.profissionais(id,barbearia_id,nome,ativo,user_id) VALUES($1,$2,'Barbeiro memória',true,$3),($4,$2,'Outro barbeiro',true,$5)", [professionalId, tenantId, barberUserId, otherProfessionalId, otherBarberUserId])
     await db.query("INSERT INTO public.clientes(id,barbearia_id,nome) VALUES($1,$2,'Cliente memória')", [clientId, tenantId])
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos) VALUES($1,$2,'Corte memória',50,30)", [serviceId, tenantId])
     await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Caixa principal','corrente',true)", [tenantId])
@@ -50,7 +52,21 @@ test('conclusão registra memória ativa, arquiva a anterior e atualiza preferê
 
     assert.equal((await db.query("SELECT public.cliente_corte_ultimo($1) corte", [clientId])).rows[0].corte.estilo, 'Social')
     assert.equal(Number((await db.query("SELECT file_size_limit FROM storage.buckets WHERE id='cortes-clientes'")).rows[0].file_size_limit), 1048576)
+
+    const activeCut = (await db.query('SELECT id FROM public.cliente_cortes WHERE cliente_id=$1 AND ativo', [clientId])).rows[0]
+    const photoPath = `${tenantId}/${clientId}/${crypto.randomUUID()}.webp`
+    await db.query("INSERT INTO storage.objects(bucket_id,name,owner_id,metadata) VALUES('cortes-clientes',$1,$2,$3::jsonb)", [photoPath, barberUserId, JSON.stringify({ mimetype: 'image/webp', size: 1000 })])
+    const updatedPhoto = await db.query("SELECT public.cliente_corte_foto_atualizar($1,$2,'image/webp',1000,800,600) result", [activeCut.id, photoPath])
+    assert.equal(updatedPhoto.rows[0].result.corte.foto_path, photoPath)
+    await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [otherBarberUserId])
+    await assert.rejects(db.query('SELECT public.cliente_corte_foto_remover($1)', [activeCut.id]), /CORTE_FOTO_NAO_AUTORIZADA/)
+    await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [barberUserId])
+    const removedPhoto = await db.query('SELECT public.cliente_corte_foto_remover($1) result', [activeCut.id])
+    assert.equal(removedPhoto.rows[0].result.foto_removida_path, photoPath)
+    assert.equal(removedPhoto.rows[0].result.corte.foto_path, null)
+    assert.ok((await db.query('SELECT foto_excluida_em FROM public.cliente_cortes WHERE id=$1', [activeCut.id])).rows[0].foto_excluida_em)
   } finally {
+    await db.query("DELETE FROM storage.objects WHERE bucket_id='cortes-clientes' AND name LIKE $1", [`${tenantId}/%`]).catch(() => {})
     await db.query('DELETE FROM public.financeiro_movimentacoes WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.financeiro_contas_receber WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.atendimento_fechamentos WHERE barbearia_id=$1', [tenantId]).catch(() => {})
@@ -60,7 +76,7 @@ test('conclusão registra memória ativa, arquiva a anterior e atualiza preferê
     await db.query('DELETE FROM public.clientes WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.servicos WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.profissionais WHERE barbearia_id=$1', [tenantId]).catch(() => {})
-    await db.query('DELETE FROM auth.users WHERE id=$1', [barberUserId]).catch(() => {})
+    await db.query('DELETE FROM auth.users WHERE id=ANY($1)', [[barberUserId, otherBarberUserId]]).catch(() => {})
     await db.query('DELETE FROM public.barbearias WHERE id=$1', [tenantId]).catch(() => {})
     await db.end()
   }

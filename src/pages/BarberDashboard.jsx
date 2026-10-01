@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
   DollarSign, LogOut, PackageSearch, Phone, Play, RefreshCw, Scissors,
-  ShoppingBag, UserPlus, UserRound, X, XCircle,
+  ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
@@ -20,9 +20,9 @@ import {
   listarAgendaBarbeiroPeriodo, mudarStatusAgendamento,
 } from '../lib/agenda/api'
 import {
-  acaoPrincipalAgenda, dataHoraLocalKey, dataLocalKey, deslocarDataKey,
+  acaoPrincipalAgenda, atrasoAtendimentoMinutos, dataHoraLocalKey, dataLocalKey, deslocarDataKey,
   formatarDataAgenda, intervaloAgenda, mensagemErroAgenda, resumoAgenda,
-  rotuloPeriodoAgenda, statusAgenda,
+  podeMarcarNaoCompareceu, rotuloPeriodoAgenda, statusAgenda,
 } from '../lib/agenda/ui'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import { listarProdutosBarbeiro, mensagemErroProduto, venderProduto } from '../lib/produtos/api'
@@ -51,10 +51,13 @@ function rotuloDiaCurto(dateKey) {
   }
 }
 
-function AppointmentCard({ appointment, isToday, busy, onAction, onCancel, onComplete }) {
+function AppointmentCard({ appointment, isToday, busy, now, onAction, onCancel, onComplete, onPhotoChanged }) {
   const status = statusAgenda(appointment.status)
   const action = acaoPrincipalAgenda(appointment.status)
   const isActive = appointment.status === 'em_atendimento'
+  const waiting = ['pendente', 'confirmado', 'encaixe'].includes(appointment.status)
+  const lateMinutes = isToday && waiting ? atrasoAtendimentoMinutos(appointment.data_hora, now) : 0
+  const canMarkAbsent = isToday && waiting && podeMarcarNaoCompareceu(appointment.data_hora, now)
   return <article className={`overflow-hidden rounded-md border bg-surface-1 ${isActive ? 'border-copper' : 'border-line'}`}>
     <div className="flex items-start gap-4 p-4">
       <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-sm border ${isActive ? 'border-copper bg-copper/10 text-copper' : 'border-line bg-surface-2 text-warm-white'}`}><Clock3 size={15} aria-hidden="true" /><time className="mt-1 text-data" dateTime={appointment.data_hora}>{formatarHorario(appointment.data_hora)}</time></div>
@@ -63,12 +66,14 @@ function AppointmentCard({ appointment, isToday, busy, onAction, onCancel, onCom
         <p className="mt-2 flex items-center gap-2 text-body-sm text-steel"><Scissors size={15} className="shrink-0 text-copper" aria-hidden="true" /><span className="truncate">{appointment.servico_nome}</span><span aria-hidden="true">·</span><span className="shrink-0">{appointment.duracao_minutos} min</span></p>
         {appointment.valor_final != null && <p className="mt-2 text-data text-gold-aged">{formatarBRL(appointment.valor_final)}</p>}
         {appointment.cliente_telefone && <a href={`tel:${appointment.cliente_telefone}`} className="mt-3 inline-flex min-h-11 items-center gap-2 text-body-sm text-info underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"><Phone size={15} aria-hidden="true" /> Ligar para o cliente</a>}
-        <LastCutSummary cut={appointment.ultimo_corte} />
+        {lateMinutes > 0 && <p role="status" className="mt-3 rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 text-body-sm text-warning">Horário atrasado há {lateMinutes} min. Você ainda pode iniciar o atendimento.</p>}
+        <LastCutSummary cut={appointment.ultimo_corte} canManage={appointment.ultimo_corte?.profissional_id === appointment.profissional_id} onPhotoChanged={onPhotoChanged} />
       </div>
     </div>
     {action && <div className="grid grid-cols-[1fr_auto] gap-2 border-t border-line bg-surface-0 p-3">
-      <Button size="lg" className="w-full" loading={busy} disabled={!isToday} onClick={() => action.nextStatus === 'concluido' ? onComplete(appointment) : onAction(appointment, action.nextStatus)}>{action.nextStatus === 'concluido' ? <CheckCircle2 size={18} /> : <Play size={18} />}{action.label}</Button>
-      {['pendente', 'confirmado', 'encaixe'].includes(appointment.status) && <Button size="lg" variant="danger" aria-label={`Cancelar horário de ${appointment.cliente_nome}`} disabled={busy || !isToday} onClick={() => onCancel(appointment)}><XCircle size={18} /></Button>}
+      <Button size="lg" className="w-full" loading={busy} disabled={!isToday} onClick={() => action.nextStatus === 'concluido' ? onComplete(appointment) : onAction(appointment, action.nextStatus)}>{action.nextStatus === 'concluido' ? <CheckCircle2 size={18} /> : <Play size={18} />}{lateMinutes > 0 && action.nextStatus === 'em_atendimento' ? 'Iniciar agora' : action.label}</Button>
+      {waiting && <Button size="lg" variant="danger" aria-label={`Cancelar horário de ${appointment.cliente_nome}`} disabled={busy || !isToday} onClick={() => onCancel(appointment)}><XCircle size={18} /></Button>}
+      {canMarkAbsent && <Button size="lg" variant="secondary" className="col-span-2 w-full" disabled={busy} onClick={() => onAction(appointment, 'nao_compareceu')}><UserX size={18} /> Cliente não compareceu</Button>}
     </div>}
     {!isToday && action && <p className="border-t border-line px-4 py-2 text-body-sm text-steel">As ações ficam disponíveis no dia do atendimento.</p>}
   </article>
@@ -116,6 +121,7 @@ export default function BarberDashboard() {
   const [saleProduct, setSaleProduct] = useState(null)
   const [saleForm, setSaleForm] = useState({ quantidade: 1, agendamentoId: '', formaPagamento: 'pix', chaveIdempotencia: '' })
   const [saleError, setSaleError] = useState('')
+  const [now, setNow] = useState(() => new Date())
 
   const weekRange = useMemo(() => intervaloAgenda(selectedDate, 'semana'), [selectedDate])
 
@@ -146,6 +152,10 @@ export default function BarberDashboard() {
 
   useEffect(() => { loadDay() }, [loadDay])
   useEffect(() => { loadSection() }, [loadSection])
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60000)
+    return () => window.clearInterval(timer)
+  }, [])
   useEffect(() => {
     if (!context?.id) return undefined
 
@@ -190,7 +200,11 @@ export default function BarberDashboard() {
     try {
       await mudarStatusAgendamento({ id: appointment.id, statusEsperado: appointment.status, novoStatus: newStatus })
       setAppointments((current) => current.map((row) => row.id === appointment.id ? { ...row, status: newStatus } : row))
-      setNotice(newStatus === 'cancelado' ? 'Horário cancelado.' : 'Atendimento iniciado.'); setCancelTarget(null)
+      setNotice(newStatus === 'cancelado'
+        ? 'Horário cancelado.'
+        : newStatus === 'nao_compareceu'
+          ? 'Ausência registrada. O horário foi liberado para encaixe; confirme com o próximo cliente antes de adiantá-lo.'
+          : 'Atendimento iniciado.'); setCancelTarget(null)
     } catch (statusError) { setError(mensagemErroAgenda(statusError)); await loadDay({ quiet: true }) } finally { setBusyId(null) }
   }
 
@@ -235,8 +249,8 @@ export default function BarberDashboard() {
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-3 text-body-sm text-success">{notice}</div>}
       {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => section === 'today' ? loadDay() : loadSection()}><RefreshCw size={15} /> Recarregar</Button></div>}
 
-      {section === 'today' && <TodaySection selectedDate={selectedDate} setSelectedDate={setSelectedDate} appointments={appointments} availability={availability} loading={loading} error={error} summary={daySummary} isToday={isToday} busyId={busyId} onWalkIn={() => setWalkInOpen(true)} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} />}
-      {section === 'week' && <WeekSection selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekRange={weekRange} weekAppointments={weekAppointments} selectedAppointments={selectedWeekAppointments} sectionLoading={sectionLoading} today={today} busyId={busyId} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} />}
+      {section === 'today' && <TodaySection selectedDate={selectedDate} setSelectedDate={setSelectedDate} appointments={appointments} availability={availability} loading={loading} error={error} summary={daySummary} isToday={isToday} busyId={busyId} now={now} onWalkIn={() => setWalkInOpen(true)} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={() => loadDay({ quiet: true })} />}
+      {section === 'week' && <WeekSection selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekRange={weekRange} weekAppointments={weekAppointments} selectedAppointments={selectedWeekAppointments} sectionLoading={sectionLoading} today={today} busyId={busyId} now={now} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={async () => { await loadDay({ quiet: true }); await loadSection() }} />}
       {section === 'summary' && <SummarySection selectedDate={selectedDate} summary={summary} loading={sectionLoading} />}
       {section === 'sales' && <SalesSection products={products} loading={sectionLoading} onSale={openSale} />}
     </main>
@@ -248,17 +262,17 @@ export default function BarberDashboard() {
   </div>
 }
 
-function TodaySection({ selectedDate, setSelectedDate, appointments, availability, loading, error, summary, isToday, busyId, onWalkIn, onAction, onCancel, onComplete }) {
+function TodaySection({ selectedDate, setSelectedDate, appointments, availability, loading, error, summary, isToday, busyId, now, onWalkIn, onAction, onCancel, onComplete, onPhotoChanged }) {
   return <><PeriodNavigator selectedDate={selectedDate} onChange={setSelectedDate} /><Button size="lg" className="w-full" onClick={onWalkIn}><UserPlus size={18} /> Encaixe de hoje</Button><AvailabilityOverview rows={availability} loading={loading} compact title="Minha disponibilidade" />
     <section className="grid grid-cols-3 gap-2" aria-label="Resumo do dia">{[['Horários', summary.total], ['Restantes', summary.restantes], ['Concluídos', summary.concluidos]].map(([label, value]) => <div key={label} className="min-w-0 rounded-md border border-line bg-surface-1 p-3 text-center"><span className="block text-data-lg text-warm-white">{value}</span><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-steel">{label}</span></div>)}</section>
-    <section aria-label="Horários do dia" className="space-y-3">{loading ? <Loading label="Carregando sua agenda" /> : !error && appointments.length === 0 ? <EmptyState icon={isToday ? UserRound : CalendarDays} title={isToday ? 'Agenda livre hoje' : 'Nenhum horário neste dia'} description={isToday ? 'Quando um cliente for agendado para você, ele aparecerá aqui.' : 'Escolha outro dia para consultar seus atendimentos.'} /> : appointments.map((appointment) => <AppointmentCard key={appointment.id} appointment={appointment} isToday={isToday} busy={busyId === appointment.id} onAction={onAction} onCancel={onCancel} onComplete={onComplete} />)}</section>
+    <section aria-label="Horários do dia" className="space-y-3">{loading ? <Loading label="Carregando sua agenda" /> : !error && appointments.length === 0 ? <EmptyState icon={isToday ? UserRound : CalendarDays} title={isToday ? 'Agenda livre hoje' : 'Nenhum horário neste dia'} description={isToday ? 'Quando um cliente for agendado para você, ele aparecerá aqui.' : 'Escolha outro dia para consultar seus atendimentos.'} /> : appointments.map((appointment) => <AppointmentCard key={appointment.id} appointment={appointment} isToday={isToday} busy={busyId === appointment.id} now={now} onAction={onAction} onCancel={onCancel} onComplete={onComplete} onPhotoChanged={onPhotoChanged} />)}</section>
   </>
 }
 
-function WeekSection({ selectedDate, setSelectedDate, weekRange, weekAppointments, selectedAppointments, sectionLoading, today, busyId, onAction, onCancel, onComplete }) {
+function WeekSection({ selectedDate, setSelectedDate, weekRange, weekAppointments, selectedAppointments, sectionLoading, today, busyId, now, onAction, onCancel, onComplete, onPhotoChanged }) {
   return <><div className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface-1 p-2"><Button variant="ghost" size="sm" aria-label="Semana anterior" onClick={() => setSelectedDate(deslocarDataKey(selectedDate, -7))}><ChevronLeft size={20} /></Button><div className="min-w-0 text-center"><span className="block text-h3 capitalize text-warm-white">{rotuloPeriodoAgenda(selectedDate, 'semana')}</span><span className="text-label text-steel">Sua agenda semanal</span></div><Button variant="ghost" size="sm" aria-label="Próxima semana" onClick={() => setSelectedDate(deslocarDataKey(selectedDate, 7))}><ChevronRight size={20} /></Button></div>
-    {sectionLoading ? <Loading label="Carregando a semana" /> : <><section className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7" aria-label="Dias da semana">{weekRange.days.map((dateKey) => { const label = rotuloDiaCurto(dateKey); const rows = weekAppointments.filter((item) => dataHoraLocalKey(item.data_hora) === dateKey && item.status !== 'cancelado'); const active = dateKey === selectedDate; return <button key={dateKey} type="button" onClick={() => setSelectedDate(dateKey)} className={`min-h-24 rounded-md border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper ${active ? 'border-copper bg-copper/10' : 'border-line bg-surface-1 hover:border-line-strong'}`}><span className={`block text-label capitalize ${active ? 'text-copper' : 'text-steel'}`}>{dateKey === today ? 'Hoje' : label.weekday}</span><span className="mt-1 block text-data-lg text-warm-white">{label.day}</span><span className="mt-2 block text-body-sm text-steel">{rows.length} {rows.length === 1 ? 'horário' : 'horários'}</span></button> })}</section>
-      <section className="space-y-3"><div><span className="text-label text-copper">DETALHE DO DIA</span><h2 className="mt-1 text-h2 capitalize text-warm-white">{formatarDataAgenda(selectedDate)}</h2></div>{selectedAppointments.length === 0 ? <EmptyState icon={CalendarDays} title="Nenhum horário neste dia" description="Escolha outro dia da semana para consultar." /> : selectedAppointments.map((appointment) => <AppointmentCard key={appointment.id} appointment={appointment} isToday={selectedDate === today} busy={busyId === appointment.id} onAction={onAction} onCancel={onCancel} onComplete={onComplete} />)}</section></>}
+    {sectionLoading ? <Loading label="Carregando a semana" /> : <><section className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7" aria-label="Dias da semana">{weekRange.days.map((dateKey) => { const label = rotuloDiaCurto(dateKey); const rows = weekAppointments.filter((item) => dataHoraLocalKey(item.data_hora) === dateKey && !['cancelado', 'nao_compareceu'].includes(item.status)); const active = dateKey === selectedDate; return <button key={dateKey} type="button" onClick={() => setSelectedDate(dateKey)} className={`min-h-24 rounded-md border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper ${active ? 'border-copper bg-copper/10' : 'border-line bg-surface-1 hover:border-line-strong'}`}><span className={`block text-label capitalize ${active ? 'text-copper' : 'text-steel'}`}>{dateKey === today ? 'Hoje' : label.weekday}</span><span className="mt-1 block text-data-lg text-warm-white">{label.day}</span><span className="mt-2 block text-body-sm text-steel">{rows.length} {rows.length === 1 ? 'horário' : 'horários'}</span></button> })}</section>
+      <section className="space-y-3"><div><span className="text-label text-copper">DETALHE DO DIA</span><h2 className="mt-1 text-h2 capitalize text-warm-white">{formatarDataAgenda(selectedDate)}</h2></div>{selectedAppointments.length === 0 ? <EmptyState icon={CalendarDays} title="Nenhum horário neste dia" description="Escolha outro dia da semana para consultar." /> : selectedAppointments.map((appointment) => <AppointmentCard key={appointment.id} appointment={appointment} isToday={selectedDate === today} busy={busyId === appointment.id} now={now} onAction={onAction} onCancel={onCancel} onComplete={onComplete} onPhotoChanged={onPhotoChanged} />)}</section></>}
   </>
 }
 
