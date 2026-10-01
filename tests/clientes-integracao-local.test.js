@@ -12,6 +12,8 @@ test('central de clientes protege CPF, evita duplicidade e isola barbearias', as
   const otherTenantId = crypto.randomUUID()
   const adminId = crypto.randomUUID()
   const professionalId = crypto.randomUUID()
+  let serviceId
+  let appointmentId
   await db.connect()
   try {
     await db.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Clientes teste',$2),($3,'Outro clientes',$4)", [tenantId, `clients-${tenantId}`, otherTenantId, `clients-other-${otherTenantId}`])
@@ -39,6 +41,15 @@ test('central de clientes protege CPF, evita duplicidade e isola barbearias', as
     assert.equal(detail.rows[0].detail.cliente.nome, 'João Cliente')
     assert.deepEqual(detail.rows[0].detail.cortes, [])
 
+    serviceId = (await db.query("INSERT INTO public.servicos(barbearia_id,nome,preco,duracao_minutos) VALUES($1,'Corte cliente',40,30) RETURNING id", [tenantId])).rows[0].id
+    appointmentId = (await db.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,now() - interval '1 day','concluido') RETURNING id", [tenantId, professionalId, clientId, serviceId])).rows[0].id
+    await db.query(
+      "INSERT INTO public.cliente_cortes(barbearia_id,cliente_id,agendamento_id,profissional_id,estilo,ativo,criado_por) VALUES($1,$2,$3,$4,'Social',true,$5)",
+      [tenantId, clientId, appointmentId, professionalId, adminId],
+    )
+    const withMemory = await db.query('SELECT * FROM public.clientes_listar(NULL,100)')
+    assert.equal(withMemory.rows[0].ultimo_corte.estilo, 'Social')
+
     await assert.rejects(
       db.query("SELECT public.cliente_salvar(NULL,'Duplicado',NULL,'52998224725',false,NULL,NULL,NULL)"),
       /CLIENTE_CPF_DUPLICADO/,
@@ -57,7 +68,10 @@ test('central de clientes protege CPF, evita duplicidade e isola barbearias', as
     const all = await db.query('SELECT * FROM public.clientes_listar(NULL,100)')
     assert.equal(all.rows.length, 1)
   } finally {
+    await db.query('DELETE FROM public.cliente_cortes WHERE barbearia_id=$1', [tenantId]).catch(() => {})
+    if (appointmentId) await db.query('DELETE FROM public.agendamentos WHERE id=$1', [appointmentId]).catch(() => {})
     await db.query('DELETE FROM public.clientes WHERE barbearia_id=ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
+    if (serviceId) await db.query('DELETE FROM public.servicos WHERE id=$1', [serviceId]).catch(() => {})
     await db.query('DELETE FROM public.profissionais WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM auth.users WHERE id=$1', [adminId]).catch(() => {})
     await db.query('DELETE FROM public.barbearias WHERE id=ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
