@@ -27,7 +27,7 @@ Status: fundação aplicada em produção; interface inicial publicada com domí
 
 ## Decisões preservadas
 
-- preços não foram definidos nem copiados do Rebip;
+- proposta de preços do Garagem registrada em `Cofre Garagem/Plano Comercial e Valores.md`; os valores ainda não foram aplicados ao catálogo nem copiados do Rebip;
 - Asaas não é pré-requisito para o primeiro membro fundador;
 - nenhuma senha será migrada ou criada pelo ADM;
 - CPF/CNPJ integral e cartão não serão persistidos;
@@ -71,4 +71,4 @@ Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativa�
 
 ## Próximo passo com Rafa
 
-Discutir preços, desconto e duração de membros fundadores, módulos por plano e validar o primeiro ciclo no sandbox do Asaas.
+Validar a proposta de preços, desconto e duração de membros fundadores, módulos por plano e primeiro ciclo no sandbox do Asaas. A proposta atual está no documento `Cofre Garagem/Plano Comercial e Valores.md`.
