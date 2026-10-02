@@ -72,3 +72,12 @@ Adicionar as operaÃ§Ãµes auditadas do ADM: cadastro e ediÃ§Ã£o de planos, ativaÃ
 ## PrÃ³ximo passo com Rafa
 
 Validar a proposta de preÃ§os, desconto e duraÃ§Ã£o de membros fundadores, mÃ³dulos por plano e primeiro ciclo no sandbox do Asaas. A proposta atual estÃ¡ no documento `Cofre Garagem/Plano Comercial e Valores.md`.
+
+## Motor de Pagamentos do ADM — 01/10/2026
+
+- criada a API interna (pi/checkouts) no ADM para processar vendas vindas da Landing Page, validando as regras de negócio de descontos (-20% membro fundador) e módulos escolhidos;
+- criada a lógica de roteamento do Asaas: o ADM identifica automaticamente se a API Key é de Produção ou Sandbox pelo prefixo _prod_ e troca a base URL do Asaas sozinho;
+- criado o Roteador de Webhooks (pi/webhooks/asaas) que escuta eventos do Asaas de forma segura, ignorando eventos de contas misturadas (ex: Rebip) ao exigir que a externalReference comece com garagem_;
+- descobertas e tratadas barreiras de segurança do Asaas de Produção (exigência de telefone e CPF válido e não vazio na criação da Assinatura);
+- seed dos planos ase e gestao criado na migration 20261001183000_adm_planos_oficiais.sql e aplicada em produção;
+- **Decisão Comercial Crucial**: foi decidido que o Garagem terá uma **conta Asaas própria (nova)** para evitar que os e-mails e faturas cheguem para as barbearias com a identidade visual e nome do vendedor vinculados ao Rebip. O código atual do ADM não precisará ser alterado, bastando atualizar as variáveis na Vercel quando a nova conta existir.
