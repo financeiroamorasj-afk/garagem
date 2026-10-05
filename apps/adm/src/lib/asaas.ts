@@ -1,90 +1,140 @@
 import "server-only";
 
-const isProdKey = process.env.ASAAS_API_KEY?.includes('_prod_');
-const API_URL = isProdKey 
-  ? 'https://api.asaas.com/v3'
-  : 'https://sandbox.asaas.com/api/v3';
+export type AsaasEnvironment = "sandbox" | "producao";
 
-async function fetchAsaas(endpoint: string, options: RequestInit = {}) {
+type CheckoutItem = {
+  externalReference: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  value: number;
+};
+
+type CreateCheckoutInput = {
+  externalReference: string;
+  cycle: "MONTHLY" | "YEARLY";
+  items: CheckoutItem[];
+  callback: {
+    successUrl: string;
+    cancelUrl: string;
+    expiredUrl: string;
+  };
+};
+
+export type AsaasCheckout = {
+  id: string;
+  link: string;
+  status: string;
+  externalReference?: string;
+};
+
+type AsaasListResponse<T> = {
+  data: T[];
+  hasMore?: boolean;
+  totalCount?: number;
+};
+
+export type AsaasPayment = {
+  id: string;
+  customer?: string;
+  subscription?: string;
+  checkoutSession?: string;
+  billingType?: string;
+  status?: string;
+  externalReference?: string;
+};
+
+export class AsaasApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "AsaasApiError";
+  }
+}
+
+export function getAsaasEnvironment(): AsaasEnvironment {
+  const configured = process.env.ASAAS_ENVIRONMENT?.trim().toLowerCase();
+  if (configured === "sandbox") return "sandbox";
+  if (configured === "producao" || configured === "production") return "producao";
+
+  const key = process.env.ASAAS_API_KEY ?? "";
+  if (key.startsWith("$aact_hmlg_")) return "sandbox";
+  if (key.startsWith("$aact_prod_")) return "producao";
+  throw new Error("ASAAS_ENVIRONMENT deve ser sandbox ou producao.");
+}
+
+function getApiUrl() {
+  return getAsaasEnvironment() === "producao"
+    ? "https://api.asaas.com/v3"
+    : "https://api-sandbox.asaas.com/v3";
+}
+
+async function fetchAsaas<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY não configurada.");
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${getApiUrl()}${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
-      'access_token': apiKey,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": "GaragemSystem/1.0 (Roosh Studio; rooshstudioprojetos@gmail.com)",
+      access_token: apiKey,
       ...options.headers,
     },
+    cache: "no-store",
   });
+
+  const payload = await response.json().catch(() => null) as {
+    errors?: Array<{ code?: string; description?: string }>;
+  } | null;
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`[ASAAS ERROR] ${endpoint}:`, errorBody);
-    throw new Error(`Asaas API Error: ${response.status} - ${errorBody}`);
+    const firstError = payload?.errors?.[0];
+    throw new AsaasApiError(
+      response.status,
+      firstError?.code ?? "ASAAS_REQUEST_FAILED",
+      firstError?.description ?? "Não foi possível concluir a comunicação com o Asaas.",
+    );
   }
 
-  return response.json();
+  return payload as T;
 }
 
-export async function createCustomer(name: string, cpfCnpj: string, email: string, phone: string, externalReference: string) {
-  const cleanCpf = cpfCnpj.replace(/\D/g, '');
-  
-  // Verifica se o cliente já existe no Asaas pelo CPF para não duplicar
-  if (cleanCpf) {
-    const search = await fetchAsaas(`/customers?cpfCnpj=${cleanCpf}`);
-    if (search.data && search.data.length > 0) {
-      // Atualiza a referência externa no cliente existente se necessário
-      const existing = search.data[0];
-      await fetchAsaas(`/customers/${existing.id}`, {
-        method: 'POST',
-        body: JSON.stringify({ externalReference })
-      });
-      return existing;
-    }
-  }
-
-  const payload: any = {
-    name,
-    email,
-    mobilePhone: phone.replace(/\D/g, ''),
-    externalReference
-  };
-
-  if (cleanCpf) {
-    payload.cpfCnpj = cleanCpf;
-  }
-
-  return fetchAsaas('/customers', {
-    method: 'POST',
-    body: JSON.stringify(payload),
+export async function createAsaasCheckout(input: CreateCheckoutInput) {
+  return fetchAsaas<AsaasCheckout>("/checkouts", {
+    method: "POST",
+    body: JSON.stringify({
+      billingTypes: ["PIX", "CREDIT_CARD"],
+      chargeTypes: ["RECURRENT"],
+      minutesToExpire: 1440,
+      externalReference: input.externalReference,
+      callback: input.callback,
+      items: input.items,
+      subscription: {
+        cycle: input.cycle,
+        nextDueDate: new Date().toISOString().slice(0, 10),
+      },
+    }),
   });
 }
 
-export async function createSubscription(
-  customerId: string, 
-  value: number, 
-  description: string, 
-  cycle: 'MONTHLY' | 'YEARLY', 
-  externalReference: string
-) {
-  
-  const today = new Date();
-  
-  const payload: any = {
-    customer: customerId,
-    billingType: 'UNDEFINED', // Permite Cartão, PIX ou Boleto no link do Asaas
-    value,
-    nextDueDate: today.toISOString().split('T')[0],
-    cycle,
-    description,
-    externalReference
-  };
+export async function listAsaasPaymentsByCheckout(checkoutId: string) {
+  const params = new URLSearchParams({ checkoutSession: checkoutId, limit: "10", offset: "0" });
+  return fetchAsaas<AsaasListResponse<AsaasPayment>>(`/payments?${params.toString()}`);
+}
 
-  const response = await fetchAsaas('/subscriptions', {
-    method: 'POST',
-    body: JSON.stringify(payload),
+export async function listAsaasPaymentsBySubscription(subscriptionId: string) {
+  const params = new URLSearchParams({ subscription: subscriptionId, limit: "100", offset: "0" });
+  return fetchAsaas<AsaasListResponse<AsaasPayment>>(`/payments?${params.toString()}`);
+}
+
+export async function updateAsaasSubscriptionValue(subscriptionId: string, value: number) {
+  return fetchAsaas(`/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ value }),
   });
-  
-  return response;
 }

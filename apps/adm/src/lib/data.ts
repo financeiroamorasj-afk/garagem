@@ -4,6 +4,8 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 export type Plan = { id: string; codigo: string; nome: string; status: string; preco_mensal: number | null; preco_anual: number | null; dias_trial: number; limite_usuarios: number | null };
 export type Barbershop = { id: string; nome: string; slug: string; criado_em: string };
 export type Subscription = { id: string; barbearia_id: string; plano_id: string; status: string; ciclo: string; preco_final: number; membro_fundador: boolean; created_at: string };
+export type Checkout = { id: string; plano_id: string; nome_barbearia: string; nome_admin: string; email_admin: string; status: string; ciclo: string; preco_final: number; gateway_ambiente: string | null; created_at: string };
+export type GatewayEvent = { id: string; event_type: string; status: string; resource_id: string | null; erro_codigo: string | null; recebido_em: string };
 export type PlatformModule = { id: string; codigo: string; nome: string; descricao: string | null; entitlement_codigo: string | null; status: string; preco_mensal: number | null; configuracao: Record<string, unknown> };
 export type PlatformIntegration = {
   id: string;
@@ -64,8 +66,13 @@ export async function listBarbershops() {
 
 export async function listSubscriptions() {
   const supabase = createAdminSupabase();
-  const { data, error } = await supabase.from("saas_assinaturas").select("id,barbearia_id,plano_id,status,ciclo,preco_final,membro_fundador,created_at").order("created_at", { ascending: false });
-  if (error) throw new Error("Não foi possível listar as assinaturas.");
+  const [subscriptionsResult, checkoutsResult, eventsResult] = await Promise.all([
+    supabase.from("saas_assinaturas").select("id,barbearia_id,plano_id,status,ciclo,preco_final,membro_fundador,created_at").order("created_at", { ascending: false }),
+    supabase.from("saas_checkouts").select("id,plano_id,nome_barbearia,nome_admin,email_admin,status,ciclo,preco_final,gateway_ambiente,created_at").order("created_at", { ascending: false }).limit(30),
+    supabase.from("saas_gateway_eventos").select("id,event_type,status,resource_id,erro_codigo,recebido_em").order("recebido_em", { ascending: false }).limit(30),
+  ]);
+  if (subscriptionsResult.error || checkoutsResult.error || eventsResult.error) throw new Error("Não foi possível listar as assinaturas.");
+  const data = subscriptionsResult.data;
   const rows = (data ?? []) as Subscription[];
   const [shops, plans] = await Promise.all([
     supabase.from("barbearias").select("id,nome,slug"),
@@ -74,6 +81,8 @@ export async function listSubscriptions() {
   if (shops.error || plans.error) throw new Error("Não foi possível completar as assinaturas.");
   return {
     rows,
+    checkouts: (checkoutsResult.data ?? []) as Checkout[],
+    events: (eventsResult.data ?? []) as GatewayEvent[],
     shops: new Map((shops.data ?? []).map((item) => [item.id, item])),
     plans: new Map((plans.data ?? []).map((item) => [item.id, item])),
   };
