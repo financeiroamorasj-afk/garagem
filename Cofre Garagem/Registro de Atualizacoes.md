@@ -205,3 +205,9 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Plano, ciclo, preços, oferta vigente e quantidades são calculados a partir do catálogo oficial, evitando valores divergentes do checkout online.
 - Assinaturas criadas desta forma ficam identificadas com cobrança `manual` e aparecem na área de Assinaturas.
 - O fluxo foi validado com build de produção, testes automatizados e aplicação das migrations no Supabase local.
+- A PR 32 foi mergeada na `main`; as migrations do Checkout hospedado e do provisionamento manual foram aplicadas e confirmadas no Supabase de produção.
+- O projeto `garagem-adm` foi publicado em produção e a rota protegida `/barbearias/nova` foi verificada no domínio oficial.
+- Ficou estabelecido que contas provisionadas manualmente não formarão um cadastro ou controle financeiro separado.
+- Próxima evolução: unificar na gestão de barbearias a barbearia, seu responsável, plano, módulos, assinatura e cobrança, permitindo que uma conta criada manualmente migre para cobrança Asaas sem duplicar o tenant.
+- Cobranças manuais e automáticas deverão compartilhar a mesma visão operacional, mantendo apenas a identificação de origem, provedor e situação financeira.
+- Pendência de infraestrutura: reativar o deploy automático do projeto Vercel `garagem-adm`, que nesta publicação precisou ser atualizado diretamente pela CLI.
