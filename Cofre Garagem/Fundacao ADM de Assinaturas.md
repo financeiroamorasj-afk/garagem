@@ -79,7 +79,7 @@ Validar a proposta de preços, desconto e duração de membros fundadores, módu
 - o Garagem continua isolado por referência externa iniciada por `garagem_`, ID próprio de checkout e webhook dedicado;
 - o endpoint `POST /api/checkouts` foi refeito para usar o Checkout hospedado oficial do Asaas, com PIX e cartão, sem capturar CPF/CNPJ ou dados de cartão na Landing Page;
 - toda contratação passa a ser registrada em `saas_checkouts` antes da chamada externa, com chave de idempotência, snapshot de preço, plano, módulos e quantidade de profissionais adicionais;
-- criada a migration `20261005143000_checkout_asaas_hospedado.sql`, ainda pendente de aplicação, para registrar o ID do checkout e os módulos adquiridos;
+- criada e aplicada em produção a migration `20261005143000_checkout_asaas_hospedado.sql`, para registrar o ID do checkout e os módulos adquiridos;
 - o endpoint `POST /api/webhooks/asaas` valida o segredo sem registrá-lo em log, usa o ID único do evento para idempotência, salva somente um payload sanitizado e aceita reentregas sem erro;
 - eventos financeiros confirmados iniciam o provisionamento idempotente da barbearia, convite do administrador, assinatura e módulos;
 - o ADM de assinaturas passa a exibir assinaturas, checkouts recentes e eventos do gateway;
@@ -92,7 +92,7 @@ Validar a proposta de preços, desconto e duração de membros fundadores, módu
 1. criar ou acessar a conta Sandbox vinculada à Roosh Studio;
 2. gerar uma API Key exclusiva para a integração do Garagem;
 3. configurar na Vercel `ASAAS_ENVIRONMENT`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_SECRET`, `CHECKOUT_ALLOWED_ORIGINS`, `GARAGEM_LANDING_URL` e `GARAGEM_APP_URL`;
-4. aplicar a migration pendente;
+4. configurar as credenciais do Sandbox e homologar o fluxo financeiro; as migrations necessárias já estão aplicadas em produção;
 5. publicar primeiro o ADM, cadastrar o webhook e somente depois publicar a Landing Page;
 6. homologar compra, reentrega de webhook, convite, cancelamento, expiração, recusa, atraso e estorno antes de trocar para Produção.
 
@@ -104,4 +104,15 @@ Validar a proposta de preços, desconto e duração de membros fundadores, módu
 - o provisionamento reutiliza as mesmas etapas idempotentes: tenant, usuário de autenticação, perfil, assinatura, entitlements e convite por e-mail;
 - nenhuma cobrança é criada automaticamente: enquanto a integração não estiver homologada, a cobrança continua sendo emitida e acompanhada manualmente pela Roosh Studio;
 - assinaturas manuais aparecem no painel de Assinaturas com a origem da cobrança identificada;
-- criada a migration `20261007100000_provisionamento_manual_tenant.sql`, dependente da migration do Checkout hospedado e ainda pendente de aplicação em produção.
+- criada e aplicada em produção a migration `20261007100000_provisionamento_manual_tenant.sql`, dependente da migration do Checkout hospedado.
+
+## Publicação e vínculo operacional — atualização de 07/10/2026
+
+- a PR 32 foi incorporada à `main` e o ADM atualizado foi publicado no projeto `garagem-adm` da Vercel;
+- a rota protegida `https://adm.garagemsystem.com.br/barbearias/nova` está disponível em produção para o `super_admin`;
+- as migrations `20261005143000` e `20261007100000` foram confirmadas no histórico remoto do Supabase;
+- o cadastro manual não deve evoluir como controle paralelo: ele já cria a barbearia e a assinatura nas estruturas centrais da plataforma;
+- pendência funcional: consolidar, na área de controle de barbearias, a relação entre tenant, responsável, plano, módulos, assinatura e cobrança correspondente;
+- quando o Asaas for ativado, cobranças manuais e automáticas deverão aparecer na mesma visão operacional, diferenciadas apenas pela origem e pelo provedor;
+- a barbearia deve possuir uma única identidade canônica no Garagem, mesmo que seja criada manualmente agora e passe a ser cobrada pelo Asaas depois;
+- também ficou pendente reativar o deploy automático do projeto `garagem-adm`; atualmente o projeto principal recebe o deploy do GitHub, mas o ADM precisou ser publicado diretamente pela CLI da Vercel.
