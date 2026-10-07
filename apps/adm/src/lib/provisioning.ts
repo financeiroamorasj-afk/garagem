@@ -2,6 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type GatewayData = {
+  provider?: string | null;
+  environment?: "sandbox" | "producao" | null;
   customerId?: string | null;
   subscriptionId?: string | null;
   paymentId?: string | null;
@@ -82,6 +84,7 @@ export async function provisionPaidCheckout(
   }
 
   let adminUserId = checkout.admin_user_id as string | null;
+  let invitedNow = false;
   if (!adminUserId) {
     const { data: existingProfile } = await supabase.from("profiles")
       .select("id,barbearia_id").eq("email", checkout.email_admin).maybeSingle();
@@ -98,6 +101,7 @@ export async function provisionPaidCheckout(
       throw new Error(`PROVISIONAMENTO_CONVITE_FALHOU:${error?.message ?? "sem retorno"}`);
     }
     adminUserId = invited.user.id;
+    invitedNow = true;
     await supabase.from("saas_checkouts").update({ admin_user_id: adminUserId }).eq("id", checkout.id);
     await markStep(supabase, checkout.id, "admin_auth_criado", "concluida");
   }
@@ -114,6 +118,7 @@ export async function provisionPaidCheckout(
     updated_at: new Date().toISOString(),
   }, { onConflict: "id" });
   if (profileError) {
+    if (invitedNow && adminUserId) await supabase.auth.admin.deleteUser(adminUserId);
     await markStep(supabase, checkout.id, "profile_vinculado", "falhou", profileError);
     throw new Error(`PROVISIONAMENTO_PROFILE_FALHOU:${profileError.message}`);
   }
@@ -139,8 +144,8 @@ export async function provisionPaidCheckout(
       desconto_expira_em: discountEnd(checkout.ciclo, Number(checkout.desconto_percentual)),
       periodo_inicio: now,
       periodo_fim: periodEnd(checkout.ciclo),
-      gateway_provider: "asaas",
-      gateway_ambiente: checkout.gateway_ambiente,
+      gateway_provider: gateway.provider ?? checkout.gateway_provider ?? "asaas",
+      gateway_ambiente: gateway.environment ?? checkout.gateway_ambiente,
       gateway_customer_id: gateway.customerId ?? checkout.gateway_customer_id,
       gateway_subscription_id: gateway.subscriptionId ?? checkout.gateway_subscription_id,
       gateway_external_reference: checkout.gateway_external_reference,

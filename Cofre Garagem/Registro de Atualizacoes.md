@@ -197,3 +197,11 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O catálogo do ADM já registra o entitlement `fiscal` em rascunho, sem acoplá-lo antecipadamente a um provedor.
 - Antes da implementação: definir município/abrangência, tipo de documento, provedor fiscal, certificados, dados obrigatórios, contingência, cancelamento e armazenamento dos documentos.
 - A oferta anual deve usar os recursos já previstos de preço anual, ofertas, desconto congelado no checkout e módulos incluídos no plano ou na assinatura.
+
+# 07/10/2026 — Implantação manual pelo ADM
+
+- O ADM ganhou a ação `Nova barbearia`, restrita ao super administrador da plataforma.
+- A implantação manual cria tenant, administrador, assinatura, módulos e convite sem chamar o Asaas.
+- Plano, ciclo, preços, oferta vigente e quantidades são calculados a partir do catálogo oficial, evitando valores divergentes do checkout online.
+- Assinaturas criadas desta forma ficam identificadas com cobrança `manual` e aparecem na área de Assinaturas.
+- O fluxo foi validado com build de produção, testes automatizados e aplicação das migrations no Supabase local.

@@ -44,3 +44,11 @@ Na Vercel, crie um segundo projeto usando este mesmo repositório e defina o dir
 3. Cadastre no Sandbox do Asaas o webhook `https://adm.garagemsystem.com.br/api/webhooks/asaas`, com envio sequencial e os eventos de Checkout e pagamento definidos no Cofre.
 4. Só depois publique a Landing Page com os botões de assinatura.
 5. Confirme no ADM a sequência checkout → evento → barbearia → convite → assinatura antes de trocar as credenciais para Produção.
+
+## Implantação manual
+
+O `super_admin` pode acessar `Barbearias → Nova barbearia` para criar um tenant
+sem chamar o Asaas. O fluxo usa os preços e módulos do catálogo, ativa a
+assinatura com origem `manual` e envia o convite ao administrador da unidade.
+A cobrança deve ser criada e acompanhada separadamente até que a assinatura
+seja vinculada ao gateway.

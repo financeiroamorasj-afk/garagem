@@ -13,8 +13,8 @@ export default async function SubscriptionsPage() {
     <header className="page-header"><div><div className="eyebrow">Contratos SaaS</div><h1 className="page-title">Assinaturas</h1><p className="page-description">Acompanhe a contratação, a confirmação do gateway e o provisionamento do acesso.</p></div></header>
 
     <section className="panel"><div className="panel-heading"><h2>Assinaturas ativas e históricas</h2><span className="panel-link">{data.rows.length} registro(s)</span></div>
-      {data.rows.length ? <div className="table-wrap"><table><thead><tr><th>Barbearia</th><th>Plano</th><th>Status</th><th>Ciclo</th><th>Valor</th><th>Início</th></tr></thead><tbody>
-        {data.rows.map((item) => <tr key={item.id}><td className="primary-cell">{data.shops.get(item.barbearia_id)?.nome ?? "Unidade não encontrada"}{item.membro_fundador ? <span className="secondary-cell">Membro fundador</span> : null}</td><td>{data.plans.get(item.plano_id)?.nome ?? "Plano não encontrado"}</td><td><Badge status={item.status} /></td><td>{item.ciclo}</td><td>{money(item.preco_final)}</td><td>{shortDate(item.created_at)}</td></tr>)}
+      {data.rows.length ? <div className="table-wrap"><table><thead><tr><th>Barbearia</th><th>Plano</th><th>Status</th><th>Ciclo</th><th>Valor</th><th>Cobrança</th><th>Início</th></tr></thead><tbody>
+        {data.rows.map((item) => <tr key={item.id}><td className="primary-cell">{data.shops.get(item.barbearia_id)?.nome ?? "Unidade não encontrada"}{item.membro_fundador ? <span className="secondary-cell">Membro fundador</span> : null}</td><td>{data.plans.get(item.plano_id)?.nome ?? "Plano não encontrado"}</td><td><Badge status={item.status} /></td><td>{item.ciclo}</td><td>{money(item.preco_final)}</td><td>{item.gateway_provider === "manual" ? "Manual" : item.gateway_provider ?? "—"}</td><td>{shortDate(item.created_at)}</td></tr>)}
       </tbody></table></div> : <div className="empty">Nenhuma assinatura provisionada até o momento.</div>}
     </section>
 

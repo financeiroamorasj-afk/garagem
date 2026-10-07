@@ -27,7 +27,7 @@ Status: fundação aplicada em produção; interface inicial publicada com domí
 
 ## Decisões preservadas
 
-- proposta de preços do Garagem registrada em `Cofre Garagem/Plano Comercial e Valores.md`; os valores ainda não foram aplicados ao catálogo nem copiados do Rebip;
+- preços oficiais do Garagem registrados em `Cofre Garagem/Plano Comercial e Valores.md` e aplicados ao catálogo próprio, sem copiar valores do Rebip;
 - Asaas não é pré-requisito para o primeiro membro fundador;
 - nenhuma senha será migrada ou criada pelo ADM;
 - CPF/CNPJ integral e cartão não serão persistidos;
@@ -95,3 +95,13 @@ Validar a proposta de preços, desconto e duração de membros fundadores, módu
 4. aplicar a migration pendente;
 5. publicar primeiro o ADM, cadastrar o webhook e somente depois publicar a Landing Page;
 6. homologar compra, reentrega de webhook, convite, cancelamento, expiração, recusa, atraso e estorno antes de trocar para Produção.
+
+## Implantação manual — atualização de 07/10/2026
+
+- o `super_admin` pode criar uma barbearia pelo ADM sem depender do Asaas;
+- o formulário registra responsável, plano, ciclo e módulos usando o mesmo catálogo oficial do checkout;
+- a assinatura recebe origem `manual`, fica ativa imediatamente e preserva preço, desconto e módulos contratados;
+- o provisionamento reutiliza as mesmas etapas idempotentes: tenant, usuário de autenticação, perfil, assinatura, entitlements e convite por e-mail;
+- nenhuma cobrança é criada automaticamente: enquanto a integração não estiver homologada, a cobrança continua sendo emitida e acompanhada manualmente pela Roosh Studio;
+- assinaturas manuais aparecem no painel de Assinaturas com a origem da cobrança identificada;
+- criada a migration `20261007100000_provisionamento_manual_tenant.sql`, dependente da migration do Checkout hospedado e ainda pendente de aplicação em produção.
