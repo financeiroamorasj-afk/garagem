@@ -27,7 +27,7 @@ Status: fundação aplicada em produção; interface inicial publicada com domí
 
 ## Decisões preservadas
 
-- proposta de preços do Garagem registrada em `Cofre Garagem/Plano Comercial e Valores.md`; os valores ainda não foram aplicados ao catálogo nem copiados do Rebip;
+- preços oficiais do Garagem registrados em `Cofre Garagem/Plano Comercial e Valores.md` e aplicados ao catálogo próprio, sem copiar valores do Rebip;
 - Asaas não é pré-requisito para o primeiro membro fundador;
 - nenhuma senha será migrada ou criada pelo ADM;
 - CPF/CNPJ integral e cartão não serão persistidos;
@@ -73,11 +73,35 @@ Adicionar as operações auditadas do ADM: cadastro e edição de planos, ativa�
 
 Validar a proposta de preços, desconto e duração de membros fundadores, módulos por plano e primeiro ciclo no sandbox do Asaas. A proposta atual está no documento `Cofre Garagem/Plano Comercial e Valores.md`.
 
-## Motor de Pagamentos do ADM � 01/10/2026
+## Motor de pagamentos — atualização de 05/10/2026
 
-- criada a API interna (pi/checkouts) no ADM para processar vendas vindas da Landing Page, validando as regras de neg�cio de descontos (-20% membro fundador) e m�dulos escolhidos;
-- criada a l�gica de roteamento do Asaas: o ADM identifica automaticamente se a API Key � de Produ��o ou Sandbox pelo prefixo _prod_ e troca a base URL do Asaas sozinho;
-- criado o Roteador de Webhooks (pi/webhooks/asaas) que escuta eventos do Asaas de forma segura, ignorando eventos de contas misturadas (ex: Rebip) ao exigir que a externalReference comece com garagem_;
-- descobertas e tratadas barreiras de seguran�a do Asaas de Produ��o (exig�ncia de telefone e CPF v�lido e n�o vazio na cria��o da Assinatura);
-- seed dos planos ase e gestao criado na migration 20261001183000_adm_planos_oficiais.sql e aplicada em produ��o;
-- **Decis�o Comercial Crucial**: foi decidido que o Garagem ter� uma **conta Asaas pr�pria (nova)** para evitar que os e-mails e faturas cheguem para as barbearias com a identidade visual e nome do vendedor vinculados ao Rebip. O c�digo atual do ADM n�o precisar� ser alterado, bastando atualizar as vari�veis na Vercel quando a nova conta existir.
+- a Roosh Studio será a titular e remetente comercial da conta Asaas usada pelos sistemas; o e-mail operacional configurado é `rooshstudioprojetos@gmail.com`;
+- o Garagem continua isolado por referência externa iniciada por `garagem_`, ID próprio de checkout e webhook dedicado;
+- o endpoint `POST /api/checkouts` foi refeito para usar o Checkout hospedado oficial do Asaas, com PIX e cartão, sem capturar CPF/CNPJ ou dados de cartão na Landing Page;
+- toda contratação passa a ser registrada em `saas_checkouts` antes da chamada externa, com chave de idempotência, snapshot de preço, plano, módulos e quantidade de profissionais adicionais;
+- criada a migration `20261005143000_checkout_asaas_hospedado.sql`, ainda pendente de aplicação, para registrar o ID do checkout e os módulos adquiridos;
+- o endpoint `POST /api/webhooks/asaas` valida o segredo sem registrá-lo em log, usa o ID único do evento para idempotência, salva somente um payload sanitizado e aceita reentregas sem erro;
+- eventos financeiros confirmados iniciam o provisionamento idempotente da barbearia, convite do administrador, assinatura e módulos;
+- o ADM de assinaturas passa a exibir assinaturas, checkouts recentes e eventos do gateway;
+- a oferta inicial não será apresentada como teste grátis irrestrito. O fluxo comercial será assinatura paga com garantia comercial de cancelamento e estorno integral em até 7 dias corridos;
+- a Landing Page passa a abrir um formulário mínimo e depois direcionar o comprador ao ambiente do Asaas. A publicação ficará bloqueada até a homologação completa no Sandbox;
+- decisão de marca: `Garagem System, desenvolvido pela Roosh Studio · criação de Rafael Ruch`.
+
+## Próximos passos com Rafa
+
+1. criar ou acessar a conta Sandbox vinculada à Roosh Studio;
+2. gerar uma API Key exclusiva para a integração do Garagem;
+3. configurar na Vercel `ASAAS_ENVIRONMENT`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_SECRET`, `CHECKOUT_ALLOWED_ORIGINS`, `GARAGEM_LANDING_URL` e `GARAGEM_APP_URL`;
+4. aplicar a migration pendente;
+5. publicar primeiro o ADM, cadastrar o webhook e somente depois publicar a Landing Page;
+6. homologar compra, reentrega de webhook, convite, cancelamento, expiração, recusa, atraso e estorno antes de trocar para Produção.
+
+## Implantação manual — atualização de 07/10/2026
+
+- o `super_admin` pode criar uma barbearia pelo ADM sem depender do Asaas;
+- o formulário registra responsável, plano, ciclo e módulos usando o mesmo catálogo oficial do checkout;
+- a assinatura recebe origem `manual`, fica ativa imediatamente e preserva preço, desconto e módulos contratados;
+- o provisionamento reutiliza as mesmas etapas idempotentes: tenant, usuário de autenticação, perfil, assinatura, entitlements e convite por e-mail;
+- nenhuma cobrança é criada automaticamente: enquanto a integração não estiver homologada, a cobrança continua sendo emitida e acompanhada manualmente pela Roosh Studio;
+- assinaturas manuais aparecem no painel de Assinaturas com a origem da cobrança identificada;
+- criada a migration `20261007100000_provisionamento_manual_tenant.sql`, dependente da migration do Checkout hospedado e ainda pendente de aplicação em produção.

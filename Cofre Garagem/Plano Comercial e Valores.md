@@ -1,7 +1,7 @@
 # Plano Comercial e Valores — Garagem System
 
 Data do registro: 28/09/2026
-Status: proposta para discussão; ainda não aplicada ao checkout nem ao catálogo comercial do ADM.
+Status: valores aplicados ao catálogo do ADM; checkout hospedado em preparação para homologação no Sandbox do Asaas.
 
 ## Referência de posicionamento
 

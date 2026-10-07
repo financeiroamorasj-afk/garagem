@@ -8,9 +8,9 @@ export function shortDate(value: string) {
 }
 
 export function badgeTone(status: string) {
-  if (["ativo", "concluido", "pago"].includes(status)) return "green";
+  if (["ativo", "concluido", "pago", "processado"].includes(status)) return "green";
   if (["cancelado", "falhou", "expirado"].includes(status)) return "red";
-  if (["trial", "aguardando_pagamento", "provisionando"].includes(status)) return "gold";
-  if (["inadimplente", "suspenso"].includes(status)) return "blue";
+  if (["trial", "aguardando_pagamento", "provisionando", "recebido", "processando"].includes(status)) return "gold";
+  if (["inadimplente", "suspenso", "ignorado"].includes(status)) return "blue";
   return "muted";
 }
