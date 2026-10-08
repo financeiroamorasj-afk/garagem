@@ -3,10 +3,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 test('recepção usa dados reais, login individual e não expõe visão financeira', async () => {
-  const [app, page, settings, api, edge, migration, leastPrivilege, accessMigration, login, barber] = await Promise.all([
+  const [app, page, settings, report, teamLink, protectedRoute, api, edge, migration, leastPrivilege, accessMigration, login, barber] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/ReceptionBoard.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/settings/ReceptionUsersPanel.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/pages/AdminReceptionReport.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/reception/ReceptionTeamLink.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/ProtectedRoute.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/recepcao/api.js', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/functions/create-receptionist/index.ts', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20260924160000_recepcao_usuarios_leitura.sql', import.meta.url), 'utf8'),
@@ -24,6 +27,14 @@ test('recepção usa dados reais, login individual e não expõe visão financei
   assert.match(settings, /criarUsuarioRecepcao/)
   assert.match(settings, /definirAcessoRecepcaoBarbeiro/)
   assert.match(settings, /Remover acesso/)
+  assert.match(settings, /<ReceptionTeamLink \/>/)
+  assert.match(report, /Relatório da recepção/)
+  assert.match(report, /<ReceptionTeamLink \/>/)
+  assert.match(teamLink, /https:\/\/app\.garagemsystem\.com\.br\/reception\/board/)
+  assert.match(teamLink, /navigator\.clipboard\.writeText\(url\)/)
+  assert.match(protectedRoute, /state=\{\{ from:/)
+  assert.match(login, /requestedRoute === '\/reception\/board'/)
+  assert.match(login, /recepcao_acesso_operador_verificar/)
   assert.match(barber, /canAccessReception && <Button/)
   assert.match(api, /functions\.invoke\('create-receptionist'/)
   assert.match(edge, /inviteUserByEmail/)

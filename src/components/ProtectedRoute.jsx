@@ -1,9 +1,10 @@
 
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function ProtectedRoute() {
+    const location = useLocation()
     const [session, setSession] = useState(null)
     const [loading, setLoading] = useState(true)
 
@@ -34,7 +35,7 @@ export default function ProtectedRoute() {
     }
 
     if (!session) {
-        return <Navigate to="/login" replace />
+        return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}${location.hash}` }} />
     }
 
     return <Outlet />

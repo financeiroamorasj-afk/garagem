@@ -211,3 +211,11 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Próxima evolução: unificar na gestão de barbearias a barbearia, seu responsável, plano, módulos, assinatura e cobrança, permitindo que uma conta criada manualmente migre para cobrança Asaas sem duplicar o tenant.
 - Cobranças manuais e automáticas deverão compartilhar a mesma visão operacional, mantendo apenas a identificação de origem, provedor e situação financeira.
 - Pendência de infraestrutura: reativar o deploy automático do projeto Vercel `garagem-adm`, que nesta publicação precisou ser atualizado diretamente pela CLI.
+
+# 08/10/2026 — Link operacional da Recepção para a equipe
+
+- O ADM passou a diferenciar o **Relatório da recepção** da tela operacional do balcão.
+- O endereço `https://app.garagemsystem.com.br/reception/board` aparece com a ação **Copiar link** no relatório e em **Configurações → Acessos à recepção**.
+- Compartilhar o endereço não concede permissão: o módulo precisa estar ativo e cada recepcionista ou barbeiro habilitado entra com seu próprio login.
+- Quem abre o link sem sessão é encaminhado ao login e retorna ao balcão após autenticação, caso tenha acesso. O barbeiro mantém seu painel original e pode alternar pelo botão **Balcão**.
+- O comportamento de concessão e revogação de acesso, inclusive a preservação do histórico, está descrito em [[Módulo de Recepção]] e [[Painel da Recepção]].
