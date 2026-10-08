@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarDays, CircleDollarSign, Clock3, CreditCard, Headset, LogOut, Package, Phone, RefreshCw, RotateCcw, Scissors, Search, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CircleDollarSign, Clock3, CreditCard, Headset, LogOut, Package, Phone, RefreshCw, RotateCcw, Scissors, Search, ShoppingBag } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -62,6 +62,17 @@ export default function ReceptionBoard() {
   const [refundKey, setRefundKey] = useState('')
   const [refunding, setRefunding] = useState(false)
   const [refundError, setRefundError] = useState('')
+  const [isBarber, setIsBarber] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
+      if (active) setIsBarber(profile?.role === 'barbeiro')
+    })
+    return () => { active = false }
+  }, [])
 
   const endDate = view === 'hoje' ? today : addDays(today, 6)
   const load = useCallback(async () => {
@@ -167,7 +178,7 @@ export default function ReceptionBoard() {
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-copper text-surface-0"><Headset size={21} /></span>
             <div className="min-w-0"><h1 className="truncate text-h3 text-warm-white">Recepção</h1><p className="text-label text-steel">Operação do balcão</p></div>
           </div>
-          <Button size="sm" variant="ghost" onClick={signOut}><LogOut size={16} /> <span className="hidden sm:inline">Sair</span></Button>
+          <div className="flex items-center gap-1">{isBarber && <Button size="sm" variant="secondary" onClick={() => navigate('/barber/dashboard')}><ArrowLeft size={16} /> Meu painel</Button>}<Button size="sm" variant="ghost" onClick={signOut}><LogOut size={16} /> <span className="hidden sm:inline">Sair</span></Button></div>
         </div>
       </header>
 

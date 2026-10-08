@@ -28,7 +28,6 @@ import AdminSettings from './pages/AdminSettings'
 import AdminReceptionReport from './pages/AdminReceptionReport'
 import ForgotPassword from './pages/ForgotPassword'
 
-const RECEPTION_ROLES = ['recepcao']
 const ADMIN_ROLES = ['admin', 'master']
 
 function App() {
@@ -46,7 +45,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/barber/dashboard" element={<BarberDashboard />} />
-          <Route path="/reception/board" element={<ModuleGate modulo="recepcao" allowedRoles={RECEPTION_ROLES}><ReceptionBoard /></ModuleGate>} />
+          <Route path="/reception/board" element={<ModuleGate modulo="recepcao" accessRpc="recepcao_acesso_operador_verificar"><ReceptionBoard /></ModuleGate>} />
           <Route path="/admin/agenda/tv" element={<AdminAgendaTv />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />

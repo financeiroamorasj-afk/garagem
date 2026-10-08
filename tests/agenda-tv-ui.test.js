@@ -11,7 +11,7 @@ test('modo TV é administrativo, somente leitura, responsivo e protege dados do 
 
   assert.match(app, /path="\/admin\/agenda\/tv" element={<AdminAgendaTv/)
   assert.match(agenda, /Modo TV/)
-  assert.match(agenda, /navigate\('\/admin\/agenda\/tv'\)/)
+  assert.match(agenda, /navigate\('\/admin\/tv'\)/)
   assert.match(tv, /resolveAdminAccess/)
   assert.match(tv, /listarAgendaAdminPeriodo\(date, date\)/)
   assert.match(tv, /listarBarbeiros\(\{ incluirInativos: false \}\)/)

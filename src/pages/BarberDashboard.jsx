@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  DollarSign, LogOut, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
+  DollarSign, Headset, LogOut, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
   ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
@@ -29,6 +29,7 @@ import { listarProdutosBarbeiro, mensagemErroProduto, venderProduto } from '../l
 import { supabase } from '../lib/supabase'
 import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
 import TvControlPanel from '../components/tv/TvControlPanel'
+import { verificarAcessoOperadorRecepcao } from '../lib/recepcao/api'
 
 const SECTIONS = [
   { value: 'today', label: 'Hoje', icon: Clock3 },
@@ -124,6 +125,18 @@ export default function BarberDashboard() {
   const [saleForm, setSaleForm] = useState({ quantidade: 1, agendamentoId: '', formaPagamento: 'pix', chaveIdempotencia: '' })
   const [saleError, setSaleError] = useState('')
   const [now, setNow] = useState(() => new Date())
+  const [canAccessReception, setCanAccessReception] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    async function checkReception() {
+      try { const allowed = await verificarAcessoOperadorRecepcao(); if (active) setCanAccessReception(allowed) }
+      catch { if (active) setCanAccessReception(false) }
+    }
+    checkReception()
+    window.addEventListener('focus', checkReception)
+    return () => { active = false; window.removeEventListener('focus', checkReception) }
+  }, [])
 
   const weekRange = useMemo(() => intervaloAgenda(selectedDate, 'semana'), [selectedDate])
 
@@ -229,7 +242,7 @@ export default function BarberDashboard() {
   async function logout() { await supabase.auth.signOut(); navigate('/login', { replace: true }) }
 
   return <div className="min-h-dvh overflow-x-hidden bg-surface-0 pb-24 text-warm-white sm:pb-8">
-    <header className="sticky top-0 z-30 border-b border-line bg-surface-0/95 px-4 py-3 backdrop-blur-sm"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></header>
+    <header className="sticky top-0 z-30 border-b border-line bg-surface-0/95 px-4 py-3 backdrop-blur-sm"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1">{canAccessReception && <Button variant="secondary" size="sm" onClick={() => navigate('/reception/board')}><Headset size={17} /> Balcão</Button>}<Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
     <SectionNavigation value={section} onChange={(value) => {
       if (value !== 'week') setSelectedDate(today)
       setSection(value); setError(''); setNotice('')

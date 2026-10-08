@@ -17,6 +17,19 @@ export async function listarUsuariosRecepcao({ incluirInativos = true } = {}) {
   return (await rpc('recepcao_usuarios_listar', { p_incluir_inativos: Boolean(incluirInativos) })) ?? []
 }
 
+export async function listarBarbeirosParaRecepcao() {
+  return (await rpc('recepcao_barbeiros_listar')) ?? []
+}
+
+export function definirAcessoRecepcaoBarbeiro(usuarioId, permitir) {
+  if (!usuarioId || typeof permitir !== 'boolean') throw new TypeError('Barbeiro inválido')
+  return rpc('recepcao_barbeiro_acesso_definir', { p_usuario_id: usuarioId, p_permitir: permitir })
+}
+
+export async function verificarAcessoOperadorRecepcao() {
+  return Boolean(await rpc('recepcao_acesso_operador_verificar'))
+}
+
 export async function criarUsuarioRecepcao(input) {
   const nome = String(input.nome ?? '').trim()
   const email = String(input.email ?? '').trim().toLowerCase()
@@ -150,6 +163,8 @@ const ERRORS = {
   RECEPCAO_CADASTRO_FALHOU: 'Não foi possível concluir o cadastro da recepção.',
   RECEPCAO_CONFLITO_VERSAO: 'Este usuário foi alterado em outra sessão. Atualize e tente novamente.',
   RECEPCAO_USUARIO_NAO_ENCONTRADO: 'O usuário da recepção não foi encontrado.',
+  RECEPCAO_BARBEIRO_NAO_ENCONTRADO: 'O barbeiro não está cadastrado nesta unidade.',
+  RECEPCAO_BARBEIRO_INATIVO: 'Reative o barbeiro antes de conceder acesso à recepção.',
   RECEPCAO_BUSCA_INVALIDA: 'Digite pelo menos dois caracteres para buscar.',
   RECEPCAO_CARRINHO_VALOR_INVALIDO: 'Revise o valor do serviço.',
   RECEPCAO_CARRINHO_PRODUTOS_INVALIDOS: 'Revise os produtos e as quantidades.',

@@ -214,7 +214,7 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-label text-steel">A cobrança e o atendimento da recepção serão configurados na próxima etapa.</p>
+                  <p className="text-label text-steel">Gerencie abaixo os logins exclusivos e os barbeiros com acesso ao balcão.</p>
                   <Button variant={modulo.ativo ? 'danger' : 'primary'} disabled={!modulo.contratado} loading={saving === modulo.chave} onClick={() => toggle(modulo)}>{modulo.ativo ? 'Desativar' : modulo.contratado ? 'Ativar na unidade' : 'Contratação necessária'}</Button>
                 </div>
               </Card>
