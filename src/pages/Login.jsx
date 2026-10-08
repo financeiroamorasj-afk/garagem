@@ -1,13 +1,13 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import garagemLogo from '../assets/brand/garagem-logo-full.png'
 import { homeRouteForRole } from '../lib/auth/homeRoute'
 
-async function homeRouteForUser(userId) {
+async function homeRouteForUser(userId, requestedRoute) {
     const { data: profile, error } = await supabase
         .from('profiles')
         .select('role, ativo')
@@ -17,6 +17,10 @@ async function homeRouteForUser(userId) {
     if (error) throw error
     if (!profile) throw new Error('Este usuário ainda não está vinculado a um perfil do Garagem.')
     if (profile.ativo === false) throw new Error('Este acesso foi desativado pelo administrador da barbearia.')
+    if (requestedRoute === '/reception/board') {
+        const { data: canAccessReception } = await supabase.rpc('recepcao_acesso_operador_verificar')
+        if (canAccessReception) return requestedRoute
+    }
     return homeRouteForRole(profile.role)
 }
 
@@ -26,6 +30,8 @@ export default function Login() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const navigate = useNavigate()
+    const location = useLocation()
+    const requestedRoute = location.state?.from === '/reception/board' ? '/reception/board' : null
 
     useEffect(() => {
         let active = true
@@ -35,7 +41,7 @@ export default function Login() {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession()
                 if (sessionError) throw sessionError
                 if (!session || !active) return
-                const route = await homeRouteForUser(session.user.id)
+                const route = await homeRouteForUser(session.user.id, requestedRoute)
                 if (active) navigate(route, { replace: true })
             } catch (sessionError) {
                 if (active) setError(sessionError.message)
@@ -44,7 +50,7 @@ export default function Login() {
 
         redirectExistingSession()
         return () => { active = false }
-    }, [navigate])
+    }, [navigate, requestedRoute])
 
     const handleLogin = async (e) => {
         e.preventDefault()
@@ -57,7 +63,7 @@ export default function Login() {
             })
             if (error) throw error
             if (!data.user) throw new Error('Não foi possível identificar o usuário autenticado.')
-            const route = await homeRouteForUser(data.user.id)
+            const route = await homeRouteForUser(data.user.id, requestedRoute)
             navigate(route, { replace: true })
         } catch (error) {
             setError(error.message)

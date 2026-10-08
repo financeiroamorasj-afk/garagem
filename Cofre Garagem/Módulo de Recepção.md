@@ -8,9 +8,18 @@ tags: [produto, recepcao, assinatura, operacao]
 O módulo de recepção é opcional e comercializado como adicional da assinatura. Existem duas autorizações diferentes:
 
 1. **O Garagem System libera o módulo no plano da barbearia** (`entitlement`).
-2. **O proprietário ativa o uso na unidade** e cria os usuários da recepção.
+2. **O proprietário ativa o uso na unidade** e controla os acessos da equipe.
 
 O proprietário não pode liberar sozinho um recurso que não pertence à assinatura. A validação precisa acontecer no backend; esconder o menu no frontend não é suficiente.
+
+## Acesso da equipe — estado atual em 08/10/2026
+
+- O endereço operacional é `https://app.garagemsystem.com.br/reception/board`. O ADM mostra e permite copiar esse link em **Configurações → Acessos à recepção** e no **Relatório da recepção**.
+- O link é compartilhável, mas não é uma autorização: cada pessoa precisa entrar com seu próprio login e ter o módulo ativo na unidade.
+- Um login exclusivo com papel `recepcao` vai ao balcão após entrar. Um barbeiro cadastrado pode receber permissão adicional sem perder o papel, o painel ou a agenda; ele também vê o botão **Balcão** no próprio painel.
+- Ao abrir o link sem sessão, o usuário passa pelo login e, se autorizado, volta ao balcão. Quem não tem permissão segue para sua tela inicial normal.
+- O proprietário concede ou revoga o acesso de barbeiros cadastrados na mesma área. Remover o acesso de um login exclusivo desativa o perfil, sem apagar cobranças, vendas ou auditoria; removê-lo de um barbeiro preserva seu login e a operação como profissional.
+- O item **Recepção** no menu do ADM é o relatório gerencial, não a tela operacional da equipe. O administrador não recebe acesso ao balcão por compartilhar o link.
 
 ## Modos de operação
 

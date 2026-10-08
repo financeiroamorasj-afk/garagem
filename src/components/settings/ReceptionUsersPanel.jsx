@@ -7,6 +7,7 @@ import EmptyState from '../ui/EmptyState'
 import Input from '../ui/Input'
 import Modal from '../ui/Modal'
 import Spinner from '../ui/Spinner'
+import ReceptionTeamLink from '../reception/ReceptionTeamLink'
 import {
   atualizarUsuarioRecepcao, criarUsuarioRecepcao, definirAcessoRecepcaoBarbeiro,
   listarBarbeirosParaRecepcao, listarUsuariosRecepcao, mensagemErroRecepcao,
@@ -86,6 +87,7 @@ export default function ReceptionUsersPanel({ enabled }) {
 
   return <section className="space-y-6" aria-labelledby="reception-users-title">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><UsersRound size={20} className="text-copper" /><h2 id="reception-users-title" className="text-h2 text-warm-white">Acessos à recepção</h2></div><p className="mt-1 text-body-sm text-steel">Controle quem pode operar o balcão. Remover um acesso não apaga o histórico.</p></div><Button onClick={openCreate}><Plus size={16} /> Novo login exclusivo</Button></div>
+    <ReceptionTeamLink />
     {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-4 text-body-sm text-success">{notice}</div>}
     {error && !modal && <div role="alert" className="rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger">{error}</div>}
     {loading ? <Card className="flex min-h-36 items-center justify-center gap-3 text-steel"><Spinner size={20} /> Carregando acessos</Card> : <>

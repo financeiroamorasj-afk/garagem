@@ -6,6 +6,7 @@ import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
+import ReceptionTeamLink from '../components/reception/ReceptionTeamLink'
 import { dataLocalKey } from '../lib/agenda/ui'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import { mensagemErroRecepcao, obterResumoRecepcaoAdmin } from '../lib/recepcao/api'
@@ -57,9 +58,11 @@ export default function AdminReceptionReport() {
     <div className="mx-auto max-w-7xl space-y-6 lg:space-y-8">
       <header>
         <span className="mb-2 block text-label text-copper">MÓDULO RECEPÇÃO</span>
-        <h1 className="text-h1 text-warm-white sm:text-display">Operação da recepção</h1>
+        <h1 className="text-h1 text-warm-white sm:text-display">Relatório da recepção</h1>
         <p className="mt-2 max-w-2xl text-body-sm text-steel sm:text-body">Acompanhe cobranças, vendas de produtos, devoluções e estornos realizados no balcão.</p>
       </header>
+
+      <ReceptionTeamLink />
 
       <Card className="p-4 sm:p-5">
         <div className="grid grid-cols-3 gap-2">
