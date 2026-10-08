@@ -6,7 +6,7 @@ import EmptyState from './ui/EmptyState'
 import Spinner from './ui/Spinner'
 import { mensagemErroModulo, verificarAcessoModulo } from '../lib/configuracoes/modulos-api'
 
-export default function ModuleGate({ modulo, allowedRoles, children }) {
+export default function ModuleGate({ modulo, allowedRoles, accessRpc, children }) {
   const [state, setState] = useState({ loading: true, allowed: false, error: '' })
 
   useEffect(() => {
@@ -15,20 +15,22 @@ export default function ModuleGate({ modulo, allowedRoles, children }) {
       try {
         const { data: userData, error: userError } = await supabase.auth.getUser()
         if (userError || !userData.user) throw userError || new Error('Sessão inválida')
-        const [moduleAllowed, profileResult] = await Promise.all([
+        const [moduleAllowed, profileResult, operationalResult] = await Promise.all([
           verificarAcessoModulo(modulo),
           supabase.from('profiles').select('role').eq('id', userData.user.id).maybeSingle(),
+          accessRpc ? supabase.rpc(accessRpc) : Promise.resolve({ data: true, error: null }),
         ])
         if (profileResult.error) throw profileResult.error
-        const roleAllowed = !allowedRoles?.length || allowedRoles.includes(profileResult.data?.role)
-        if (active) setState({ loading: false, allowed: moduleAllowed && roleAllowed, error: roleAllowed ? '' : 'Este perfil não pertence à equipe de recepção.' })
+        if (operationalResult.error) throw operationalResult.error
+        const roleAllowed = (!allowedRoles?.length || allowedRoles.includes(profileResult.data?.role)) && Boolean(operationalResult.data)
+        if (active) setState({ loading: false, allowed: moduleAllowed && roleAllowed, error: roleAllowed ? '' : 'Este usuário não tem acesso à recepção.' })
       } catch (error) {
         if (active) setState({ loading: false, allowed: false, error: mensagemErroModulo(error) })
       }
     }
     checkAccess()
     return () => { active = false }
-  }, [allowedRoles, modulo])
+  }, [accessRpc, allowedRoles, modulo])
 
   if (state.loading) {
     return <div className="flex min-h-screen items-center justify-center bg-surface-0 text-steel"><span className="inline-flex items-center gap-3"><Spinner size={24} /> Verificando módulo</span></div>
