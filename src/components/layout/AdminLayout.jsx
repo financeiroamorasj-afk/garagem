@@ -11,6 +11,7 @@ import {
   Landmark,
   LogOut,
   Menu,
+  MonitorPlay,
   Radar,
   Scissors,
   Settings,
@@ -50,6 +51,7 @@ const navItems = [
     group: 'Operacional',
     items: [
       { label: 'Agenda', href: '/admin/agenda', icon: CalendarDays },
+      { label: 'Modo TV', href: '/admin/tv', icon: MonitorPlay },
       { label: 'Clientes', href: '/admin/clientes', icon: ContactRound },
       { label: 'Barbeiros', href: '/admin/barbeiros', icon: Scissors },
       { label: 'Serviços e materiais', href: '/admin/catalogo', icon: Wrench },

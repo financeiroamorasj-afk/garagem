@@ -16,6 +16,8 @@ import MapaBarbearia from './pages/MapaBarbearia'
 import AdminBarbers from './pages/AdminBarbers'
 import AdminAgenda from './pages/AdminAgenda'
 import AdminAgendaTv from './pages/AdminAgendaTv'
+import TvScreen from './pages/TvScreen'
+import AdminTvControl from './pages/AdminTvControl'
 import AdminCatalog from './pages/AdminCatalog'
 import AdminAvailability from './pages/AdminAvailability'
 import AdminClients from './pages/AdminClients'
@@ -39,6 +41,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/design-system" element={<DesignSystem />} />
         <Route path="/portal/:slug" element={<ClientPortal />} />
+        <Route path="/tv" element={<TvScreen />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -55,6 +58,7 @@ function App() {
             <Route path="financeiro/envelopes" element={<FinanceEnvelopes />} />
             <Route path="barbeiros" element={<AdminBarbers />} />
             <Route path="agenda" element={<AdminAgenda />} />
+            <Route path="tv" element={<AdminTvControl />} />
             <Route path="catalogo" element={<AdminCatalog />} />
             <Route path="produtos" element={<AdminProducts />} />
             <Route path="disponibilidade" element={<AdminAvailability />} />
