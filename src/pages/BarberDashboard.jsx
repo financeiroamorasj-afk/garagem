@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  DollarSign, LogOut, PackageSearch, Phone, Play, RefreshCw, Scissors,
+  DollarSign, LogOut, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
   ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
@@ -28,12 +28,14 @@ import { formatarBRL } from '../lib/financeiro/moeda'
 import { listarProdutosBarbeiro, mensagemErroProduto, venderProduto } from '../lib/produtos/api'
 import { supabase } from '../lib/supabase'
 import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
+import TvControlPanel from '../components/tv/TvControlPanel'
 
 const SECTIONS = [
   { value: 'today', label: 'Hoje', icon: Clock3 },
   { value: 'week', label: 'Semana', icon: CalendarDays },
   { value: 'sales', label: 'Vender', icon: ShoppingBag },
   { value: 'summary', label: 'Resumo', icon: BarChart3 },
+  { value: 'tv', label: 'TV', icon: MonitorPlay },
 ]
 
 const PAYMENT_LABELS = { pix: 'Pix', dinheiro: 'Dinheiro', debito: 'Cartão de débito', credito: 'Cartão de crédito', outro: 'Outro' }
@@ -81,10 +83,10 @@ function AppointmentCard({ appointment, isToday, busy, now, onAction, onCancel, 
 
 function SectionNavigation({ value, onChange }) {
   return <>
-    <nav className="mx-auto hidden max-w-5xl grid-cols-4 gap-2 px-4 py-3 sm:grid" aria-label="Área do barbeiro">
+    <nav className="mx-auto hidden max-w-5xl grid-cols-5 gap-2 px-4 py-3 sm:grid" aria-label="Área do barbeiro">
       {SECTIONS.map((item) => { const Icon = item.icon; const active = value === item.value; return <button key={item.value} type="button" onClick={() => onChange(item.value)} className={`flex min-h-11 items-center justify-center gap-2 rounded-sm border text-body-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper ${active ? 'border-copper bg-copper/10 text-copper' : 'border-line bg-surface-1 text-steel hover:text-warm-white'}`}><Icon size={17} />{item.label}</button> })}
     </nav>
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-line bg-surface-1/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden" aria-label="Área do barbeiro">
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-surface-1/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden" aria-label="Área do barbeiro">
       {SECTIONS.map((item) => { const Icon = item.icon; const active = value === item.value; return <button key={item.value} type="button" onClick={() => onChange(item.value)} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-copper ${active ? 'text-copper' : 'text-steel'}`}><Icon size={21} /><span>{item.label}</span></button> })}
     </nav>
   </>
@@ -253,6 +255,7 @@ export default function BarberDashboard() {
       {section === 'week' && <WeekSection selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekRange={weekRange} weekAppointments={weekAppointments} selectedAppointments={selectedWeekAppointments} sectionLoading={sectionLoading} today={today} busyId={busyId} now={now} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={async () => { await loadDay({ quiet: true }); await loadSection() }} />}
       {section === 'summary' && <SummarySection selectedDate={selectedDate} summary={summary} loading={sectionLoading} />}
       {section === 'sales' && <SalesSection products={products} loading={sectionLoading} onSale={openSale} />}
+      {section === 'tv' && <TvControlPanel />}
     </main>
 
     {cancelTarget && <Modal open onClose={() => !busyId && setCancelTarget(null)} title="Cancelar horário" footer={<><Button variant="ghost" disabled={Boolean(busyId)} onClick={() => setCancelTarget(null)}>Voltar</Button><Button variant="danger" loading={busyId === cancelTarget.id} onClick={() => changeStatus(cancelTarget, 'cancelado')}>Cancelar horário</Button></>}><p className="text-body text-steel">Cancelar o horário de <strong className="text-warm-white">{cancelTarget.cliente_nome}</strong> às {formatarHorario(cancelTarget.data_hora)}? Esta ação ficará registrada na agenda.</p></Modal>}

@@ -382,7 +382,7 @@ export default function AdminAgenda() {
         </div>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Button size="sm" variant="secondary" onClick={() => navigate('/admin/agenda/tv')}><MonitorUp size={16} /> Modo TV</Button>
+            <Button size="sm" variant="secondary" onClick={() => navigate('/admin/tv')}><MonitorUp size={16} /> Modo TV</Button>
             <Button size="sm" variant="secondary" onClick={() => setWalkInOpen(true)}><UserPlus size={16} /> Encaixe</Button>
             <Button size="sm" variant="secondary" onClick={openExtraHours}><Clock3 size={16} /> Horário extra</Button>
             <Button size="sm" onClick={() => setAppointmentOpen(true)}><Plus size={16} /> Novo corte</Button>
