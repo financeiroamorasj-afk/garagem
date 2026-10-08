@@ -34,7 +34,7 @@ Deno.serve(async (request) => {
   const commerciallyValid = entitlement?.status_contrato === 'ativo'
     ? (!entitlement.vigente_ate || new Date(entitlement.vigente_ate).getTime() >= now)
     : entitlement?.status_contrato === 'trial' && Boolean(entitlement.trial_ate) && new Date(entitlement.trial_ate).getTime() >= now
-  if (!entitlement?.ativo_na_unidade || !commerciallyValid) return json(403, { code: 'RECEPCAO_MODULO_INATIVO' })
+  if (!commerciallyValid) return json(403, { code: 'RECEPCAO_MODULO_INATIVO' })
 
   let input: Record<string, unknown>
   try { input = await request.json() } catch { return json(400, { code: 'RECEPCAO_DADOS_INVALIDOS' }) }

@@ -165,6 +165,7 @@ const ERRORS = {
   RECEPCAO_USUARIO_NAO_ENCONTRADO: 'O usuário da recepção não foi encontrado.',
   RECEPCAO_BARBEIRO_NAO_ENCONTRADO: 'O barbeiro não está cadastrado nesta unidade.',
   RECEPCAO_BARBEIRO_INATIVO: 'Reative o barbeiro antes de conceder acesso à recepção.',
+  RECEPCAO_ULTIMO_OPERADOR: 'Antes de remover este acesso, habilite outra pessoa para cobrar ou desative o módulo Recepção.',
   RECEPCAO_BUSCA_INVALIDA: 'Digite pelo menos dois caracteres para buscar.',
   RECEPCAO_CARRINHO_VALOR_INVALIDO: 'Revise o valor do serviço.',
   RECEPCAO_CARRINHO_PRODUTOS_INVALIDOS: 'Revise os produtos e as quantidades.',

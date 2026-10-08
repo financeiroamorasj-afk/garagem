@@ -29,6 +29,12 @@ test('entitlement comercial e ativação do módulo são isolados por barbearia'
     )
 
     await db.query("INSERT INTO public.barbearia_modulos(barbearia_id,modulo,status_contrato) VALUES($1,'recepcao','ativo')", [tenantId])
+    await assert.rejects(
+      db.query("SELECT public.configuracoes_modulo_definir_ativo('recepcao',true,NULL)"),
+      /RECEPCAO_SEM_OPERADOR/,
+    )
+    await db.query("INSERT INTO public.profissionais(barbearia_id,nome,ativo,user_id) VALUES($1,'Barbeiro módulos',true,$2)", [tenantId, barberId])
+    await db.query('SELECT public.recepcao_barbeiro_acesso_definir($1,true)', [barberId])
     const activated = await db.query("SELECT public.configuracoes_modulo_definir_ativo('recepcao',true,NULL) result")
     assert.equal(activated.rows[0].result.ativo, true)
     assert.equal(await accessFor(db, adminId), true)

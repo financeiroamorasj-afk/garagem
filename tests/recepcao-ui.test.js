@@ -40,6 +40,7 @@ test('recepção usa dados reais, login individual e não expõe visão financei
   assert.match(edge, /inviteUserByEmail/)
   assert.match(edge, /role: 'recepcao'/)
   assert.match(edge, /barbearia_modulos/)
+  assert.doesNotMatch(edge, /!entitlement\?\.ativo_na_unidade/)
   assert.match(migration, /REVOKE INSERT, UPDATE, DELETE ON TABLE public\.profiles FROM anon, authenticated/)
   assert.match(migration, /recepcao_assert_operador/)
   assert.match(accessMigration, /CREATE TABLE public\.recepcao_acessos_barbeiro/)
