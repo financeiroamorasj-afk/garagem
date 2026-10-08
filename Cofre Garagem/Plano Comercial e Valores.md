@@ -59,7 +59,7 @@ Caso a barbearia precise de algo pontual, é possível adicionar módulos extras
 - **Profissional adicional (Capacidade)**: R$ 14,90/mês (ou R$ 11,90 no anual)
   - Inclui novo acesso, agenda individual e participação na equipe.
 - **Módulo Recepção**: R$ 14,90/mês (ou R$ 11,90 no anual)
-  - Acesso dedicado, fila, check-in, cobrança no balcão e venda de produtos.
+  - Fila e caixa compartilhado da equipe, conferência de serviços/produtos, cobrança no balcão e venda avulsa. Não exige recepcionista dedicado; o dono pode habilitar barbeiros já cadastrados.
 - **Modo TV**: R$ 9,90/mês (ou R$ 7,90 no anual)
   - Exibe a agenda da equipe e conteúdo em uma tela para a barbearia.
 
