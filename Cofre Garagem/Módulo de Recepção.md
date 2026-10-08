@@ -12,6 +12,21 @@ O módulo de recepção é opcional e comercializado como adicional da assinatur
 
 O proprietário não pode liberar sozinho um recurso que não pertence à assinatura. A validação precisa acontecer no backend; esconder o menu no frontend não é suficiente.
 
+## Regra comercial e operacional fechada em 08/10/2026
+
+O adicional pago compra a **fila e o caixa compartilhado**, não a obrigação de contratar um recepcionista ou criar um novo e-mail.
+
+| Situação | Encerramento pelo barbeiro | Cobrança |
+| --- | --- | --- |
+| Recepção desativada | Finaliza o atendimento no próprio app | O próprio barbeiro registra o pagamento |
+| Recepção ativa | Finaliza apenas a parte técnica e envia serviço/produtos para `aguardando_pagamento` | Qualquer operador autorizado da unidade cobra pelo Balcão: recepcionista exclusivo ou barbeiro habilitado |
+
+- A permissão de balcão é individual e auditável. Um tablet ou PC compartilhado não implica conta ou senha compartilhada.
+- O dono pode preparar os acessos enquanto o módulo estiver contratado, mas ainda desativado. A ativação exige ao menos um operador apto; as telas de gestão impedem remover ou desativar o último operador enquanto o módulo estiver ativo.
+- O barbeiro autorizado mantém seu papel e painel. Ele pode cobrar um atendimento enviado por outro barbeiro, mas não pode contornar a fila usando o checkout direto do próprio painel.
+- O login exclusivo continua opcional e, na implementação atual, usa convite por e-mail; a pessoa pode usar um e-mail que já possui. Autenticação por telefone ainda não foi implementada e não é pré-requisito para operar sem recepcionista dedicado.
+- Acesso emergencial do proprietário ao Balcão permanece uma decisão futura, não uma permissão presumida.
+
 ## Acesso da equipe — estado atual em 08/10/2026
 
 - O endereço operacional é `https://app.garagemsystem.com.br/reception/board`. O ADM mostra e permite copiar esse link em **Configurações → Acessos à recepção** e no **Relatório da recepção**.
@@ -39,7 +54,7 @@ O proprietário não pode liberar sozinho um recurso que não pertence à assina
 - A recepção recebe o atendimento em uma fila em tempo real.
 - A recepção confere serviço, produtos, desconto autorizado, forma de pagamento e taxa.
 - Somente ao confirmar a cobrança o sistema conclui o atendimento, baixa o estoque, calcula as comissões e cria o financeiro.
-- O proprietário mantém uma ação de contingência para concluir ou estornar uma cobrança.
+- Um barbeiro habilitado pode assumir o balcão quando não houver recepcionista dedicado, sempre com o próprio login.
 
 ## O que a recepção pode ver
 

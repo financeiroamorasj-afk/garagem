@@ -219,3 +219,13 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Compartilhar o endereço não concede permissão: o módulo precisa estar ativo e cada recepcionista ou barbeiro habilitado entra com seu próprio login.
 - Quem abre o link sem sessão é encaminhado ao login e retorna ao balcão após autenticação, caso tenha acesso. O barbeiro mantém seu painel original e pode alternar pelo botão **Balcão**.
 - O comportamento de concessão e revogação de acesso, inclusive a preservação do histórico, está descrito em [[Módulo de Recepção]] e [[Painel da Recepção]].
+
+# 08/10/2026 — Caixa compartilhado da Recepção publicado
+
+- Regra de produto: sem o módulo, o barbeiro cobra no próprio painel; com o módulo ativo, ele encerra a parte técnica e toda cobrança de atendimento passa pela fila do Balcão.
+- A cobrança pode ser feita por recepcionista exclusivo ou por barbeiro autorizado, inclusive de atendimento realizado por um colega. O checkout direto do barbeiro continua bloqueado quando a Recepção está ativa.
+- A PR 37 foi incorporada à `main`; a migration `20261008190000_recepcao_caixa_equipe.sql` e a função `create-receptionist` foram publicadas no Supabase, e o deploy automático da Vercel ficou pronto no domínio `app.garagemsystem.com.br`.
+- A gestão dos acessos agora aparece antes da ativação. O backend exige ao menos um operador apto para ativar e impede retirar o último acesso pelas telas de Recepção ou desativar o último barbeiro operador.
+- O login exclusivo segue opcional e usa e-mail já existente da pessoa; login por telefone não foi incluído nesta entrega.
+- Validação: 129 testes aprovados, 1 teste de TV ignorado, build e ESLint dos arquivos alterados sem falhas. O teste novo cobre um barbeiro cobrando atendimento de outro pela fila e confirma que o checkout direto segue bloqueado.
+- Próxima conversa de produto: **Modo TV**.
