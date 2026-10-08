@@ -214,7 +214,7 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-label text-steel">Gerencie abaixo os logins exclusivos e os barbeiros com acesso ao balcão.</p>
+                  <p className="text-label text-steel">{modulo.ativo ? 'Gerencie abaixo quem pode operar o balcão.' : 'Antes de ativar, habilite abaixo ao menos uma pessoa para cobrar no balcão.'}</p>
                   <Button variant={modulo.ativo ? 'danger' : 'primary'} disabled={!modulo.contratado} loading={saving === modulo.chave} onClick={() => toggle(modulo)}>{modulo.ativo ? 'Desativar' : modulo.contratado ? 'Ativar na unidade' : 'Contratação necessária'}</Button>
                 </div>
               </Card>
@@ -223,7 +223,7 @@ export default function AdminSettings() {
         )}
       </section>
 
-      <ReceptionUsersPanel enabled={modules.some((modulo) => modulo.chave === 'recepcao' && modulo.ativo)} />
+      <ReceptionUsersPanel enabled={modules.some((modulo) => modulo.chave === 'recepcao' && modulo.contratado)} active={modules.some((modulo) => modulo.chave === 'recepcao' && modulo.ativo)} />
     </div>
   )
 }

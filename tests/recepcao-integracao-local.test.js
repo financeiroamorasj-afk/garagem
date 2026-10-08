@@ -61,6 +61,8 @@ test('recepção enxerga somente operação da própria barbearia e não acessa 
 
     await setUser(db, adminId)
     const currentVersion = (await db.query("SELECT updated_at::text FROM public.profiles WHERE id=$1", [receptionId])).rows[0].updated_at
+    await assert.rejects(db.query('SELECT public.recepcao_usuario_atualizar($1,$2,$3,false,$4)', [receptionId, 'Balcão local', '11977770000', currentVersion]), /RECEPCAO_ULTIMO_OPERADOR/)
+    await db.query("SELECT public.configuracoes_modulo_definir_ativo('recepcao',false,NULL)")
     await db.query('SELECT public.recepcao_usuario_atualizar($1,$2,$3,false,$4)', [receptionId, 'Balcão local', '11977770000', currentVersion])
     await setUser(db, receptionId)
     assert.equal((await db.query("SELECT public.modulo_acesso_verificar('recepcao') result")).rows[0].result, false)

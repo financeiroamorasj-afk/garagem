@@ -32,5 +32,6 @@ export function mensagemErroModulo(error) {
   if (message.includes('MODULO_CONFLITO_VERSAO')) return 'A configuração mudou em outra sessão. Atualize a página e tente novamente.'
   if (message.includes('MODULO_SEM_PERMISSAO')) return 'Seu perfil não possui permissão para alterar módulos.'
   if (message.includes('MODULO_INVALIDO')) return 'A configuração informada não é válida.'
+  if (message.includes('RECEPCAO_SEM_OPERADOR')) return 'Habilite ao menos um barbeiro ou um login de recepção antes de ativar o módulo.'
   return 'Não foi possível carregar ou alterar os módulos. Tente novamente.'
 }

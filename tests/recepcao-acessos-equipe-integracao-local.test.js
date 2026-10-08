@@ -54,6 +54,8 @@ test('barbeiro recebe e perde acesso ao balcão sem perder seu papel; login excl
     assert.equal((await db.query('SELECT public.recepcao_acesso_operador_verificar() AS allowed')).rows[0].allowed, true)
     await setUser(db, adminId)
     const version = (await db.query('SELECT updated_at::text AS updated_at FROM public.profiles WHERE id=$1', [receptionId])).rows[0].updated_at
+    await denied(db, 'SELECT public.recepcao_usuario_atualizar($1,$2,$3,false,$4)', /RECEPCAO_ULTIMO_OPERADOR/, [receptionId, 'Recepcionista', null, version])
+    await db.query("SELECT public.configuracoes_modulo_definir_ativo('recepcao',false,NULL)")
     await db.query('SELECT public.recepcao_usuario_atualizar($1,$2,$3,false,$4)', [receptionId, 'Recepcionista', null, version])
     await setUser(db, receptionId)
     assert.equal((await db.query('SELECT public.recepcao_acesso_operador_verificar() AS allowed')).rows[0].allowed, false)
