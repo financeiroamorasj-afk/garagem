@@ -12,7 +12,7 @@ export async function listarAgendaBarbeiro(data) {
   if (!DATE_KEY.test(String(data ?? ''))) throw new TypeError('Data da agenda inválida')
   const { data: rows, error } = await supabase.rpc('barbeiro_agenda_listar_memoria', { p_data: data })
   if (error) throw error
-  return rows ?? []
+  return incluirInicioAtendimento(rows ?? [])
 }
 
 export async function listarAgendaBarbeiroPeriodo(dataInicial, dataFinal) {
@@ -24,7 +24,16 @@ export async function listarAgendaBarbeiroPeriodo(dataInicial, dataFinal) {
     p_data_final: dataFinal,
   })
   if (error) throw error
-  return rows ?? []
+  return incluirInicioAtendimento(rows ?? [])
+}
+
+async function incluirInicioAtendimento(rows) {
+  const activeIds = rows.filter((row) => row.status === 'em_atendimento').map((row) => row.id)
+  if (activeIds.length === 0) return rows
+  const { data: starts, error } = await supabase.from('agendamentos').select('id,iniciado_em').in('id', activeIds)
+  if (error) return rows
+  const startById = new Map((starts ?? []).map((item) => [item.id, item.iniciado_em]))
+  return rows.map((row) => ({ ...row, iniciado_em: startById.get(row.id) ?? null }))
 }
 
 export async function carregarResumoBarbeiro(dataInicial, dataFinal) {

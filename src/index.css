@@ -71,6 +71,36 @@
     --container-modal: 560px;
 }
 
+html[data-theme='light'] {
+    color-scheme: light;
+    --color-surface-0: #f5f1e9;
+    --color-surface-1: #fffdf9;
+    --color-surface-2: #ece6dc;
+    --color-surface-3: #dfd4c5;
+    --color-copper: #984b20;
+    --color-copper-light: #ae6030;
+    --color-gold-aged: #75551f;
+    --color-warm-white: #231d18;
+    --color-steel: #5e584f;
+    --color-line: rgba(35,29,24,0.16);
+    --color-line-strong: rgba(35,29,24,0.36);
+    --color-success: #42703c;
+    --color-warning: #925d14;
+    --color-danger: #ad3e32;
+    --color-info: #37637d;
+    --color-industrial-dark: #f5f1e9;
+    --shadow-overlay: 0 16px 48px rgba(35,29,24,0.18), 0 2px 8px rgba(35,29,24,0.12);
+}
+
+/* O texto sobre botões de cobre continua claro; superfícies usam marfim. */
+html[data-theme='light'] .text-surface-0 {
+    color: #fffdf9;
+}
+
+html[data-theme='light'] .surface-header-blur {
+    background: linear-gradient(to bottom, rgba(255,253,249,0.85), transparent);
+}
+
 /* =========================================================
    Base
    ========================================================= */

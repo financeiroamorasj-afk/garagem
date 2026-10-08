@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MonitorPlay, RefreshCw, ShieldCheck, Trash2, Youtube } from 'lucide-react'
+import { Copy, ExternalLink, MonitorPlay, RefreshCw, ShieldCheck, Trash2, Youtube } from 'lucide-react'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 import Spinner from '../ui/Spinner'
@@ -10,6 +10,7 @@ import {
 } from '../../lib/tv/api'
 
 export default function TvControlPanel({ manager = false }) {
+  const tvUrl = `${window.location.origin}/tv`
   const [devices, setDevices] = useState([])
   const [operators, setOperators] = useState([])
   const [code, setCode] = useState('')
@@ -69,6 +70,16 @@ export default function TvControlPanel({ manager = false }) {
     }, videoInput.trim() ? 'Vídeo enviado para a TV.' : 'TV configurada para mostrar somente a agenda.')
   }
 
+  async function copyTvLink() {
+    setError(''); setNotice('')
+    try {
+      await navigator.clipboard.writeText(tvUrl)
+      setNotice('Link do Modo TV copiado.')
+    } catch {
+      setError('Não foi possível copiar automaticamente. Use o link exibido acima.')
+    }
+  }
+
   return <section aria-labelledby="tv-control-title" className="space-y-4">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h2 id="tv-control-title" className="flex items-center gap-2 text-h2 text-warm-white"><MonitorPlay size={21} className="text-copper" /> Modo TV</h2><p className="mt-1 text-body-sm text-steel">Conecte a tela e controle o YouTube pelo celular.</p></div>
@@ -78,7 +89,13 @@ export default function TvControlPanel({ manager = false }) {
     {notice && <p role="status" className="rounded-sm border border-success/40 bg-success/10 p-3 text-body-sm text-success">{notice}</p>}
     {loading ? <Card className="flex min-h-28 items-center justify-center gap-2 text-steel"><Spinner size={20} /> Carregando TVs</Card> : <>
       {manager && <Card className="space-y-4 p-5">
-        <div><h3 className="text-h3 text-warm-white">Conectar uma TV</h3><p className="mt-1 text-body-sm text-steel">Abra <strong>app.garagemsystem.com.br/tv</strong> na televisão e digite aqui o código exibido.</p></div>
+        <div><h3 className="text-h3 text-warm-white">Conectar uma TV</h3><p className="mt-1 text-body-sm text-steel">Abra o endereço abaixo na televisão e digite aqui o código exibido.</p></div>
+        <div className="flex flex-wrap items-center gap-3 rounded-sm border border-line bg-surface-0 p-3">
+          <a href={tvUrl} target="_blank" rel="noopener noreferrer" className="min-w-0 break-all text-body-sm text-copper underline underline-offset-4">{tvUrl}<span className="sr-only"> (abre em nova aba)</span></a>
+          <Button type="button" size="sm" variant="secondary" onClick={copyTvLink}><Copy size={16} /> Copiar link</Button>
+          <a href={tvUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-sm border border-line px-3 text-body-sm text-steel hover:border-copper hover:text-copper"><ExternalLink size={16} /> Abrir em nova aba</a>
+        </div>
+        <p className="text-body-sm text-steel">Para o vídeo continuar na TV, mantenha a aba de exibição aberta e visível nesse aparelho. O navegador pode pausar vídeos em abas ocultas.</p>
         <form onSubmit={pair} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <label className="text-label text-steel">CÓDIGO DA TV<input required value={code} onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-F0-9]/g,'').slice(0,8))} maxLength={8} placeholder="A1B2C3D4" className="mt-2 h-11 w-full rounded-sm border border-line-strong bg-surface-0 px-3 font-mono text-body text-warm-white" /></label>
           <label className="text-label text-steel">NOME DO APARELHO<input required value={name} onChange={(event) => setName(event.target.value)} maxLength={60} className="mt-2 h-11 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white" /></label>
@@ -88,7 +105,7 @@ export default function TvControlPanel({ manager = false }) {
 
       <Card className="space-y-4 p-5">
         <div><h3 className="text-h3 text-warm-white">Vídeo nas TVs</h3><p className="mt-1 text-body-sm text-steel">O link enviado por aqui aparece na TV conectada. Cole um vídeo ou playlist.</p></div>
-        {devices.length === 0 ? <p className="text-body-sm text-steel">Nenhuma TV conectada{manager ? '. Abra o endereço acima na TV para começar.' : ' ou sua conta ainda não foi habilitada pelo dono.'}</p> : <>
+          {devices.length === 0 ? <p className="text-body-sm text-steel">{manager ? 'Nenhuma TV conectada. Abra o endereço acima na TV para começar.' : 'Sua permissão para controlar vídeos está ativa. O dono ainda precisa conectar uma TV para você escolher o conteúdo.'}</p> : <>
           <label className="block text-label text-steel">ESCOLHA A TV<select value={selectedId} onChange={(event) => setSelectedId(event.target.value)} className="mt-2 h-11 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white">{devices.map((device) => <option key={device.id} value={device.id}>{device.nome}</option>)}</select></label>
           <form onSubmit={saveVideo} className="space-y-3">
             <label className="block text-label text-steel">LINK DO YOUTUBE<input type="url" value={videoInput} onChange={(event) => setVideoInput(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="mt-2 h-11 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white" /></label>
@@ -107,6 +124,6 @@ export default function TvControlPanel({ manager = false }) {
         {operators.length === 0 ? <p className="text-body-sm text-steel">Nenhum barbeiro ativo cadastrado.</p> : <div className="divide-y divide-line">{operators.map((operator) => <label key={operator.id} className="flex min-h-12 items-center justify-between gap-3 py-2 text-body-sm text-warm-white"><span>{operator.nome}</span><input type="checkbox" checked={operator.permitido} disabled={busy} onChange={(event) => run(() => definirPermissaoTv(operator.id, event.target.checked), 'Permissão atualizada.')} className="h-5 w-5 accent-copper" aria-label={`Permitir ${operator.nome} controlar vídeos`} /></label>)}</div>}
       </Card>}
     </>}
-    {manager && <Link to="/admin/agenda/tv" className="text-body-sm text-copper underline">Abrir prévia da agenda neste aparelho</Link>}
+    {manager && <Link to="/admin/agenda/tv" target="_blank" rel="noopener noreferrer" className="text-body-sm text-copper underline">Abrir prévia da agenda em nova aba</Link>}
   </section>
 }

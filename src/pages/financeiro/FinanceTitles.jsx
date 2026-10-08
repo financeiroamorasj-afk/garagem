@@ -275,7 +275,19 @@ export default function FinanceTitles() {
     { key: 'status', header: 'Status', render: (value) => <Badge variant={statusVariant[value] ?? 'neutral'}>{value}</Badge> },
   ]
 
-  const table = <DataTable columns={columns} rows={rows} loading={loading} caption={type === 'pagar' ? 'Contas reais a pagar' : 'Contas reais a receber'} emptyTitle="Nenhum título encontrado" emptyDescription="Não há títulos para os filtros e período selecionados." renderAction={(row) => <div className="flex min-w-max flex-wrap justify-end gap-2">{row.pode_liquidar && <Button size="sm" variant="secondary" onClick={() => openSettlement(row)}>{row.tipo === 'pagar' ? 'Pagar' : 'Receber'}</Button>}{row.pode_editar && <Button size="sm" variant="ghost" onClick={() => openEditor(row)}>Editar</Button>}{row.pode_cancelar && <Button size="sm" variant="danger" onClick={() => openCancel(row)}>Cancelar</Button>}{row.pode_estornar && <Button size="sm" variant="danger" onClick={() => { setCheckoutReversal(row); setCheckoutReversalReason(''); setTitleErrors({}); setFeedback('') }}>Estornar atendimento</Button>}{!row.pode_liquidar && !row.pode_editar && !row.pode_cancelar && !row.pode_estornar && <span className="text-body-sm text-steel">Sem ação</span>}</div>} />
+  const renderActions = (row) => <div className="flex flex-wrap gap-2 sm:justify-end">{row.pode_liquidar && <Button size="sm" variant="secondary" onClick={() => openSettlement(row)}>{row.tipo === 'pagar' ? 'Pagar' : 'Receber'}</Button>}{row.pode_editar && <Button size="sm" variant="ghost" onClick={() => openEditor(row)}>Editar</Button>}{row.pode_cancelar && <Button size="sm" variant="danger" onClick={() => openCancel(row)}>Cancelar</Button>}{row.pode_estornar && <Button size="sm" variant="danger" onClick={() => { setCheckoutReversal(row); setCheckoutReversalReason(''); setTitleErrors({}); setFeedback('') }}>Estornar atendimento</Button>}{!row.pode_liquidar && !row.pode_editar && !row.pode_cancelar && !row.pode_estornar && <span className="text-body-sm text-steel">Sem ação</span>}</div>
+
+  const table = <>
+    <div className="space-y-3 sm:hidden" aria-label={type === 'pagar' ? 'Contas a pagar' : 'Contas a receber'}>
+      {loading ? <p className="rounded-md border border-line bg-surface-1 p-4 text-body-sm text-steel">Carregando contas...</p> : rows.length === 0 ? <p className="rounded-md border border-line bg-surface-1 p-4 text-body-sm text-steel">Nenhuma conta encontrada para os filtros e período selecionados.</p> : rows.map((row) => <article key={row.id} className="min-w-0 space-y-3 rounded-md border border-line bg-surface-1 p-4">
+        <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="break-words text-body font-semibold text-warm-white">{row.descricao}</h3>{row.modalidade !== 'unico' && <p className="mt-1 text-label text-copper">{row.modalidade === 'parcelado' ? 'PARCELA' : 'RECORRÊNCIA'} {row.numero_repeticao}/{row.total_repeticoes}</p>}</div><Badge variant={statusVariant[row.status] ?? 'neutral'}>{row.status}</Badge></div>
+        <p className="text-data-lg text-warm-white">{formatarBRL(row.valor)}</p>
+        <dl className="grid grid-cols-2 gap-3 text-body-sm"><div><dt className="text-steel">{type === 'pagar' ? 'Vencimento' : 'Previsão'}</dt><dd className="mt-1 text-warm-white">{row.data_evento}</dd></div><div><dt className="text-steel">Categoria</dt><dd className="mt-1 break-words text-warm-white">{row.categoria || 'Sem categoria'}</dd></div><div className="col-span-2"><dt className="text-steel">Contraparte</dt><dd className="mt-1 break-words text-warm-white">{row.contraparte || 'Não informada'}</dd></div></dl>
+        <div className="border-t border-line pt-3">{renderActions(row)}</div>
+      </article>)}
+    </div>
+    <DataTable className="hidden sm:block" columns={columns} rows={rows} loading={loading} caption={type === 'pagar' ? 'Contas reais a pagar' : 'Contas reais a receber'} emptyTitle="Nenhum título encontrado" emptyDescription="Não há títulos para os filtros e período selecionados." renderAction={renderActions} />
+  </>
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">

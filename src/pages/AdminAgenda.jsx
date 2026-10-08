@@ -153,12 +153,16 @@ function DayView({ appointments }) {
   )
 }
 
-function WeekView({ days, appointmentsByDay, today }) {
-  const hasAppointments = days.some((day) => (appointmentsByDay.get(day) ?? []).length > 0)
-  if (!hasAppointments) return <EmptyCalendar />
+function WeekView({ days, selectedDate, appointmentsByDay, today, showPastDays, onTogglePastDays }) {
+  const hasPastDays = days.includes(today) && days.some((day) => day < today)
+  const hidePastDays = hasPastDays && !showPastDays && selectedDate >= today
+  const visibleDays = hidePastDays ? days.filter((day) => day >= today) : days
+  const hasAppointments = visibleDays.some((day) => (appointmentsByDay.get(day) ?? []).length > 0)
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-7">
-      {days.map((day) => {
+    <div className="space-y-3">
+      {hasPastDays && <button type="button" className="text-body-sm text-copper underline underline-offset-4" onClick={onTogglePastDays}>{hidePastDays ? 'Ver dias anteriores desta semana' : 'Ocultar dias anteriores'}</button>}
+      {!hasAppointments ? <EmptyCalendar /> : <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+      {visibleDays.map((day) => {
         const rows = appointmentsByDay.get(day) ?? []
         return (
           <section key={day} className={`min-w-0 rounded-md border bg-surface-1 p-3 ${day === today ? 'border-copper' : 'border-line'}`}>
@@ -173,7 +177,7 @@ function WeekView({ days, appointmentsByDay, today }) {
             )}
           </section>
         )
-      })}
+      })}</div>}
     </div>
   )
 }
@@ -231,6 +235,7 @@ export default function AdminAgenda() {
   const [activeArea, setActiveArea] = useState('calendario')
   const [selectedDate, setSelectedDate] = useState(today)
   const [view, setView] = useState('semana')
+  const [showPastDays, setShowPastDays] = useState(false)
   const [professionalFilter, setProfessionalFilter] = useState('todos')
   const [statusFilter, setStatusFilter] = useState('todos')
   const [clientQuery, setClientQuery] = useState('')
@@ -477,7 +482,7 @@ export default function AdminAgenda() {
         ) : error ? null : view === 'dia' ? (
           <DayView appointments={appointmentsByDay.get(selectedDate) ?? []} />
         ) : view === 'semana' ? (
-          <WeekView days={range.days} appointmentsByDay={appointmentsByDay} today={today} />
+          <WeekView days={range.days} selectedDate={selectedDate} appointmentsByDay={appointmentsByDay} today={today} showPastDays={showPastDays} onTogglePastDays={() => setShowPastDays((current) => !current)} />
         ) : (
           <MonthView days={range.days} selectedDate={selectedDate} appointmentsByDay={appointmentsByDay} today={today} onOpenDay={openDay} />
         )}

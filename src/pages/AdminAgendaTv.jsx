@@ -463,11 +463,11 @@ export default function AdminAgendaTv() {
           </div>
         )}
 
-        {loading ? (
+        {loading && team.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-steel"><Spinner size={28} /><span className="ml-3">Carregando agenda da equipe</span></div>
-        ) : !error && team.length === 0 ? (
+        ) : team.length === 0 ? (
           <div className="flex flex-1 items-center justify-center"><EmptyState icon={Users} title="Nenhum barbeiro ativo" description="Cadastre ou ative a equipe para usar o modo TV." /></div>
-        ) : !error && (
+        ) : (
           <div className={`relative grid min-h-0 flex-1 gap-3 2xl:gap-4 ${youtubeEmbed && youtubeMode === 'split' ? 'lg:grid-cols-[minmax(0,2.15fr)_minmax(340px,.85fr)]' : ''}`}>
             {youtubeEmbed && (
               <section className={`min-h-0 overflow-hidden rounded-lg border border-line bg-black shadow-overlay ${showYoutube ? '' : 'pointer-events-none absolute inset-0 invisible'}`} aria-label="YouTube" aria-hidden={showYoutube ? undefined : 'true'}>

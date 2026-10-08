@@ -12,12 +12,19 @@ import {
   podeMarcarNaoCompareceu,
   resumoAgenda,
   statusAgenda,
+  tempoAtendimento,
 } from '../src/lib/agenda/ui.js'
 
 test('agenda formata datas sem depender de UTC e atravessa meses', () => {
   assert.equal(dataLocalKey(new Date(2026, 8, 23, 23, 50)), '2026-09-23')
   assert.equal(deslocarDataKey('2026-09-30', 1), '2026-10-01')
   assert.equal(deslocarDataKey('2026-03-01', -1), '2026-02-28')
+})
+
+test('cronômetro usa o início real do atendimento e não o horário agendado', () => {
+  assert.equal(tempoAtendimento('2026-10-08T12:00:00Z', new Date('2026-10-08T13:02:03Z')), '01:02:03')
+  assert.equal(tempoAtendimento(null), null)
+  assert.equal(tempoAtendimento('inválido'), null)
 })
 
 test('calendário calcula intervalos de dia, semana e mês', () => {

@@ -24,6 +24,7 @@ const ENVELOPE_ERRORS = {
   FINANCEIRO_ENVELOPE_INATIVO: 'Este envelope está inativo e não pode receber reservas.',
   FINANCEIRO_ENVELOPE_NAO_ENCONTRADO: 'O envelope não foi encontrado. Recarregue os dados.',
   FINANCEIRO_VALOR_INVALIDO: 'Informe um valor maior que zero.',
+  FINANCEIRO_SALDO_INSUFICIENTE: 'O envelope não possui saldo suficiente para esse resgate.',
   FINANCEIRO_IDEMPOTENCIA_PAYLOAD_DIVERGENTE: 'A tentativa anterior usou outros dados. Cancele e inicie uma nova operação.',
 }
 

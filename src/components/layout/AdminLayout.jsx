@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import EmptyState from '../ui/EmptyState'
 import Spinner from '../ui/Spinner'
+import ThemeToggle from '../ui/ThemeToggle'
 import useAdminProfile from '../../hooks/useAdminProfile'
 import { resolveAdminAccess } from '../../lib/auth/adminAccess'
 import { supabase } from '../../lib/supabase'
@@ -159,7 +160,8 @@ function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
           </button>
         </div>
         <Navigation onNavigate={onClose} />
-        <div className="shrink-0 border-t border-line p-4">
+        <div className="shrink-0 space-y-3 border-t border-line p-4">
+          <ThemeToggle showLabel />
           <button
             type="button"
             onClick={onSignOut}
@@ -175,7 +177,7 @@ function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
   )
 }
 
-function MobileBottomNavigation({ onOpenMenu }) {
+function MobileBottomNavigation() {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface-1/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
@@ -199,14 +201,6 @@ function MobileBottomNavigation({ onOpenMenu }) {
           </NavLink>
         )
       })}
-      <button
-        type="button"
-        onClick={onOpenMenu}
-        className="flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold text-steel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-copper"
-      >
-        <Menu size={21} strokeWidth={1.8} aria-hidden="true" />
-        <span>Menu</span>
-      </button>
     </nav>
   )
 }
@@ -315,10 +309,14 @@ export default function AdminLayout() {
             <span className="text-body font-semibold text-gold-aged">GARAGEM</span>
           </div>
 
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-body-sm font-bold text-copper lg:hidden">
-            {userName.charAt(0).toUpperCase()}
+          <div className="flex items-center gap-2 lg:hidden">
+            <ThemeToggle />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-body-sm font-bold text-copper">
+              {userName.charAt(0).toUpperCase()}
+            </div>
           </div>
           <div className="hidden items-center gap-4 lg:flex">
+            <ThemeToggle />
             <span className="text-body-sm text-steel">{userName}</span>
             <button
               type="button"
@@ -337,7 +335,7 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      <MobileBottomNavigation onOpenMenu={() => setMobileMenuOpen(true)} />
+      <MobileBottomNavigation />
       <MobileDrawer
         open={isMobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}

@@ -126,6 +126,16 @@ export function atrasoAtendimentoMinutos(dataHora, agora = new Date()) {
   return Math.max(0, diferenca)
 }
 
+export function tempoAtendimento(iniciadoEm, agora = new Date()) {
+  if (!iniciadoEm) return null
+  const inicio = new Date(iniciadoEm).getTime()
+  if (!Number.isFinite(inicio)) return null
+  const segundos = Math.max(0, Math.floor((agora.getTime() - inicio) / 1000))
+  const horas = Math.floor(segundos / 3600)
+  const minutos = Math.floor((segundos % 3600) / 60)
+  return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:${String(segundos % 60).padStart(2, '0')}`
+}
+
 export function podeMarcarNaoCompareceu(dataHora, agora = new Date()) {
   return atrasoAtendimentoMinutos(dataHora, agora) >= 10
 }

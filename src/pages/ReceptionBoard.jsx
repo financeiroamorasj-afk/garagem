@@ -8,6 +8,7 @@ import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
+import ThemeToggle from '../components/ui/ThemeToggle'
 import ReceptionCheckoutModal from '../components/ReceptionCheckoutModal'
 import ReceptionProductSaleModal from '../components/ReceptionProductSaleModal'
 import ReceptionSalesHistory from '../components/ReceptionSalesHistory'
@@ -178,7 +179,7 @@ export default function ReceptionBoard() {
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-copper text-surface-0"><Headset size={21} /></span>
             <div className="min-w-0"><h1 className="truncate text-h3 text-warm-white">Recepção</h1><p className="text-label text-steel">Operação do balcão</p></div>
           </div>
-          <div className="flex items-center gap-1">{isBarber && <Button size="sm" variant="secondary" onClick={() => navigate('/barber/dashboard')}><ArrowLeft size={16} /> Meu painel</Button>}<Button size="sm" variant="ghost" onClick={signOut}><LogOut size={16} /> <span className="hidden sm:inline">Sair</span></Button></div>
+          <div className="flex items-center gap-1">{isBarber && <Button size="sm" variant="secondary" onClick={() => navigate('/barber/dashboard')}><ArrowLeft size={16} /> Meu painel</Button>}<ThemeToggle /><Button size="sm" variant="ghost" onClick={signOut}><LogOut size={16} /> <span className="hidden sm:inline">Sair</span></Button></div>
         </div>
       </header>
 
