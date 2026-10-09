@@ -266,7 +266,7 @@ export default function AdminAgenda() {
     try {
       const [rows, team, extras, operationalAvailability] = await Promise.all([
         listarAgendaAdminPeriodo(range.start, range.end),
-        professionals.length ? Promise.resolve(professionals) : listarBarbeiros({ incluirInativos: true }),
+        listarBarbeiros({ incluirInativos: true }),
         listarHorariosExtras({ dataInicial: range.start, dataFinal: range.end }),
         listarDisponibilidadeOperacional({ dataInicial: range.start, dataFinal: range.end }),
       ])
@@ -279,7 +279,7 @@ export default function AdminAgenda() {
     } finally {
       if (!quiet) setLoading(false)
     }
-  }, [professionals, range.end, range.start])
+  }, [range.end, range.start])
 
   useEffect(() => { load() }, [load])
 
