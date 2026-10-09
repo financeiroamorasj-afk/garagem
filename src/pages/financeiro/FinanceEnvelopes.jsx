@@ -11,7 +11,7 @@ import Label from '../../components/ui/Label'
 import Modal from '../../components/ui/Modal'
 import ReserveMeter from '../../components/ui/ReserveMeter'
 import Spinner from '../../components/ui/Spinner'
-import { aportarEnvelope, criarEnvelope, definirEnvelopeAtivo, distribuirEnvelopesDiario, editarEnvelope, listarEnvelopes, listarSaldosDisponiveisContas, listarTransacoesEnvelope, simularDistribuicaoEnvelopes } from '../../lib/financeiro/api'
+import { aportarEnvelope, criarEnvelope, definirEnvelopeAtivo, distribuirEnvelopesDiario, editarEnvelope, liberarEnvelope, listarEnvelopes, listarSaldosDisponiveisContas, listarTransacoesEnvelope, simularDistribuicaoEnvelopes } from '../../lib/financeiro/api'
 import { formatarBRL } from '../../lib/financeiro/moeda'
 import { dataCompetenciaBrt, periodoMensalBrt } from '../../lib/financeiro/periodo'
 import { classificarEnvelope, mensagemErroEnvelope, podeAdicionarReserva } from '../../lib/financeiro/envelopes-ui'
@@ -23,7 +23,7 @@ const PURPOSE_LABELS = { reserva: 'Reserva', reinvestimento: 'Reinvestimento', s
 
 const transactionColumns = [
   { key: 'data_brt', header: 'Data BRT', dataType: true },
-  { key: 'tipo', header: 'Tipo', render: (value) => value === 'distribuicao' ? 'Distribuição' : value === 'resgate' ? 'Resgate / uso' : value === 'aporte_avulso' ? 'Reserva adicionada' : 'Estorno' },
+  { key: 'tipo', header: 'Tipo', render: (value) => value === 'distribuicao' ? 'Distribuição' : value === 'resgate' ? 'Resgate para conta a pagar' : value === 'resgate_livre' ? 'Resgate para saldo disponível' : value === 'aporte_avulso' ? 'Reserva adicionada' : 'Estorno' },
   { key: 'direcao', header: 'Direção', render: (value) => <Badge variant={value === 'credito' ? 'success' : 'warning'}>{value === 'credito' ? 'Crédito' : 'Débito'}</Badge> },
   { key: 'valor', header: 'Valor', align: 'right', dataType: true, render: formatarBRL },
   { key: 'saldo_depois', header: 'Saldo após', align: 'right', dataType: true, render: formatarBRL },
@@ -46,11 +46,13 @@ export default function FinanceEnvelopes() {
   const [statusModal, setStatusModal] = useState(null)
   const [distribution, setDistribution] = useState(null)
   const [reserveModal, setReserveModal] = useState(null)
+  const [rescueModal, setRescueModal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const formIntentRef = useRef(null)
   const statusIntentRef = useRef(null)
   const distributionIntentRef = useRef(null)
   const reserveIntentRef = useRef(null)
+  const rescueIntentRef = useRef(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -273,6 +275,43 @@ export default function FinanceEnvelopes() {
     }
   }
 
+  function openRescueModal(envelope) {
+    rescueIntentRef.current = envelopeIntentKeyFor(null, 'liberar', envelope.id)
+    setRescueModal({ row: envelope, valor: null, error: '' })
+  }
+
+  function closeRescueModal() {
+    rescueIntentRef.current = null
+    setRescueModal(null)
+  }
+
+  async function confirmRescue(event) {
+    event.preventDefault()
+    if (!rescueModal || !rescueIntentRef.current) return
+    const envelope = rescueModal.row
+    const intent = rescueIntentRef.current
+    setSubmitting(true)
+    setRescueModal((current) => ({ ...current, error: '' }))
+    try {
+      await liberarEnvelope({
+        envelopeId: envelope.id,
+        valor: rescueModal.valor,
+        idempotencyKey: intent.key,
+        correlationId: intent.key,
+      })
+      closeRescueModal()
+      setFeedback('Reserva liberada para o saldo disponível da conta vinculada.')
+      await loadData()
+      if (selected?.id === envelope.id) await loadStatement(envelope, 1)
+    } catch (requestError) {
+      setRescueModal((current) => ({ ...current, error: mensagemErroEnvelope(requestError).message }))
+      const detail = [requestError?.code, requestError?.message, requestError?.details].filter(Boolean).join(' ')
+      if (detail.includes('FINANCEIRO_SALDO_INSUFICIENTE')) await loadData()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const accountById = new Map(accounts.map((account) => [account.conta_bancaria_id, account]))
   const totalPages = Math.max(1, Math.ceil(transactionsTotal / PAGE_SIZE))
   const simulationItems = distribution?.simulation?.itens ?? []
@@ -309,7 +348,7 @@ export default function FinanceEnvelopes() {
           </section>
 
           <section aria-labelledby="envelopes-title" className="space-y-5">
-            <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-end"><div className="max-w-3xl"><h2 id="envelopes-title" className="text-h1 text-warm-white">Reservas por propósito</h2><p className="mt-2 text-body text-steel">Crie, edite e organize percentuais. O resgate permanece indisponível nesta fase.</p></div><div className="flex rounded-sm border border-line-strong p-1" role="group" aria-label="Filtro de envelopes"><Button size="sm" variant={!includeInactive ? 'secondary' : 'ghost'} aria-pressed={!includeInactive} onClick={() => setIncludeInactive(false)}>Ativos</Button><Button size="sm" variant={includeInactive ? 'secondary' : 'ghost'} aria-pressed={includeInactive} onClick={() => setIncludeInactive(true)}>Todos</Button></div></div>
+            <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-end"><div className="max-w-3xl"><h2 id="envelopes-title" className="text-h1 text-warm-white">Reservas por propósito</h2><p className="mt-2 text-body text-steel">Crie, edite e organize percentuais. Use o resgate para liberar uma reserva no saldo disponível da conta vinculada.</p></div><div className="flex rounded-sm border border-line-strong p-1" role="group" aria-label="Filtro de envelopes"><Button size="sm" variant={!includeInactive ? 'secondary' : 'ghost'} aria-pressed={!includeInactive} onClick={() => setIncludeInactive(false)}>Ativos</Button><Button size="sm" variant={includeInactive ? 'secondary' : 'ghost'} aria-pressed={includeInactive} onClick={() => setIncludeInactive(true)}>Todos</Button></div></div>
             {envelopes.length === 0 ? <Card><EmptyState icon={Inbox} title="Nenhum envelope cadastrado" description="Os envelopes ativos aparecerão aqui quando forem cadastrados em uma próxima etapa operacional." /></Card> : (
               <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {envelopes.map((envelope) => {
@@ -317,7 +356,22 @@ export default function FinanceEnvelopes() {
                   const status = classificarEnvelope(envelope, account)
                   const canReserve = podeAdicionarReserva(envelope, account)
                   const reserveHelpId = `envelope-${envelope.id}-reserve-help`
-                  return <Card key={envelope.id} className="flex h-full flex-col" aria-labelledby={`envelope-${envelope.id}-title`}><Card.Body className="flex flex-1 flex-col"><div className="flex items-start justify-between gap-4"><div className="flex min-w-0 items-start gap-3"><WalletCards size={20} className="mt-1 shrink-0 text-copper" aria-hidden="true" /><div className="min-w-0"><h3 id={`envelope-${envelope.id}-title`} className="text-h3 text-warm-white">{envelope.nome}</h3><p className="mt-1 text-body-sm text-steel">{envelope.finalidade}</p></div></div><Badge variant={status.variant}>{Number(envelope.percentual_distribuicao || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</Badge></div><p className="mt-4 text-body-sm text-steel">Conta vinculada: {envelope.conta_nome}</p><div className="mt-6"><p className="text-label text-steel">Saldo reservado</p><p className="mt-2 text-data-lg text-warm-white">{formatarBRL(envelope.saldo_acumulado)}</p></div>{account && <ReserveMeter className="mt-6 border-t border-line pt-4" label={`Uso de ${envelope.nome}`} bankBalance={account.saldo_bancario} reserved={account.saldo_reservado} available={account.saldo_disponivel} />}<div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4"><span className="text-body-sm text-steel">Situação</span><Badge variant={status.variant}>{status.label}</Badge></div><div className="mt-auto flex flex-col gap-3 pt-6"><Button className="w-full" disabled={!canReserve} aria-describedby={!canReserve ? reserveHelpId : undefined} onClick={() => openReserveModal(envelope)}><CirclePlus size={16} aria-hidden="true" />Adicionar reserva</Button>{!canReserve && <p id={reserveHelpId} className="text-body-sm text-steel">{!envelope.ativa ? 'Ative o envelope para adicionar uma reserva.' : !account ? 'A conta vinculada ainda não foi carregada.' : 'A conta não possui valor disponível para reservar.'}</p>}<div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={() => openEnvelopeForm(envelope)}>Editar</Button><Button variant="ghost" disabled={envelope.ativa && Number(envelope.saldo_acumulado) > 0} aria-describedby={envelope.ativa && Number(envelope.saldo_acumulado) > 0 ? `envelope-${envelope.id}-status-help` : undefined} onClick={() => openStatusModal(envelope)}>{envelope.ativa ? 'Desativar' : 'Ativar'}</Button></div>{envelope.ativa && Number(envelope.saldo_acumulado) > 0 && <p id={`envelope-${envelope.id}-status-help`} className="text-body-sm text-warning">Resgate todo o saldo antes de desativar.</p>}<div className="grid grid-cols-2 gap-3"><Button variant="secondary" className="w-full" onClick={() => openStatement(envelope)}><History size={16} aria-hidden="true" />Ver extrato</Button><Button variant="ghost" className="w-full" disabled aria-describedby={`envelope-${envelope.id}-resgate-help`}><ReceiptText size={16} aria-hidden="true" />Usar / resgatar</Button></div><p id={`envelope-${envelope.id}-resgate-help`} className="text-body-sm text-steel">Disponível após a implantação de lançamentos manuais a pagar.</p></div></Card.Body></Card>
+                  return <Card key={envelope.id} className="flex h-full flex-col" aria-labelledby={`envelope-${envelope.id}-title`}>
+                    <Card.Body className="flex flex-1 flex-col">
+                      <div className="flex items-start justify-between gap-4"><div className="flex min-w-0 items-start gap-3"><WalletCards size={20} className="mt-1 shrink-0 text-copper" aria-hidden="true" /><div className="min-w-0"><h3 id={`envelope-${envelope.id}-title`} className="text-h3 text-warm-white">{envelope.nome}</h3><p className="mt-1 text-body-sm text-steel">{envelope.finalidade}</p></div></div><Badge variant={status.variant}>{Number(envelope.percentual_distribuicao || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</Badge></div>
+                      <p className="mt-4 text-body-sm text-steel">Conta vinculada: {envelope.conta_nome}</p>
+                      <div className="mt-6"><p className="text-label text-steel">Saldo reservado</p><p className="mt-2 text-data-lg text-warm-white">{formatarBRL(envelope.saldo_acumulado)}</p></div>
+                      {account && <ReserveMeter className="mt-6 border-t border-line pt-4" label={`Uso de ${envelope.nome}`} bankBalance={account.saldo_bancario} reserved={account.saldo_reservado} available={account.saldo_disponivel} />}
+                      <div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4"><span className="text-body-sm text-steel">Situação</span><Badge variant={status.variant}>{status.label}</Badge></div>
+                      <div className="mt-auto flex flex-col gap-3 pt-6">
+                        <Button className="w-full" disabled={!canReserve} aria-describedby={!canReserve ? reserveHelpId : undefined} onClick={() => openReserveModal(envelope)}><CirclePlus size={16} aria-hidden="true" />Adicionar reserva</Button>
+                        {!canReserve && <p id={reserveHelpId} className="text-body-sm text-steel">{!envelope.ativa ? 'Ative o envelope para adicionar uma reserva.' : !account ? 'A conta vinculada ainda não foi carregada.' : 'A conta não possui valor disponível para reservar.'}</p>}
+                        <div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={() => openEnvelopeForm(envelope)}>Editar</Button><Button variant="ghost" disabled={envelope.ativa && Number(envelope.saldo_acumulado) > 0} aria-describedby={envelope.ativa && Number(envelope.saldo_acumulado) > 0 ? `envelope-${envelope.id}-status-help` : undefined} onClick={() => openStatusModal(envelope)}>{envelope.ativa ? 'Desativar' : 'Ativar'}</Button></div>
+                        {envelope.ativa && Number(envelope.saldo_acumulado) > 0 && <p id={`envelope-${envelope.id}-status-help`} className="text-body-sm text-warning">Resgate todo o saldo antes de desativar.</p>}
+                        <div className="grid grid-cols-2 gap-3"><Button variant="secondary" className="w-full" onClick={() => openStatement(envelope)}><History size={16} aria-hidden="true" />Ver extrato</Button><Button variant="ghost" className="w-full" disabled={!envelope.ativa || Number(envelope.saldo_acumulado) <= 0} onClick={() => openRescueModal(envelope)}><ReceiptText size={16} aria-hidden="true" />Usar / resgatar</Button></div>
+                      </div>
+                    </Card.Body>
+                  </Card>
                 })}
               </div>
             )}
@@ -342,6 +396,16 @@ export default function FinanceEnvelopes() {
           <div><p className="text-label text-steel">Saldo disponível atual</p><p className="mt-2 text-data-lg text-success">{formatarBRL(accountById.get(reserveModal.row.conta_bancaria_id)?.saldo_disponivel)}</p></div>
           <CurrencyInput id="reserve-value" label="Valor a reservar" value={reserveModal.valor} onValueChange={(valor) => setReserveModal((current) => ({ ...current, valor, error: '' }))} error={reserveModal.error} autoFocus />
           <p className="rounded-md border border-info bg-info/12 p-4 text-body text-steel">Esta operação reserva parte do saldo da conta no sistema. O saldo bancário real não é movimentado.</p>
+        </form>}
+      </Modal>
+
+      <Modal open={Boolean(rescueModal)} onClose={() => !submitting && closeRescueModal()} title="Usar / resgatar envelope" footer={<><Button variant="secondary" disabled={submitting} onClick={closeRescueModal}>Cancelar</Button><Button type="submit" form="rescue-form" loading={submitting}>Confirmar resgate</Button></>}>
+        {rescueModal && <form id="rescue-form" className="space-y-5" onSubmit={confirmRescue}>
+          <div><p className="text-label text-steel">Envelope</p><p className="mt-2 text-body text-warm-white">{rescueModal.row.nome}</p></div>
+          <div><p className="text-label text-steel">Saldo reservado</p><p className="mt-2 text-data-lg text-warm-white">{formatarBRL(rescueModal.row.saldo_acumulado)}</p></div>
+          <div><p className="text-label text-steel">Conta que receberá o saldo disponível</p><p className="mt-2 text-body text-warm-white">{accountById.get(rescueModal.row.conta_bancaria_id)?.nome ?? rescueModal.row.conta_nome}</p></div>
+          <CurrencyInput id="rescue-value" label="Valor a resgatar" value={rescueModal.valor} onValueChange={(valor) => setRescueModal((current) => ({ ...current, valor, error: '' }))} error={rescueModal.error} autoFocus />
+          <p className="rounded-md border border-info bg-info/12 p-4 text-body-sm text-steel">O resgate libera a reserva para o saldo disponível da própria conta vinculada. Não cria receita nem transfere dinheiro entre bancos.</p>
         </form>}
       </Modal>
 

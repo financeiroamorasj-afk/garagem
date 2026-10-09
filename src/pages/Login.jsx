@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import ThemeToggle from '../components/ui/ThemeToggle'
 import garagemLogo from '../assets/brand/garagem-logo-full.png'
 import { homeRouteForRole } from '../lib/auth/homeRoute'
 
@@ -76,6 +77,7 @@ export default function Login() {
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-0 p-6 font-sans">
             <div className="atmosphere-vignette absolute inset-0" aria-hidden="true" />
             <div className="relative w-full max-w-md space-y-8 rounded-md border border-line bg-surface-1 p-8">
+                <div className="flex justify-end"><ThemeToggle showLabel /></div>
                 <div className="flex justify-center">
                     <img
                         src={garagemLogo}

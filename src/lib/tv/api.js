@@ -10,6 +10,15 @@ export const iniciarPareamentoTv = () => rpc('tv_pareamento_iniciar')
 export const lerEstadoTv = (token) => rpc('tv_estado_ler', { p_token: token })
 export const confirmarPareamentoTv = (codigo, nome) => rpc('tv_pareamento_confirmar', { p_codigo: codigo, p_nome: nome })
 export const listarAparelhosTv = () => rpc('tv_aparelhos_listar')
+export async function verificarPermissaoTv() {
+  try {
+    await listarAparelhosTv()
+    return true
+  } catch (error) {
+    if (String(error?.message || '').includes('TV_SEM_PERMISSAO')) return false
+    throw error
+  }
+}
 export const listarPermissoesTv = () => rpc('tv_permissoes_listar')
 export const definirPermissaoTv = (usuarioId, permitir) => rpc('tv_permissao_definir', { p_usuario_id: usuarioId, p_permitir: permitir })
 export const definirVideoTv = (aparelhoId, videoId, playlistId, modo) => rpc('tv_video_definir', {

@@ -20,8 +20,6 @@ export type ManualTenantState = {
   barbershopId?: string;
 };
 
-export const initialManualTenantState: ManualTenantState = { ok: false, message: "" };
-
 function price(value: unknown, code: string) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) throw new Error(code);

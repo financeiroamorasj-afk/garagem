@@ -223,6 +223,15 @@ export function aportarEnvelope({ envelopeId, valor, idempotencyKey, correlation
   })
 }
 
+export function liberarEnvelope({ envelopeId, valor, idempotencyKey, correlationId }) {
+  return executarRpc('financeiro_liberar_envelope', {
+    p_envelope_id: exigirUuid(envelopeId, 'Envelope'),
+    p_valor: normalizarValorAporte(valor),
+    p_idempotency_key: exigirChaveIdempotencia(idempotencyKey),
+    p_correlation_id: textoOpcional(correlationId, 'Correlation ID', 200),
+  })
+}
+
 export function listarTransacoesEnvelope({ envelopeId, dataInicio, dataFim, pagina = 1, porPagina = 25 }) {
   const periodo = exigirPeriodo(dataInicio, dataFim)
   const paginacao = exigirPaginacao(pagina, porPagina)

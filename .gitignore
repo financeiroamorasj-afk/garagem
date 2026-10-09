@@ -18,6 +18,9 @@ dist-ssr
 # Backups de .env (contêm credenciais de produção — nunca versionar)
 *.bak
 
+# Utilitários locais com credenciais de desenvolvimento
+apps/adm/create_user.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

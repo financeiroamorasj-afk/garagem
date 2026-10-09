@@ -16,10 +16,10 @@ test('classifica estados dos envelopes sem inferir o saldo disponível', () => {
 test('tela usa apenas os wrappers de leitura e gestão autorizados', async () => {
   const api = await readFile(new URL('../src/lib/financeiro/api.js', import.meta.url), 'utf8')
   const page = await readFile(new URL('../src/pages/financeiro/FinanceEnvelopes.jsx', import.meta.url), 'utf8')
-  for (const rpc of ['financeiro_listar_envelopes', 'financeiro_saldos_disponiveis_contas', 'financeiro_listar_transacoes_envelope', 'financeiro_criar_envelope', 'financeiro_editar_envelope', 'financeiro_definir_envelope_ativo', 'financeiro_simular_distribuicao_diaria', 'financeiro_distribuir_envelopes_diario', 'financeiro_aportar_envelope']) assert.match(api, new RegExp(rpc))
+  for (const rpc of ['financeiro_listar_envelopes', 'financeiro_saldos_disponiveis_contas', 'financeiro_listar_transacoes_envelope', 'financeiro_criar_envelope', 'financeiro_editar_envelope', 'financeiro_definir_envelope_ativo', 'financeiro_simular_distribuicao_diaria', 'financeiro_distribuir_envelopes_diario', 'financeiro_aportar_envelope', 'financeiro_liberar_envelope']) assert.match(api, new RegExp(rpc))
   assert.doesNotMatch(page, /resgatarEnvelope|estornarResgate|\.from\s*\(/)
   assert.doesNotMatch(api, /financeiro_resgatar_envelope|financeiro_estornar_resgate/)
-  assert.match(page, /Disponível após a implantação de lançamentos manuais a pagar\./)
+  assert.match(page, /O resgate libera a reserva para o saldo disponível da própria conta vinculada/)
 })
 
 test('aporte usa somente a RPC auditada com os quatro parâmetros exatos', async () => {
@@ -30,6 +30,16 @@ test('aporte usa somente a RPC auditada com os quatro parâmetros exatos', async
   for (const parameter of ['p_envelope_id', 'p_valor', 'p_idempotency_key', 'p_correlation_id']) assert.match(wrapper, new RegExp(parameter))
   assert.doesNotMatch(wrapper, /barbearia|tenant|\.from\s*\(/i)
   assert.doesNotMatch(`${api}\n${page}`, /service_role|\.from\s*\(\s*['"]financeiro_/i)
+})
+
+test('resgate livre usa a RPC auditada e preserva a intenção em caso de retry', async () => {
+  const api = await readFile(new URL('../src/lib/financeiro/api.js', import.meta.url), 'utf8')
+  const page = await readFile(new URL('../src/pages/financeiro/FinanceEnvelopes.jsx', import.meta.url), 'utf8')
+  const wrapper = api.match(/export function liberarEnvelope[\s\S]*?\r?\n}\r?\n/)?.[0] ?? ''
+  assert.match(wrapper, /financeiro_liberar_envelope/)
+  for (const parameter of ['p_envelope_id', 'p_valor', 'p_idempotency_key', 'p_correlation_id']) assert.match(wrapper, new RegExp(parameter))
+  assert.match(page, /function closeRescueModal\(\) \{\s*rescueIntentRef\.current = null/s)
+  assert.match(page, /await liberarEnvelope\([\s\S]*?idempotencyKey: intent\.key[\s\S]*?correlationId: intent\.key/)
 })
 
 test('botão de aporte só habilita para envelope ativo, conta carregada e saldo positivo', () => {
@@ -115,6 +125,7 @@ test('mapeia os erros operacionais da gestão sem expor SQL', () => {
     'FINANCEIRO_ENVELOPE_INATIVO',
     'FINANCEIRO_ENVELOPE_NAO_ENCONTRADO',
     'FINANCEIRO_VALOR_INVALIDO',
+    'FINANCEIRO_SALDO_INSUFICIENTE',
     'FINANCEIRO_IDEMPOTENCIA_PAYLOAD_DIVERGENTE',
   ]
   for (const code of codes) {
