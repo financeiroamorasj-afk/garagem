@@ -3,8 +3,10 @@ import test from 'node:test'
 import { Client } from 'pg'
 
 const databaseUrl = globalThis.process.env.TV_TEST_DATABASE_URL
+  || globalThis.process.env.SUPABASE_LOCAL_DB_URL
+  || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres'
 
-test('pareamento e controle da TV respeitam permissões e revogação', { skip: !databaseUrl }, async () => {
+test('pareamento e controle da TV respeitam permissões e revogação', async () => {
   const client = new Client({ connectionString: databaseUrl })
   await client.connect()
   try {

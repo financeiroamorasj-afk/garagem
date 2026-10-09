@@ -17,6 +17,6 @@
 
 ## Verificação e limites
 
-- 140 testes aprovados; 1 teste de TV já marcado como pendente. Build Vite e ESLint dos arquivos alterados concluídos sem erros.
+- Validação local repetida em 09/10/2026: 141 testes aprovados, incluindo o pareamento e controle da TV. Build Vite, build Next.js/TypeScript do ADM e ESLint concluídos sem erros.
 - O clique que não reagia no atendimento não pôde ser reproduzido com o login local disponível. A interface agora mostra erros no próprio cartão; é necessário retestar com um atendimento real.
 - A exibição de fotos de produtos e publicações no Modo TV não faz parte desta entrega. Requer fotos no cadastro de produtos, curadoria e um canal de conteúdo para a TV. A integração opcional ao Instagram deve usar autorização da conta profissional, sem copiar publicações por scraping.
