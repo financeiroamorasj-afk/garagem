@@ -35,7 +35,9 @@ npm install
 npm run dev
 ```
 
-Na Vercel, crie um segundo projeto usando este mesmo repositório e defina o diretório raiz como `apps/adm`.
+Na Vercel, o projeto `garagem-adm` usa este mesmo repositório com o diretório raiz `apps/adm`. O repositório GitHub `financeiroamorasj-afk/garagem` está conectado ao projeto: branches geram previews e a branch `main` publica em produção.
+
+Os commits devem preservar a autoria GitHub configurada no repositório (`257612817+financeiroamorasj-afk@users.noreply.github.com`) para que a Vercel associe corretamente o autor e aceite o deploy.
 
 ## Homologação do Asaas
 
