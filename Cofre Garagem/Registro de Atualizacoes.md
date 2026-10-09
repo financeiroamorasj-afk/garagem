@@ -229,3 +229,11 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O login exclusivo segue opcional e usa e-mail já existente da pessoa; login por telefone não foi incluído nesta entrega.
 - Validação: 129 testes aprovados, 1 teste de TV ignorado, build e ESLint dos arquivos alterados sem falhas. O teste novo cobre um barbeiro cobrando atendimento de outro pela fila e confirma que o checkout direto segue bloqueado.
 - Próxima conversa de produto: **Modo TV**.
+
+# 08/10/2026 — Correção do Cadastro de Barbearia no ADM e Diagnóstico SMTP
+
+- Resolvido Erro 500 fatal na Vercel e no localhost ao criar uma nova barbearia no ADM. O erro era causado pela exportação de objeto literal (`initialManualTenantState`) em arquivo de Server Actions (`"use server"`), o que viola o comportamento do Next.js.
+- A declaração de estado inicial foi isolada para o lado cliente, destravando a execução do fluxo. O ADM compilou perfeitamente após o conserto e a correção foi enviada para a produção oficial (Vercel) via deploy manual (`npx vercel deploy --prod --yes`).
+- O envio de e-mails usando a porta `587` do Gmail funciona perfeitamente por trás dos panos.
+- Foi detectado um bloqueio unilateral do Google: disparos recentes com e-mails genéricos para testes de cadastro geram bloqueio silencioso (rate limiting/reputação) no lado do SMTP do Gmail, mesmo o Supabase retornando sucesso na entrega.
+- Recomendação técnica final: migrar o remetente transacional do Garagem para uma plataforma dedicada (Resend ou Sendgrid) para garantir integridade e 100% de entregabilidade aos clientes.

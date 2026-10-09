@@ -2,7 +2,9 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
-import { createManualTenant, initialManualTenantState } from "./actions";
+import { createManualTenant, type ManualTenantState } from "./actions";
+
+const initialManualTenantState: ManualTenantState = { ok: false, message: "" };
 
 type PlanOption = {
   id: string;
