@@ -108,7 +108,7 @@ export async function createAsaasCheckout(input: CreateCheckoutInput) {
   return fetchAsaas<AsaasCheckout>("/checkouts", {
     method: "POST",
     body: JSON.stringify({
-      billingTypes: ["PIX", "CREDIT_CARD"],
+      billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 1440,
       externalReference: input.externalReference,

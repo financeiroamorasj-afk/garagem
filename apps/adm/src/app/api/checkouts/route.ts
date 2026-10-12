@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       nome_admin: nomeAdmin,
       email_admin: emailAdmin,
       telefone_admin: telefoneAdmin,
-      forma_pagamento: "pix_ou_cartao",
+      forma_pagamento: "cartao",
       ciclo,
       preco_lista: listPrice,
       desconto_percentual: discountPercent,
