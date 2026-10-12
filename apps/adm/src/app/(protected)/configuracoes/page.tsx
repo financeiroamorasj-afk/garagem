@@ -64,8 +64,8 @@ export default async function SettingsPage() {
       </section>
 
       <section className="settings-section">
-        <div className="section-heading"><div><span className="eyebrow">Catálogo comercial</span><h2>Controle de módulos</h2></div><Puzzle size={22} /></div>
-        <p className="section-description">Este catálogo será usado para incluir recursos nos planos ou liberá-los como adicionais em cada assinatura.</p>
+        <div className="section-heading"><div><span className="eyebrow">Catálogo comercial</span><h2>Módulos integrados</h2></div><Puzzle size={22} /></div>
+        <p className="section-description">Visão técnica dos recursos contratáveis. Preços, descrições e disponibilidade agora são editados em <a href="/planos" className="inline-link">Planos e módulos</a>.</p>
         <div className="module-grid">
           {modules.map((module) => (
             <article className="module-card" key={module.id}>
