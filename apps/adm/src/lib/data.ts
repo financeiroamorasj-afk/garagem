@@ -1,12 +1,12 @@
 import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 
-export type Plan = { id: string; codigo: string; nome: string; status: string; preco_mensal: number | null; preco_anual: number | null; dias_trial: number; limite_usuarios: number | null };
+export type Plan = { id: string; codigo: string; nome: string; descricao: string | null; status: string; preco_mensal: number | null; preco_anual: number | null; dias_trial: number; limite_usuarios: number | null };
 export type Barbershop = { id: string; nome: string; slug: string; criado_em: string };
 export type Subscription = { id: string; barbearia_id: string; plano_id: string; status: string; ciclo: string; preco_final: number; membro_fundador: boolean; gateway_provider: string | null; created_at: string };
 export type Checkout = { id: string; plano_id: string; nome_barbearia: string; nome_admin: string; email_admin: string; status: string; ciclo: string; preco_final: number; gateway_ambiente: string | null; created_at: string };
 export type GatewayEvent = { id: string; event_type: string; status: string; resource_id: string | null; erro_codigo: string | null; recebido_em: string };
-export type PlatformModule = { id: string; codigo: string; nome: string; descricao: string | null; entitlement_codigo: string | null; status: string; preco_mensal: number | null; configuracao: Record<string, unknown> };
+export type PlatformModule = { id: string; codigo: string; nome: string; descricao: string | null; entitlement_codigo: string | null; status: string; preco_mensal: number | null; preco_anual: number | null; configuracao: Record<string, unknown> };
 export type ProvisioningModule = { id: string; codigo: string; nome: string; descricao: string | null; preco_mensal: number | null; preco_anual: number | null };
 export type PlatformIntegration = {
   id: string;
@@ -54,9 +54,30 @@ export async function dashboardData() {
 }
 
 export async function listPlans() {
-  const { data, error } = await createAdminSupabase().from("saas_planos").select("id,codigo,nome,status,preco_mensal,preco_anual,dias_trial,limite_usuarios").order("ordem").order("nome");
+  const { data, error } = await createAdminSupabase().from("saas_planos").select("id,codigo,nome,descricao,status,preco_mensal,preco_anual,dias_trial,limite_usuarios").order("ordem").order("nome");
   if (error) throw new Error("Não foi possível listar os planos.");
   return (data ?? []) as Plan[];
+}
+
+export async function commercialCatalog() {
+  const supabase = createAdminSupabase();
+  const { data: product, error: productError } = await supabase.from("plataforma_produtos")
+    .select("id").eq("codigo", "garagem").single();
+  if (productError || !product) throw new Error("Não foi possível localizar o produto Garagem.");
+
+  const [plansResult, modulesResult] = await Promise.all([
+    supabase.from("saas_planos")
+      .select("id,codigo,nome,descricao,status,preco_mensal,preco_anual,dias_trial,limite_usuarios")
+      .eq("produto_id", product.id).order("ordem").order("nome"),
+    supabase.from("saas_modulos")
+      .select("id,codigo,nome,descricao,entitlement_codigo,status,preco_mensal,preco_anual,configuracao")
+      .eq("produto_id", product.id).order("ordem").order("nome"),
+  ]);
+  if (plansResult.error || modulesResult.error) throw new Error("Não foi possível carregar o catálogo comercial.");
+  return {
+    plans: (plansResult.data ?? []) as Plan[],
+    modules: (modulesResult.data ?? []) as PlatformModule[],
+  };
 }
 
 export async function listBarbershops() {
@@ -122,7 +143,7 @@ export async function platformSettings() {
   const [modulesResult, integrationsResult] = await Promise.all([
     supabase
       .from("saas_modulos")
-      .select("id,codigo,nome,descricao,entitlement_codigo,status,preco_mensal,configuracao")
+      .select("id,codigo,nome,descricao,entitlement_codigo,status,preco_mensal,preco_anual,configuracao")
       .eq("produto_id", product.id)
       .order("ordem")
       .order("nome"),
