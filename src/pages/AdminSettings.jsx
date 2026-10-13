@@ -5,6 +5,7 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
+import ClientPortalShareCard from '../components/portal/ClientPortalShareCard'
 import ReceptionUsersPanel from '../components/settings/ReceptionUsersPanel'
 import { definirModuloAtivo, listarModulos, mensagemErroModulo } from '../lib/configuracoes/modulos-api'
 import { carregarIdentidadeBarbearia, mensagemErroIdentidade, removerLogoBarbearia, salvarLogoBarbearia } from '../lib/configuracoes/identidade-api'
@@ -172,6 +173,11 @@ export default function AdminSettings() {
             {identity?.logo_url && <Button variant="danger" disabled={logoBusy} onClick={removeLogo}><Trash2 size={16} /> Remover</Button>}
           </div>
         </Card>
+      </section>
+
+      <section aria-labelledby="client-portal-title">
+        <div className="mb-4 flex items-center gap-3"><Building2 size={20} className="text-copper" /><div><h2 id="client-portal-title" className="text-h2 text-warm-white">Acesso dos clientes</h2><p className="text-body-sm text-steel">Link público vinculado à identidade desta barbearia.</p></div></div>
+        <ClientPortalShareCard barbearia={identity} />
       </section>
 
       <section aria-labelledby="pix-title">
