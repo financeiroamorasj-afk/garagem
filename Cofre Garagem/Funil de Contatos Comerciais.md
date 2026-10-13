@@ -1,7 +1,7 @@
 # Funil de Contatos Comerciais do Garagem
 
 Data da proposta: 13/10/2026
-Estado: Fase 1 implementada; migration aplicada em produção; publicação do frontend em andamento
+Estado: Fase 1 implementada e publicada em produção em 13/10/2026
 
 ## Objetivo
 
