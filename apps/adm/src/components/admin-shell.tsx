@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CreditCard, LayoutDashboard, PackageOpen, Settings } from "lucide-react";
+import { Building2, ContactRound, CreditCard, LayoutDashboard, PackageOpen, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout } from "@/app/actions/auth";
 import type { PlatformRole } from "@/lib/auth";
 
 const links = [
   { href: "/", label: "Visão geral", icon: LayoutDashboard, roles: ["super_admin", "financeiro", "suporte"] },
+  { href: "/contatos", label: "Contatos", icon: ContactRound, roles: ["super_admin"] },
   { href: "/planos", label: "Planos", icon: PackageOpen, roles: ["super_admin", "financeiro"] },
   { href: "/barbearias", label: "Barbearias", icon: Building2, roles: ["super_admin", "financeiro", "suporte"] },
   { href: "/assinaturas", label: "Assinaturas", icon: CreditCard, roles: ["super_admin", "financeiro"] },
