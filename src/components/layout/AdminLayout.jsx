@@ -26,6 +26,7 @@ import {
 import EmptyState from '../ui/EmptyState'
 import Spinner from '../ui/Spinner'
 import ThemeToggle from '../ui/ThemeToggle'
+import PushNotificationPrompt from '../PushNotificationPrompt'
 import useAdminProfile from '../../hooks/useAdminProfile'
 import { resolveAdminAccess } from '../../lib/auth/adminAccess'
 import { supabase } from '../../lib/supabase'
@@ -331,6 +332,7 @@ export default function AdminLayout() {
         </header>
 
         <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24 pt-5 sm:px-6 lg:p-6">
+          <div className="mb-5"><PushNotificationPrompt /></div>
           <Outlet />
         </main>
       </div>

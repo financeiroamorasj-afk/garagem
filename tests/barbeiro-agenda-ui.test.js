@@ -41,6 +41,8 @@ test('calendário calcula intervalos de dia, semana e mês', () => {
 
 test('agenda oferece somente as ações válidas em cada estado', () => {
   assert.deepEqual(acaoPrincipalAgenda('pendente'), { label: 'Iniciar atendimento', nextStatus: 'em_atendimento' })
+  assert.deepEqual(acaoPrincipalAgenda('confirmado'), { label: 'Iniciar atendimento', nextStatus: 'em_atendimento' })
+  assert.deepEqual(acaoPrincipalAgenda('encaixe'), { label: 'Iniciar atendimento', nextStatus: 'em_atendimento' })
   assert.deepEqual(acaoPrincipalAgenda('em_atendimento'), { label: 'Concluir atendimento', nextStatus: 'concluido' })
   assert.equal(acaoPrincipalAgenda('concluido'), null)
   assert.equal(statusAgenda('cancelado').variant, 'danger')
@@ -76,5 +78,8 @@ test('dashboard não mantém agenda fictícia e usa o contrato protegido', async
   assert.doesNotMatch(dashboard, /MOCK_APPOINTMENTS/)
   assert.match(api, /barbeiro_agenda_listar/)
   assert.match(api, /barbeiro_agendamento_mudar_status/)
+  assert.match(api, /barbeiro_atendimento_ativo/)
+  assert.match(dashboard, /ATENDIMENTO EM ANDAMENTO/)
+  assert.match(dashboard, /Outro corte em andamento/)
   assert.match(dashboard, /overflow-x-hidden/)
 })

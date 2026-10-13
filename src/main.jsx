@@ -12,6 +12,12 @@ import { applyTheme, currentTheme } from './lib/theme'
 
 applyTheme(currentTheme())
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
