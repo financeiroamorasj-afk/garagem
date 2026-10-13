@@ -237,3 +237,104 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O envio de e-mails usando a porta `587` do Gmail funciona perfeitamente por trás dos panos.
 - Foi detectado um bloqueio unilateral do Google: disparos recentes com e-mails genéricos para testes de cadastro geram bloqueio silencioso (rate limiting/reputação) no lado do SMTP do Gmail, mesmo o Supabase retornando sucesso na entrega.
 - Recomendação técnica final: migrar o remetente transacional do Garagem para uma plataforma dedicada (Resend ou Sendgrid) para garantir integridade e 100% de entregabilidade aos clientes.
+
+# 11/10/2026 — Asaas de produção e acessos validados
+
+- O fluxo de redefinição de senha foi validado de ponta a ponta com o template oficial do Garagem.
+- O fluxo de convite e primeiro acesso do barbeiro também foi confirmado em produção.
+- Foi gerada no Asaas uma chave de produção exclusiva para o Garagem, separada das integrações do Rebip. O valor da chave não foi registrado no cofre, no banco ou no repositório.
+- O projeto `garagem-adm` recebeu na Vercel as variáveis de produção `ASAAS_ENVIRONMENT`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_SECRET`, `CHECKOUT_ALLOWED_ORIGINS`, `GARAGEM_LANDING_URL` e `GARAGEM_APP_URL`. Chave e segredo permanecem armazenados como variáveis secretas.
+- Foi criado no Asaas o webhook `Garagem System - Produção`, ativo, usando API v3, envio sequencial, fila habilitada e token próprio de autenticação.
+- O webhook escuta somente os eventos processados pelo código: confirmação, recebimento, atraso, recusa de captura, estornos total e parcial, chargeback, checkout pago, cancelado e expirado.
+- O endereço configurado é `https://adm.garagemsystem.com.br/api/webhooks/asaas`, com alertas de falha enviados ao e-mail operacional do Garagem.
+- Foi feito um redeploy do código já aprovado na `main`, sem alteração de autoria ou novo commit. A Vercel confirmou o deployment de produção como `Ready` no domínio oficial.
+- A verificação segura do endpoint retornou HTTP `401` para uma chamada sem token, confirmando que a rota está publicada e protegida. A raiz do ADM continuou redirecionando usuários sem sessão para o login.
+- Nenhum checkout, cobrança, assinatura financeira ou pagamento real foi criado nesta etapa.
+
+## Retomada em 12/10/2026 — Rodada 1
+
+- Criar somente um checkout real de produção, sem efetuar o pagamento.
+- Usar o plano Base mensal, sem módulos, com identificação clara de homologação, e-mail controlado e telefone informado pelo responsável no momento do teste.
+- Conferir preço e oferta antes da criação; o catálogo atual prevê R$ 49,90 e desconto vigente de 20%, resultando em R$ 39,92 enquanto a oferta estiver ativa.
+- Validar a criação do registro em `saas_checkouts`, o status `aguardando_pagamento`, o link hospedado no Asaas e a expiração em 24 horas.
+- Confirmar que barbearia, administrador, convite e assinatura não são provisionados antes do pagamento.
+- Encerrar a Rodada 1 sem pagar. A Rodada 2, com PIX real, provisionamento, cancelamento da recorrência e eventual estorno, exigirá nova confirmação explícita.
+
+# 12/10/2026 — Rodada 1 do checkout de produção concluída
+
+- A primeira criação controlada revelou uma incompatibilidade real antes de qualquer pagamento: o Asaas retornou HTTP `422` porque `RECURRENT` aceita somente `CREDIT_CARD` no Checkout com Assinatura; o código ainda enviava `PIX` e `CREDIT_CARD` juntos.
+- A tentativa rejeitada foi registrada como falha técnica e não gerou link, cobrança ou pagamento.
+- O adaptador foi corrigido para enviar somente `CREDIT_CARD`, e o checkout passou a registrar `forma_pagamento = cartao` desde a criação.
+- O build de produção e o ESLint dos dois arquivos alterados foram aprovados. O lint completo ainda aponta um erro preexistente em `apps/adm/create_user.js`, fora desta correção.
+- A correção foi versionada com a autoria oficial de Rafa no commit `108f9fa`, publicada pela PR 43 e incorporada à `main` pelo merge `602fff4`.
+- O deploy automático do `garagem-adm` concluiu em produção com estado `Ready`.
+- A segunda tentativa retornou HTTP `201` e criou o checkout real do plano Base mensal, sem módulos e sem pagamento.
+- O Asaas apresentou subtotal e total de R$ 39,92, recorrência mensal, primeira cobrança em 12/10/2026 e validade de 24 horas.
+- O banco confirmou preço de lista de R$ 49,90, desconto de 20%, preço final de R$ 39,92, ambiente `producao`, forma `cartao`, gateway criado e status `aguardando_pagamento`.
+- O checkout permaneceu sem `barbearia_id`, confirmando que o provisionamento não ocorreu antes do pagamento.
+- Nenhum CPF, endereço ou dado de cartão foi preenchido; a Rodada 1 terminou antes da etapa financeira, conforme planejado.
+
+## Próxima decisão — Rodada 2
+
+- O teste financeiro de ponta a ponta deverá usar cartão real, não PIX, porque esta integração cria uma assinatura recorrente pelo Checkout hospedado.
+- Antes da Rodada 2, revisar a jornada e decidir se o custo e a criação temporária de tenant, convite e assinatura justificam o teste financeiro em produção.
+- O preenchimento e a confirmação do pagamento exigirão autorização específica do responsável no momento da execução.
+
+# 12/10/2026 — Rodada 2 financeira concluída
+
+- O checkout Base mensal foi pago em produção no valor de R$ 39,92.
+- Os eventos `PAYMENT_CONFIRMED` e `CHECKOUT_PAID` foram recebidos e processados sem erro.
+- O Garagem provisionou automaticamente barbearia, administrador, perfil ativo, assinatura e recorrência; todas as etapas internas terminaram como concluídas.
+- A assinatura de homologação foi removida no Asaas, encerrando as cobranças futuras.
+- O estorno integral de R$ 39,92 foi solicitado com sucesso. O webhook `PAYMENT_REFUNDED` foi processado e a assinatura local passou para `suspenso`.
+- Ficou aprovada a futura gestão dessas operações pelo ADM usando a API de produção do Asaas: cancelamento definitivo por `DELETE /v3/subscriptions/{id}` e estorno por `POST /v3/payments/{id}/refund`.
+- O futuro fluxo do ADM será restrito ao `super_admin`, exigirá motivo e confirmação reforçada, registrará auditoria completa e acompanhará a conclusão por webhook.
+- Pendência técnica identificada: tratar `SUBSCRIPTION_DELETED` para que a remoção da recorrência também leve a assinatura local ao estado `cancelado`, sem depender do evento de estorno.
+- O desconto manual no ADM continua anotado para implementação posterior, com vigência, motivo, auditoria e sincronização apenas das cobranças futuras.
+
+# 13/10/2026 — Agenda em tempo real, Web Push e atendimento ativo
+
+- Foi confirmada em produção a proteção atômica contra choque de horários. Portal, agendamento manual e encaixe usam a mesma trava transacional por profissional; quando duas operações disputam o mesmo intervalo, somente a primeira é gravada e a segunda recebe a indicação de horário indisponível.
+- A agenda administrativa e o painel do barbeiro continuam sendo atualizados pelo Supabase Realtime e também refazem a consulta quando o usuário retorna ao aplicativo.
+- Foi implementado Web Push para novos agendamentos criados pelo Portal do Cliente. O dono e os administradores da barbearia recebem o aviso; o barbeiro recebe apenas quando o agendamento pertence a ele.
+- Cada usuário precisa tocar uma única vez em **Ativar avisos** e permitir as notificações no navegador. O aviso pode chegar com o Garagem fechado e, ao ser aberto, leva o dono para `/admin/agenda` e o barbeiro para `/barber/dashboard`.
+- Em iPhone e iPad, a barbearia precisa adicionar o Garagem à Tela de Início antes de ativar Web Push. Nos demais navegadores compatíveis, basta conceder a permissão solicitada.
+- As inscrições são isoladas por barbearia e usuário. Inscrições expiradas são desativadas automaticamente, e o disparo usa fila assíncrona para nunca impedir a criação do agendamento.
+- O bloqueio percebido no botão **Iniciar corte** foi diagnosticado: o banco impedia corretamente um segundo atendimento ativo, mas o atendimento anterior podia estar em outro dia e não ficava visível na tela atual.
+- O painel do barbeiro agora mostra **Atendimento em andamento**, com cliente, serviço, horário de início e a ação **Abrir atendimento**. A ação leva à data original e permite concluir inclusive um atendimento iniciado em dia anterior.
+- Enquanto houver outro corte em andamento, os demais botões de início ficam desabilitados e explicam o motivo. A função do banco também ganhou uma trava por barbeiro para impedir que dois cliques simultâneos iniciem clientes diferentes.
+- A migration `20261013110000_push_agenda_e_atendimento_ativo.sql` foi aplicada no Supabase de produção e a Edge Function `push-appointment` foi publicada como ativa. A chave privada VAPID permanece somente nos segredos do Supabase.
+- As alterações foram incorporadas à `main` pelas PRs 46 e 47 e publicadas em `https://app.garagemsystem.com.br`.
+- Verificações concluídas: ESLint, build de produção, testes focados de Realtime, agenda do barbeiro e Web Push, endpoint da função e conteúdo do service worker publicado.
+- Limitação da validação local: os testes de integração que dependem do PostgreSQL local não puderam ser executados porque o Docker Desktop estava indisponível. A migration e a função foram validadas diretamente no ambiente remoto.
+
+## Backlog aprovado — inteligência de duração dos serviços
+
+- Em uma etapa posterior, o gestor receberá indicadores baseados no tempo real entre `iniciado_em` e `concluido_em` de cada atendimento.
+- A análise deverá permitir comparar duração prevista e realizada por barbeiro, serviço e período, com média, mediana, variação e quantidade de atendimentos válidos.
+- Cancelamentos, ausências, registros incompletos e tempos claramente anômalos devem ficar fora dos indicadores principais ou aparecer identificados separadamente.
+- O objetivo é ajudar a barbearia a ajustar agenda, duração dos serviços, capacidade da equipe e necessidade de treinamento. A métrica não deve virar ranking punitivo nem misturar tempo de espera ou cobrança com o tempo técnico do corte.
+- A implementação futura deve aproveitar os timestamps já existentes, preservar o histórico e apresentar somente dados da própria barbearia.
+
+# 13/10/2026 — Fila do balcão: consistência após conclusão
+
+- Foi corrigido o caso em que um atendimento já concluído ainda aparecia como pendente na fila da recepção.
+- A função `recepcao_fila_listar()` agora confirma também o status do agendamento e só retorna registros cujo agendamento continua em `aguardando_pagamento`.
+- A tela do balcão passou a atualizar por mudanças em `atendimento_pendencias` e `agendamentos`, além de ignorar respostas antigas de carregamentos concorrentes.
+- A migration `20261013150000_recepcao_fila_status_consistencia.sql` está pronta para aplicação no Supabase de produção.
+- Validações concluídas: teste focado da fila, ESLint e build de produção.
+
+# 13/10/2026 — Clube Garagem apresentado na Landing Page
+
+- A Landing Page passou a apresentar o `Clube Garagem` como feature em pré-lançamento.
+- A comunicação explica a proposta: a barbearia poderá criar planos recorrentes para clientes, definir benefícios e acompanhar membros e pagamentos no ADM.
+- O texto evita prometer disponibilidade, preço ou cobrança antes da implementação financeira do módulo.
+- Foi incluído um CTA para o WhatsApp, permitindo registrar interesse sem criar assinatura ou plano.
+- A seção foi posicionada junto aos módulos comerciais, antes dos recursos futuros, com adaptação responsiva para celular.
+
+# 13/10/2026 — Histórico do cliente atualizado após atendimento
+
+- O portal do cliente carregava `portal_dados` apenas ao entrar na sessão. Quando um corte era concluído no ADM com o portal já aberto, o cliente continuava vendo a lista antiga.
+- O portal agora consulta os dados ao abrir a aba **Cortes**, ao retornar à janela e a cada 30 segundos enquanto a sessão estiver visível.
+- O registro de histórico continua vindo de `cliente_cortes`, criado tanto no checkout direto quanto no envio para a fila da recepção; a correção evita exigir logout ou recarga manual.
+- Testes focados do portal/fila, ESLint e build de produção foram aprovados.
