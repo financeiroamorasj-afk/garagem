@@ -340,6 +340,13 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - iPhone/iPad recebem a orientação curta **Compartilhar → Adicionar à Tela de Início**, que é o fluxo exigido pelo iOS.
 - O aviso respeita sessões instaladas e pode ser fechado sem bloquear o restante do sistema.
 
+# 13/10/2026 — Conclusão de atendimento de teste
+
+- O botão **Enviar para cobrança** estava corretamente protegido, mas sem explicar o motivo do bloqueio.
+- No fluxo com recepção ativa, o barbeiro precisa registrar o **estilo do corte** antes de enviar o atendimento ao balcão; materiais e produtos podem permanecer sem alteração.
+- O rodapé do modal agora informa claramente quando falta o estilo ou quando ainda há carregamento de dados, e os campos de estilo foram marcados como obrigatórios.
+- A validação continua preservando a memória do corte e impedindo conclusões sem dados mínimos.
+
 # 13/10/2026 — Histórico do cliente atualizado após atendimento
 
 - O portal do cliente carregava `portal_dados` apenas ao entrar na sessão. Quando um corte era concluído no ADM com o portal já aberto, o cliente continuava vendo a lista antiga.
