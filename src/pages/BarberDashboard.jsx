@@ -94,7 +94,7 @@ function AppointmentCard({ appointment, activeAppointmentId, isToday, busy, now,
     </div>}
     {blockedByActive && <p className="border-t border-warning/30 bg-warning/10 px-4 py-3 text-body-sm text-warning">Abra e conclua o atendimento em andamento antes de iniciar este corte.</p>}
     {actionError && <p role="alert" className="border-t border-danger/40 bg-danger/10 px-4 py-3 text-body-sm text-danger">{actionError}</p>}
-    {!isToday && action && <p className="border-t border-line px-4 py-2 text-body-sm text-steel">As ações ficam disponíveis no dia do atendimento.</p>}
+    {!isToday && action && !isActive && <p className="border-t border-line px-4 py-2 text-body-sm text-steel">As ações ficam disponíveis no dia do atendimento.</p>}
   </article>
 }
 
