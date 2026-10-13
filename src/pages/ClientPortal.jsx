@@ -252,10 +252,27 @@ function PortalApp({ token, initialData, onLogout }) {
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState('')
   const refresh = useCallback(async () => { const fresh = await carregarDadosPortal(token); setData(fresh); return fresh }, [token])
+  useEffect(() => {
+    let active = true
+    const update = () => {
+      if (document.visibilityState !== 'visible') return
+      refresh().catch((requestError) => { if (active) setError(erroPortal(requestError).message) })
+    }
+    const interval = window.setInterval(update, 30000)
+    const onVisibilityChange = () => { if (document.visibilityState === 'visible') update() }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => { active = false; window.clearInterval(interval); document.removeEventListener('visibilitychange', onVisibilityChange) }
+  }, [refresh])
+  useEffect(() => {
+    if (tab !== 'historico') return
+    let active = true
+    refresh().catch((requestError) => { if (active) setError(erroPortal(requestError).message) })
+    return () => { active = false }
+  }, [refresh, tab])
   async function cancel(appointment) { if (!window.confirm(`Cancelar ${appointment.servico_nome} em ${shortDate(appointment.data_hora)} às ${time(appointment.data_hora)}?`)) return; setCancelling(appointment.id); setError(''); try { await cancelarAgendamentoPortal(token, appointment.id); await refresh(); setNotice('Agendamento cancelado.') } catch (requestError) { setError(erroPortal(requestError).message) } finally { setCancelling('') } }
   async function booked() { await refresh(); setNotice('Horário solicitado com sucesso. Acompanhe a confirmação por aqui.'); setTab('inicio'); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   function navigate(next) { setTab(next); setNotice(''); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  return <div className="min-h-dvh bg-surface-0 pb-24"><header className="sticky top-0 z-30 border-b border-line bg-surface-0/95 px-4 py-3 backdrop-blur sm:px-6"><div className="mx-auto flex max-w-4xl items-center justify-between gap-3"><Brand compact shop={data.barbearia} /><button type="button" aria-label="Sair" className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper" onClick={onLogout}><LogOut size={18} /></button></div></header><main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8"><Feedback>{error}</Feedback><Feedback type="success">{notice}</Feedback><div className={(error || notice) ? 'mt-5' : ''}>{tab === 'inicio' && <HomeView data={data} token={token} onNavigate={navigate} onCancel={cancel} cancelling={cancelling} />}{tab === 'agendar' && <BookingView data={data} token={token} onBooked={booked} />}{tab === 'historico' && <HistoryView history={data.historico} token={token} />}{tab === 'equipe' && <TeamView team={data.equipe} favoriteId={data.cliente.barbeiro_favorito_id} />}{tab === 'perfil' && <ProfileView data={data} token={token} onUpdated={refresh} onLogout={onLogout} />}</div></main><nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface-1/98 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur" aria-label="Navegação do portal"><div className="mx-auto grid max-w-xl grid-cols-5">{TABS.map(({ id, label, icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-sm text-[10px] font-semibold ${tab === id ? 'bg-copper/10 text-copper' : 'text-steel hover:text-warm-white'}`}>{icon}<span>{label}</span></button>)}</div></nav></div>
+  return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0"><header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3 sm:px-6"><div className="mx-auto flex max-w-4xl items-center justify-between gap-3"><Brand compact shop={data.barbearia} /><button type="button" aria-label="Sair" className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper" onClick={onLogout}><LogOut size={18} /></button></div></header><main className="min-h-0 flex-1 overscroll-contain overflow-y-auto overflow-x-hidden"><div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8"><Feedback>{error}</Feedback><Feedback type="success">{notice}</Feedback><div className={(error || notice) ? 'mt-5' : ''}>{tab === 'inicio' && <HomeView data={data} token={token} onNavigate={navigate} onCancel={cancel} cancelling={cancelling} />}{tab === 'agendar' && <BookingView data={data} token={token} onBooked={booked} />}{tab === 'historico' && <HistoryView history={data.historico} token={token} />}{tab === 'equipe' && <TeamView team={data.equipe} favoriteId={data.cliente.barbeiro_favorito_id} />}{tab === 'perfil' && <ProfileView data={data} token={token} onUpdated={refresh} onLogout={onLogout} />}</div></div></main><nav className="z-40 shrink-0 border-t border-line bg-surface-1 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2" aria-label="Navegação do portal"><div className="mx-auto grid max-w-xl grid-cols-5">{TABS.map(({ id, label, icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-sm px-1 text-[10px] font-semibold ${tab === id ? 'bg-copper/10 text-copper' : 'text-steel hover:text-warm-white'}`}>{icon}<span className="max-w-full truncate">{label}</span></button>)}</div></nav></div>
 }
 
 export default function ClientPortal() {
