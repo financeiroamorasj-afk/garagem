@@ -138,6 +138,13 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
   const finalTotal = Math.max(0, grossTotal - Number(discount || 0))
   const netTotal = Math.max(0, finalTotal - Number(fee || 0))
   const adjustedMaterials = useMemo(() => materials.filter((material) => Number(materialQuantities[material.material_id] ?? 0) !== Number(material.quantidade_prevista)), [materialQuantities, materials])
+  const completionHint = checkingMode
+    ? 'Verificando o modo de cobrança...'
+    : loadingMaterials
+      ? 'Carregando os materiais do serviço...'
+      : style.trim().length < 2
+        ? 'Escolha o estilo do corte para liberar a conclusão.'
+        : ''
 
   function changeProduct(product, delta) {
     setProductQuantities((current) => {
@@ -222,6 +229,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
       className="sm:max-w-4xl"
       footer={(
         <>
+          {completionHint && <p className="col-span-2 text-body-sm text-warning sm:mr-auto sm:self-center">{completionHint}</p>}
           <Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button>
           <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || loadingMaterials || compressing || style.trim().length < 2 || grossTotal <= 0 || (!receptionMode && paymentMethod === 'pix' && !pixReady)}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : paymentMethod === 'pix' ? 'Confirmar PIX' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
         </>
@@ -248,8 +256,8 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
           </section>
         )}
 
-        <ChoiceGroup label="Estilo do corte" options={STYLES} value={style} onChange={setStyle} />
-        <Input label="Estilo personalizado" value={style} onChange={(event) => setStyle(event.target.value)} maxLength={80} placeholder="Ex.: degradê baixo com topo texturizado" />
+        <ChoiceGroup label="Estilo do corte (obrigatório)" options={STYLES} value={style} onChange={setStyle} />
+        <Input label="Estilo personalizado (obrigatório)" value={style} onChange={(event) => setStyle(event.target.value)} maxLength={80} placeholder="Ex.: degradê baixo com topo texturizado" required />
         <Input label="Pentes e alturas" value={combs} onChange={(event) => setCombs(event.target.value)} maxLength={120} placeholder="Ex.: 0,5 nas laterais; pente 2 na conexão" />
         <ChoiceGroup label="Acabamento" options={FINISHES} value={finish} onChange={setFinish} />
         <ChoiceGroup label="Barba" options={BEARDS} value={beard} onChange={setBeard} />

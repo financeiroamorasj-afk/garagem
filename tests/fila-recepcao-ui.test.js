@@ -18,6 +18,8 @@ test('barbeiro envia parte técnica e recepção acompanha fila real', async () 
 
   assert.match(modal, /verificarAcessoModulo\('recepcao'\)/)
   assert.match(modal, /Enviar para cobrança/)
+  assert.match(modal, /Escolha o estilo do corte para liberar a conclusão/)
+  assert.match(modal, /Estilo personalizado \(obrigatório\)/)
   assert.match(modal, /Nenhum estoque, comissão ou lançamento financeiro será movimentado agora/)
   assert.match(cutApi, /barbeiro_atendimento_enviar_recepcao/)
   assert.match(barber, /Atendimento enviado para cobrança na recepção/)
