@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import ThemeToggle from '../components/ui/ThemeToggle'
+import InstallAppPrompt from '../components/InstallAppPrompt'
 import garagemLogo from '../assets/brand/garagem-logo-full.png'
 import { homeRouteForRole } from '../lib/auth/homeRoute'
 
@@ -134,6 +135,7 @@ export default function Login() {
                     </Button>
                 </form>
             </div>
+            <InstallAppPrompt />
         </div>
     )
 }

@@ -2,6 +2,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import InstallAppPrompt from './InstallAppPrompt'
 
 export default function ProtectedRoute() {
     const location = useLocation()
@@ -38,5 +39,5 @@ export default function ProtectedRoute() {
         return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}${location.hash}` }} />
     }
 
-    return <Outlet />
+    return <><Outlet /><InstallAppPrompt /></>
 }

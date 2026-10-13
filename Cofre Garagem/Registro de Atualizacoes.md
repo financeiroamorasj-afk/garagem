@@ -332,6 +332,14 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Foi incluído um CTA para o WhatsApp, permitindo registrar interesse sem criar assinatura ou plano.
 - A seção foi posicionada junto aos módulos comerciais, antes dos recursos futuros, com adaptação responsiva para celular.
 
+# 13/10/2026 — Atalho do webapp no celular
+
+- O Garagem já possuía manifesto PWA, ícone, `display: standalone` e service worker; faltava orientar a instalação para a equipe.
+- Foi criado o aviso **Use o Garagem como app**, disponível no login e nas áreas protegidas do gestor, barbeiro e recepção.
+- Android/Chrome recebe o botão **Instalar app** pelo evento nativo `beforeinstallprompt`.
+- iPhone/iPad recebem a orientação curta **Compartilhar → Adicionar à Tela de Início**, que é o fluxo exigido pelo iOS.
+- O aviso respeita sessões instaladas e pode ser fechado sem bloquear o restante do sistema.
+
 # 13/10/2026 — Histórico do cliente atualizado após atendimento
 
 - O portal do cliente carregava `portal_dados` apenas ao entrar na sessão. Quando um corte era concluído no ADM com o portal já aberto, o cliente continuava vendo a lista antiga.
