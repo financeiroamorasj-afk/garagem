@@ -15,6 +15,12 @@ export async function listarAgendaBarbeiro(data) {
   return incluirInicioAtendimento(rows ?? [])
 }
 
+export async function carregarAtendimentoAtivo() {
+  const { data, error } = await supabase.rpc('barbeiro_atendimento_ativo')
+  if (error) throw error
+  return data ?? null
+}
+
 export async function listarAgendaBarbeiroPeriodo(dataInicial, dataFinal) {
   if (!DATE_KEY.test(String(dataInicial ?? '')) || !DATE_KEY.test(String(dataFinal ?? ''))) {
     throw new TypeError('Período da agenda inválido')
