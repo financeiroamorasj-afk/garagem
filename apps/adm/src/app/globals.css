@@ -41,6 +41,20 @@ a { color: inherit; text-decoration: none; }
 .table-action-button:hover { background: rgba(213, 122, 53, .1); }
 .table-action-button:disabled { cursor: wait; opacity: .6; }
 .table-action-unavailable { margin-top: 0; }
+.invite-action-stack { display: grid; gap: .45rem; min-width: 16rem; }
+.invite-action-buttons { display: flex; align-items: center; gap: .45rem; }
+.generate-link-button { border-color: var(--gold); color: var(--gold); }
+.generate-link-button:hover { background: rgba(198, 162, 91, .1); }
+.invite-action-warning { color: var(--muted); font-size: .68rem; white-space: normal; }
+.invite-link-result { width: min(32rem, 72vw); margin-top: .25rem; border: 1px solid rgba(124, 183, 90, .45); background: rgba(124, 183, 90, .08); padding: .75rem; color: #c9dfbb; white-space: normal; }
+.invite-link-result.warning { border-color: rgba(198, 162, 91, .5); background: rgba(198, 162, 91, .08); color: #dec895; }
+.invite-link-result.error { border-color: rgba(224, 93, 69, .5); background: rgba(224, 93, 69, .08); color: #ff866e; }
+.invite-link-result p { margin: 0 0 .65rem; line-height: 1.4; }
+.invite-link-copy-row { display: flex; align-items: stretch; gap: .45rem; }
+.invite-link-copy-row input { min-width: 0; flex: 1; border: 1px solid #504a40; background: #f0f4fb; color: #101010; padding: .65rem .7rem; font: .7rem Consolas, monospace; }
+.invite-link-copy-row button { border: 1px solid var(--gold); background: var(--gold); color: #0a0907; padding: .55rem .7rem; cursor: pointer; font-weight: 800; white-space: nowrap; }
+.invite-link-result small { display: block; margin-top: .55rem; color: inherit; line-height: 1.4; }
+.invite-link-result .copy-error { color: #ff866e; }
 
 .shell { min-height: 100vh; display: grid; grid-template-columns: 17rem 1fr; }
 .sidebar { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); background: rgba(8, 8, 7, .94); padding: 1.5rem 1rem; display: flex; flex-direction: column; }
