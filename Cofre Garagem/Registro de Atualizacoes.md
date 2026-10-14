@@ -363,3 +363,14 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - A alteração foi incorporada pela PR 53 e publicada com sucesso no projeto `garagem-adm`, no domínio oficial `https://adm.garagemsystem.com.br`.
 - A consulta de produção confirmou que o primeiro cliente fundador permanecia com convite pendente e sem primeiro login. O convite foi reenviado em produção em 14/10/2026 às 09:50 (horário de Brasília), e a execução foi registrada na auditoria como ação de sistema.
 - Verificações concluídas: ESLint e build de produção do ADM, previews da Vercel, deploy da `main`, rota protegida no domínio oficial e leitura posterior do estado do usuário no Supabase Auth.
+
+# 14/10/2026 — Link direto de primeiro acesso
+
+- O ADM ganhou a ação **Gerar link** para administradores com convite pendente, permitindo entregar o primeiro acesso diretamente por WhatsApp ou outro canal privado sem depender do recebimento do e-mail.
+- A geração continua restrita ao `super_admin`; o servidor confirma barbearia, papel, estado ativo e ausência de aceite ou primeiro login antes de emitir o link.
+- A tela avisa que um novo link substitui os convites anteriores, pede confirmação antes da geração, mostra a validade de uma hora e oferece a ação **Copiar link**.
+- O token é devolvido somente para a sessão que solicitou a geração. O link completo não é persistido no banco, na auditoria, nos logs do fluxo nem neste cofre.
+- A auditoria registra operador, cliente, estado anterior, horário de geração, expiração e forma de entrega manual, sem registrar a credencial.
+- A implementação foi incorporada pela PR 55 e publicada no projeto `garagem-adm` no domínio oficial.
+- A validação em produção foi executada somente na unidade de homologação: tipo `invite`, redirecionamento para `https://app.garagemsystem.com.br/definir-senha`, usuário ainda não confirmado e auditoria registrada. O token de teste não foi exibido nem armazenado.
+- Verificações concluídas: ESLint, build de produção, previews da Vercel, deploy da `main` e geração controlada contra o Supabase Auth de produção.
