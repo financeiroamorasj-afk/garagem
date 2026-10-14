@@ -2,8 +2,7 @@ import Link from "next/link";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { listBarbershops, type BarbershopAdminAccess } from "@/lib/data";
 import { shortDate, shortDateTime } from "@/lib/format";
-import { resendBarbershopAdminInvite } from "./actions";
-import { ResendInviteButton } from "./resend-invite-button";
+import { InviteAccessActions } from "./invite-access-actions";
 
 const inviteMessages: Record<string, { tone: "notice" | "alert"; text: string }> = {
   reenviado: { tone: "notice", text: "Convite reenviado. O novo link foi enviado para o administrador da barbearia." },
@@ -52,11 +51,11 @@ export default async function BarbershopsPage({
             <td><AccessStatus admin={admin} /></td>
             <td><FirstLoginStatus admin={admin} /></td>
             <td>{index === 0 ? shortDate(shop.criado_em) : null}</td>
-            {operator.role === "super_admin" ? <td>{canResend ? <form action={resendBarbershopAdminInvite}>
-              <input type="hidden" name="barbearia_id" value={shop.id} />
-              <input type="hidden" name="user_id" value={admin.userId} />
-              <ResendInviteButton firstSend={!admin.invitedAt} />
-            </form> : <span className="secondary-cell table-action-unavailable">{admin.acceptedAt || admin.firstLoginAt ? "Acesso concluído" : "Indisponível"}</span>}</td> : null}
+            {operator.role === "super_admin" ? <td>{canResend ? <InviteAccessActions
+              barbershopId={shop.id}
+              userId={admin.userId}
+              firstSend={!admin.invitedAt}
+            /> : <span className="secondary-cell table-action-unavailable">{admin.acceptedAt || admin.firstLoginAt ? "Acesso concluído" : "Indisponível"}</span>}</td> : null}
           </tr>;
         }) : [<tr key={shop.id}>
           <td className="primary-cell">{shop.nome}<span className="secondary-cell">/portal/{shop.slug}</span></td>
