@@ -56,7 +56,7 @@ function CardMetric({ label, value, badge, className = '', ...props }) {
   return (
     <div
       className={[
-        'rounded-md border border-line bg-surface-1 p-6',
+        'min-w-0 rounded-md border border-line bg-surface-1 p-4 sm:p-6',
         className,
       ]
         .filter(Boolean)
@@ -64,8 +64,8 @@ function CardMetric({ label, value, badge, className = '', ...props }) {
       {...props}
     >
       <p className="text-label text-steel">{label}</p>
-      <div className="mt-2 flex items-center gap-3">
-        <span className="text-data-lg text-warm-white">{value}</span>
+      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="min-w-0 text-[20px] font-medium leading-snug text-warm-white sm:text-data-lg">{value}</span>
         {badge}
       </div>
     </div>

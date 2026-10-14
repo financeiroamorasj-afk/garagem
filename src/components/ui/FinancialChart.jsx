@@ -17,14 +17,14 @@ function FinancialChart({ title, summary, data, formatValue = String, className 
       <Card.Header title={title} />
       <Card.Body>
         <p className="text-body text-steel">{summary}</p>
-        <div className="mt-6 flex min-h-40 items-end gap-3" aria-hidden="true">
+        <div className="mt-6 flex min-h-40 min-w-0 items-end gap-1 sm:gap-3" aria-hidden="true">
           {data.map((item) => {
             const status = STATUS[item.status] || STATUS.positive
             return (
-              <div key={item.label} className="flex h-full min-w-12 flex-1 flex-col items-center justify-end gap-2">
-                <span className="text-data text-warm-white">{formatValue(item.value)}</span>
+              <div key={item.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                <span className="max-w-full text-center font-mono text-[9px] leading-tight text-warm-white sm:text-data">{item.value === 0 ? '0' : formatValue(item.value).replace(/^R\$\s*/, '')}</span>
                 <div className={['w-full max-w-12 rounded-sm border border-current bg-current/12', status.className].join(' ')} style={{ height: `${Math.max(12, Math.round((Math.abs(item.value) / max) * 96))}px` }} />
-                <span className="text-label text-steel">{item.label}</span>
+                <span className="max-w-full text-center font-mono text-[8px] tracking-normal text-steel sm:text-label">{item.label}</span>
               </div>
             )
           })}

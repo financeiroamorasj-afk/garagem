@@ -94,7 +94,7 @@ function Modal({ open, onClose, title, footer, className = '', children }) {
         <div className="mt-4">{children}</div>
 
         {footer && (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:justify-end">{footer}</div>
+          <div className="mt-6 grid grid-cols-1 gap-3 min-[440px]:grid-cols-2 sm:flex sm:justify-end [&>*]:w-full sm:[&>*]:w-auto">{footer}</div>
         )}
       </div>
     </div>,

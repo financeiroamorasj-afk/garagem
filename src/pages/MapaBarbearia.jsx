@@ -9,7 +9,7 @@ import {
   COLS, EXTRA_ACCESS, MAX_MICRO, MICRO_STEP, R0, R_BAND_IN, R_BAND_OUT, R_CORE, R_HEX, R_LABEL, R_MICRO, ROW, ROWS, SECTORS, SECTOR_BY_KEY, VB,
   arcPath, colAngle, hexPoints, polar, radialText, ringPath, sectorPath,
 } from '../lib/mapa/geometria'
-import { ACCENT, ALERT, DS, MAPA_CORES, MICRO } from '../lib/mapa/tokens'
+import { ACCENT, ALERT, DS, MAPA_SVG, MICRO } from '../lib/mapa/tokens'
 
 // Mapa da barbearia — radar do negócio. Portado do "Mapa da casa"
 // (FinanceiroApp) com a identidade do Garagem. Detalhes da geometria em
@@ -50,7 +50,7 @@ const StaticFrame = memo(function StaticFrame() {
     const major = a % 15 === 0
     const p0 = polar(R_HEX + 20, a)
     const p1 = polar(R_HEX + (major ? 29 : 24), a)
-    ticks.push(<line key={a} x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={major ? MAPA_CORES.trilhoForte : MAPA_CORES.trilho} strokeWidth={major ? 1 : 0.7} />)
+    ticks.push(<line key={a} x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={major ? MAPA_SVG.trilhoForte : MAPA_SVG.trilho} strokeWidth={major ? 1 : 0.7} />)
   }
   const ringLabel = (id, r, text, color, opacity = 0.75) => (
     <g key={id}>
@@ -64,21 +64,21 @@ const StaticFrame = memo(function StaticFrame() {
   return (
     <g pointerEvents="none">
       <circle r={VB} fill="url(#mb-bg)" />
-      <circle r="62" fill="none" stroke={MAPA_CORES.trilho} strokeDasharray="1 5" />
-      <path d={ringPath(R_BAND_IN, R_BAND_OUT)} fill={MAPA_CORES.faixa} fillOpacity="0.7" fillRule="evenodd" />
-      <circle r={R_BAND_IN} fill="none" stroke={MAPA_CORES.trilho} />
-      <circle r={R_BAND_OUT} fill="none" stroke={MAPA_CORES.trilho} />
+      <circle r="62" fill="none" stroke={MAPA_SVG.trilho} strokeDasharray="1 5" />
+      <path d={ringPath(R_BAND_IN, R_BAND_OUT)} fill={MAPA_SVG.faixa} fillOpacity="0.82" fillRule="evenodd" />
+      <circle r={R_BAND_IN} fill="none" stroke={MAPA_SVG.trilho} />
+      <circle r={R_BAND_OUT} fill="none" stroke={MAPA_SVG.trilho} />
       {SECTORS.map((s) => {
         const p0 = polar(R_BAND_IN, s.start)
         const p1 = polar(R_BAND_OUT, s.start)
-        return <line key={s.key} x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={MAPA_CORES.trilho} />
+        return <line key={s.key} x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={MAPA_SVG.trilho} />
       })}
-      <g fill={MAPA_CORES.grade}>{grid}</g>
+      <g fill={MAPA_SVG.grade}>{grid}</g>
       <g fill={ACCENT} opacity="0.5">{coreDots}</g>
       <circle r={R_MICRO} fill="none" stroke={MICRO} strokeOpacity="0.3" strokeWidth="0.8" />
       <g fill="none" stroke={MICRO} strokeOpacity="0.3">{microMarks}</g>
-      <circle r={R_HEX} fill="none" stroke={MAPA_CORES.trilhoForte} strokeOpacity="0.8" strokeWidth="0.8" />
-      <circle r={R_HEX + 20} fill="none" stroke={MAPA_CORES.trilho} strokeWidth="0.6" />
+      <circle r={R_HEX} fill="none" stroke={MAPA_SVG.trilhoForte} strokeOpacity="0.8" strokeWidth="0.8" />
+      <circle r={R_HEX + 20} fill="none" stroke={MAPA_SVG.trilho} strokeWidth="0.6" />
       {ticks}
       {ringLabel('mb-arc-items', R_BAND_IN - 10, 'ITENS', DS.steel, 0.7)}
       {ringLabel('mb-arc-micro', R_MICRO + 6, 'LANÇAMENTOS', MICRO, 0.8)}
@@ -253,7 +253,7 @@ export default function MapaBarbearia() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  const frame = `flex flex-col bg-surface-0 text-warm-white ${isFull ? 'h-screen' : '-m-6 h-[calc(100vh-4rem)]'}`
+  const frame = `flex min-w-0 flex-col bg-surface-0 text-warm-white ${isFull ? 'h-screen' : '-mx-4 -mb-5 -mt-5 min-h-full sm:-mx-6 lg:-m-6 lg:h-[calc(100vh-4rem)]'}`
 
   if (error) {
     return (
@@ -352,8 +352,8 @@ export default function MapaBarbearia() {
           <svg viewBox={`${-VB} ${-VB} ${2 * VB} ${2 * VB}`} className="absolute inset-0 h-full w-full select-none" role="img" aria-label="Radar da barbearia: núcleos, itens e alertas">
             <defs>
               <radialGradient id="mb-bg" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#211b12" stopOpacity="0.95" />
-                <stop offset="55%" stopColor="#130f0a" stopOpacity="0.55" />
+                <stop offset="0%" stopColor="var(--color-mapa-bg-centro)" stopOpacity="0.95" />
+                <stop offset="55%" stopColor="var(--color-mapa-bg-meio)" stopOpacity="0.62" />
                 <stop offset="100%" stopColor={DS.surface0} stopOpacity="0" />
               </radialGradient>
               <radialGradient id="mb-hubglow" cx="50%" cy="50%" r="50%">
@@ -465,7 +465,7 @@ export default function MapaBarbearia() {
 
             {/* rótulos radiais dos itens */}
             {labeledItems.map((item) => (
-              <text key={`label-${item.id}`} {...radialText(R_LABEL, item.angle)} dominantBaseline="middle" fontFamily="var(--font-mono)" fontSize="9.5" fill={item.alert ? MAPA_CORES.alertaSuave : MAPA_CORES.texto} pointerEvents="none">
+              <text key={`label-${item.id}`} {...radialText(R_LABEL, item.angle)} dominantBaseline="middle" fontFamily="var(--font-mono)" fontSize="9.5" fill={item.alert ? MAPA_SVG.alertaSuave : MAPA_SVG.texto} pointerEvents="none">
                 {truncate(item.name, 14)}
               </text>
             ))}
@@ -501,7 +501,7 @@ export default function MapaBarbearia() {
                     <circle cx={p.x} cy={p.y} r="11" fill="#000" fillOpacity="0" />
                     <circle cx={p.x} cy={p.y} r={active ? 6.5 : 5.2} fill={m.id === selectedMicroId ? stroke : DS.surface0} stroke={stroke} strokeWidth="1.3" filter={active ? 'url(#mb-glow)' : undefined} />
                   </g>
-                  <text {...radialText(R_MICRO + 10, m.angle)} dominantBaseline="middle" fontFamily="var(--font-mono)" fontSize="7.5" fill={active ? MAPA_CORES.lancamentoSuave : DS.steel} pointerEvents="none">
+                  <text {...radialText(R_MICRO + 10, m.angle)} dominantBaseline="middle" fontFamily="var(--font-mono)" fontSize="7.5" fill={active ? MAPA_SVG.lancamentoSuave : DS.steel} pointerEvents="none">
                     {dataCurta(m.date)}
                   </text>
                 </g>
@@ -531,7 +531,7 @@ export default function MapaBarbearia() {
                   <IconeMapa name={s.icon} x={p.x - 8} y={p.y - 8} size={16} color={s.color} strokeWidth={1.9} pointerEvents="none" />
                   <text x={lp.x} y={lp.y} textAnchor={anchor} fontFamily="var(--font-mono)" fontSize="9.5" letterSpacing="0.3" fill={DS.warmWhite}>
                     <tspan x={lp.x} dy={anchor === 'middle' ? 3 : -3}>{s.label.toUpperCase()}</tspan>
-                    <tspan x={lp.x} dy="11" fontSize="8" fill={s.alerts || s.indisponivel ? MAPA_CORES.alertaSuave : DS.steel}>{subText}</tspan>
+                    <tspan x={lp.x} dy="11" fontSize="8" fill={s.alerts || s.indisponivel ? MAPA_SVG.alertaSuave : DS.steel}>{subText}</tspan>
                   </text>
                 </g>
               )
@@ -545,7 +545,7 @@ export default function MapaBarbearia() {
               </circle>
               <rect x="-20" y="-20" width="40" height="40" rx="4" fill={DS.surface2} stroke={ACCENT} strokeWidth="1.4" filter="url(#mb-glow)" />
               <IconeMapa name="barbearia" x={-11} y={-11} size={22} color={ACCENT} pointerEvents="none" />
-              <text y="35" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="3" fill={MAPA_CORES.texto}>BARBEARIA</text>
+              <text y="35" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="3" fill={MAPA_SVG.texto}>BARBEARIA</text>
             </g>
 
             {/* anel de acessos: atalhos em hexágonos */}
@@ -654,7 +654,7 @@ export default function MapaBarbearia() {
           ) : focusSector ? (
             <div className="pb-4">
               <div className="flex items-center gap-3 px-4 pt-4">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border" style={{ borderColor: `${focusSector.color}66`, color: focusSector.color }}>
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border" style={{ borderColor: `color-mix(in srgb, ${focusSector.color} 40%, transparent)`, color: focusSector.color }}>
                   <IconeMapa name={focusSector.icon} size={18} strokeWidth={1.75} />
                 </span>
                 <div className="min-w-0">

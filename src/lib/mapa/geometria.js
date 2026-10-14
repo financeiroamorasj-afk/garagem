@@ -9,16 +9,16 @@
 //   4. anel de LANÇAMENTOS — as micro-conexões do item selecionado;
 //   5. anel de ACESSOS — atalhos para as telas, em hexágonos.
 
-import { MAPA_CORES } from './tokens.js'
+import { MAPA_SVG } from './tokens.js'
 
 export const SECTOR_DEFS = [
-  { key: 'contas', label: 'Contas', route: '/admin/financeiro', icon: 'contas', color: MAPA_CORES.cobre },
-  { key: 'categorias', label: 'Categorias', route: '/admin/financeiro/cadastros', icon: 'categorias', color: MAPA_CORES.latao },
-  { key: 'cofres', label: 'Cofres', route: '/admin/financeiro/envelopes', icon: 'cofres', color: MAPA_CORES.patina },
-  { key: 'comissoes', label: 'Comissões', route: '/admin/barbeiros', icon: 'comissoes', color: MAPA_CORES.oliva },
-  { key: 'equipe', label: 'Equipe', route: '/admin/barbeiros', icon: 'equipe', color: MAPA_CORES.aco },
-  { key: 'clientes', label: 'Clientes', route: null, icon: 'clientes', color: MAPA_CORES.ameixa },
-  { key: 'agenda', label: 'Agenda', route: '/reception/board', icon: 'agenda', color: MAPA_CORES.osso },
+  { key: 'contas', label: 'Contas', route: '/admin/financeiro', icon: 'contas', color: MAPA_SVG.cobre },
+  { key: 'categorias', label: 'Categorias', route: '/admin/financeiro/cadastros', icon: 'categorias', color: MAPA_SVG.latao },
+  { key: 'cofres', label: 'Cofres', route: '/admin/financeiro/envelopes', icon: 'cofres', color: MAPA_SVG.patina },
+  { key: 'comissoes', label: 'Comissões', route: '/admin/barbeiros', icon: 'comissoes', color: MAPA_SVG.oliva },
+  { key: 'equipe', label: 'Equipe', route: '/admin/barbeiros', icon: 'equipe', color: MAPA_SVG.aco },
+  { key: 'clientes', label: 'Clientes', route: null, icon: 'clientes', color: MAPA_SVG.ameixa },
+  { key: 'agenda', label: 'Agenda', route: '/reception/board', icon: 'agenda', color: MAPA_SVG.osso },
 ]
 
 export const WEDGE = 360 / SECTOR_DEFS.length

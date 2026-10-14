@@ -80,7 +80,7 @@ export default function FinanceOverview() {
       </section>
       <section className="space-y-4"><h2 className="text-h1 text-warm-white">Saldo por conta</h2><DataTable columns={contaColumns} rows={accounts} loading={loading} caption="Saldo real por conta" emptyTitle="Nenhuma conta bancária ativa" emptyDescription="Cadastre uma conta para iniciar o acompanhamento financeiro." /></section>
       {!loading && (hasMovements
-        ? <div className="max-w-full overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" role="region" aria-label="Gráfico de resultado diário com rolagem horizontal" tabIndex={0}><div className="min-w-[720px]"><FinancialChart title="Resultado diário" summary="Entradas menos saídas, sem dupla contagem de transferências internas." data={series} formatValue={formatarBRL} /></div></div>
+        ? <FinancialChart title="Resultado diário" summary="Entradas menos saídas, sem dupla contagem de transferências internas." data={series} formatValue={formatarBRL} />
         : <Card><EmptyState title="Sem movimentações no período" description="Não há entradas ou saídas registradas para o período selecionado." /></Card>)}
       <section className="space-y-4"><h2 className="text-h1 text-warm-white">Próximos vencimentos</h2><DataTable columns={vencimentoColumns} rows={summary?.proximos_vencimentos ?? []} loading={loading} caption="Próximos vencimentos reais" emptyTitle="Nenhum vencimento próximo" emptyDescription="Não há títulos pendentes nos próximos 30 dias." /></section>
     </div>

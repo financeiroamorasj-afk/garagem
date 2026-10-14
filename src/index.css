@@ -43,6 +43,8 @@
     --color-mapa-texto: #e6dfd2;
     --color-mapa-alerta-suave: #e8998a;
     --color-mapa-lancamento-suave: #e8c27a;
+    --color-mapa-bg-centro: #211b12;
+    --color-mapa-bg-meio: #130f0a;
 
     /* Alias de compatibilidade — remover quando /ds-migrar zerar o grep */
     --color-industrial-dark: #050505;
@@ -88,6 +90,23 @@ html[data-theme='light'] {
     --color-warning: #925d14;
     --color-danger: #ad3e32;
     --color-info: #37637d;
+    --color-mapa-cobre: #8a3d18;
+    --color-mapa-latao: #755414;
+    --color-mapa-patina: #2d665b;
+    --color-mapa-oliva: #566526;
+    --color-mapa-aco: #3b607b;
+    --color-mapa-ameixa: #714867;
+    --color-mapa-osso: #6a5638;
+    --color-mapa-grade: #9f8e79;
+    --color-mapa-trilho: #b9aa97;
+    --color-mapa-trilho-forte: #776956;
+    --color-mapa-faixa: #ddd1c0;
+    --color-mapa-painel: #eee5d8;
+    --color-mapa-texto: #2b2119;
+    --color-mapa-alerta-suave: #9c3027;
+    --color-mapa-lancamento-suave: #744c0a;
+    --color-mapa-bg-centro: #d7cbbb;
+    --color-mapa-bg-meio: #ece4d8;
     --color-industrial-dark: #f5f1e9;
     --shadow-overlay: 0 16px 48px rgba(35,29,24,0.18), 0 2px 8px rgba(35,29,24,0.12);
 }
@@ -104,6 +123,20 @@ html[data-theme='light'] .surface-header-blur {
 /* =========================================================
    Base
    ========================================================= */
+html,
+body,
+#root {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    margin: 0;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
 body {
     background-color: var(--color-surface-0);
     color: var(--color-warm-white);
@@ -111,6 +144,15 @@ body {
     font-size: 14px;
     line-height: 1.5;
     overflow-x: hidden;
+    overscroll-behavior-x: none;
+}
+
+@media (max-width: 639px) {
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
 }
 
 /* Scrollbars — aplicação e regiões internas roláveis */

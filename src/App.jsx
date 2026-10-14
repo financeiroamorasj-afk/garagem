@@ -5,7 +5,6 @@ import DesignSystem from './pages/DesignSystem'
 import ProtectedRoute from './components/ProtectedRoute'
 import ModuleGate from './components/ModuleGate'
 import AdminDashboard from './pages/AdminDashboard'
-import Dashboard from './pages/Dashboard'
 import BarberDashboard from './pages/BarberDashboard'
 import ReceptionBoard from './pages/ReceptionBoard'
 import FinanceOverview from './pages/financeiro/FinanceOverview'
@@ -43,7 +42,7 @@ function App() {
         <Route path="/tv" element={<TvScreen />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/barber/dashboard" element={<BarberDashboard />} />
           <Route path="/reception/board" element={<ModuleGate modulo="recepcao" accessRpc="recepcao_acesso_operador_verificar"><ReceptionBoard /></ModuleGate>} />
           <Route path="/admin/agenda/tv" element={<AdminAgendaTv />} />

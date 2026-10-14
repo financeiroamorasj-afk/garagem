@@ -181,7 +181,7 @@ function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
 function MobileBottomNavigation() {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface-1/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      className="z-30 grid shrink-0 grid-cols-5 border-t border-line bg-surface-1 pb-[env(safe-area-inset-bottom)] lg:hidden"
       aria-label="Atalhos administrativos"
     >
       {mobileNavItems.map((item) => {
@@ -282,7 +282,7 @@ export default function AdminLayout() {
   const userName = auth.profile.nome || 'Administrador'
 
   return (
-    <div className="flex h-[100dvh] min-w-0 bg-surface-0 text-warm-white">
+    <div className="flex h-[100dvh] min-w-0 max-w-full overflow-hidden bg-surface-0 text-warm-white">
       <DesktopSidebar isCollapsed={isCollapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -331,13 +331,13 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24 pt-5 sm:px-6 lg:p-6">
+        <main className="min-w-0 flex-1 overscroll-contain overflow-y-auto overflow-x-hidden px-4 pb-5 pt-5 sm:px-6 lg:p-6">
           <div className="mb-5"><PushNotificationPrompt /></div>
           <Outlet />
         </main>
+        <MobileBottomNavigation />
       </div>
 
-      <MobileBottomNavigation />
       <MobileDrawer
         open={isMobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}

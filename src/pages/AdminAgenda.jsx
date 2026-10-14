@@ -386,11 +386,11 @@ export default function AdminAgenda() {
           <p className="mt-2 max-w-2xl text-body-sm text-steel sm:text-body">Consulte os horários da equipe por dia, semana ou mês.</p>
         </div>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Button size="sm" variant="secondary" onClick={() => navigate('/admin/tv')}><MonitorUp size={16} /> Modo TV</Button>
-            <Button size="sm" variant="secondary" onClick={() => setWalkInOpen(true)}><UserPlus size={16} /> Encaixe</Button>
-            <Button size="sm" variant="secondary" onClick={openExtraHours}><Clock3 size={16} /> Horário extra</Button>
-            <Button size="sm" onClick={() => setAppointmentOpen(true)}><Plus size={16} /> Novo corte</Button>
+          <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
+            <Button className="w-full px-2 text-[11px] sm:px-3 sm:text-[13px]" size="sm" variant="secondary" onClick={() => navigate('/admin/tv')}><MonitorUp className="shrink-0" size={16} /> Modo TV</Button>
+            <Button className="w-full px-2 text-[11px] sm:px-3 sm:text-[13px]" size="sm" variant="secondary" onClick={() => setWalkInOpen(true)}><UserPlus className="shrink-0" size={16} /> Encaixe</Button>
+            <Button className="w-full px-2 text-[11px] sm:px-3 sm:text-[13px]" size="sm" variant="secondary" onClick={openExtraHours}><Clock3 className="shrink-0" size={16} /> Horário extra</Button>
+            <Button className="w-full px-2 text-[11px] sm:px-3 sm:text-[13px]" size="sm" onClick={() => setAppointmentOpen(true)}><Plus className="shrink-0" size={16} /> Novo corte</Button>
           </div>
           {activeArea === 'calendario' && (
             <div className="grid grid-cols-3 gap-1 rounded-md border border-line bg-surface-1 p-1" aria-label="Visualização da agenda">

@@ -24,16 +24,23 @@ export const MAPA_CORES = {
   lancamentoSuave: '#e8c27a',
 }
 
+// O SVG usa variáveis CSS com fallback para reagir ao tema sem precisar
+// remontar a geometria. MAPA_CORES continua sendo a fonte canônica do tema
+// escuro e também serve aos testes de sincronização com o design system.
+export const MAPA_SVG = Object.fromEntries(
+  Object.entries(MAPA_CORES).map(([chave, valor]) => [chave, `var(${nomeTokenCss(chave)}, ${valor})`])
+)
+
 // Tokens do design system usados diretamente pelo radar (seção 1).
 export const DS = {
-  surface0: '#050505',
-  surface2: '#17150f',
-  copper: '#c1793f',
-  warmWhite: '#f2ece0',
-  steel: '#8b877d',
-  danger: '#d4614a',
-  warning: '#d9a03f',
-  success: '#7ba05b',
+  surface0: 'var(--color-surface-0, #050505)',
+  surface2: 'var(--color-surface-2, #17150f)',
+  copper: 'var(--color-copper, #c1793f)',
+  warmWhite: 'var(--color-warm-white, #f2ece0)',
+  steel: 'var(--color-steel, #8b877d)',
+  danger: 'var(--color-danger, #d4614a)',
+  warning: 'var(--color-warning, #d9a03f)',
+  success: 'var(--color-success, #7ba05b)',
 }
 
 export const ALERT = DS.danger
