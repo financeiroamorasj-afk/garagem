@@ -353,3 +353,13 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O portal agora consulta os dados ao abrir a aba **Cortes**, ao retornar à janela e a cada 30 segundos enquanto a sessão estiver visível.
 - O registro de histórico continua vindo de `cliente_cortes`, criado tanto no checkout direto quanto no envio para a fila da recepção; a correção evita exigir logout ou recarga manual.
 - Testes focados do portal/fila, ESLint e build de produção foram aprovados.
+
+# 14/10/2026 — Acompanhamento e reenvio de convites dos clientes
+
+- A lista **Barbearias** do ADM passou a mostrar, para cada administrador, se o convite está pendente ou aceito e se o primeiro login já ocorreu, sempre com as datas disponíveis no Supabase Auth.
+- O super administrador da plataforma ganhou a ação **Reenviar convite**, disponível somente enquanto o administrador do cliente continua ativo e ainda não confirmou o acesso.
+- O servidor revalida o vínculo entre usuário, papel e barbearia antes do envio; acessos já confirmados ou inativos não recebem um novo convite.
+- Cada reenvio feito pelo ADM registra o operador, o estado anterior do acesso e a data da nova emissão em `saas_auditoria`.
+- A alteração foi incorporada pela PR 53 e publicada com sucesso no projeto `garagem-adm`, no domínio oficial `https://adm.garagemsystem.com.br`.
+- A consulta de produção confirmou que o primeiro cliente fundador permanecia com convite pendente e sem primeiro login. O convite foi reenviado em produção em 14/10/2026 às 09:50 (horário de Brasília), e a execução foi registrada na auditoria como ação de sistema.
+- Verificações concluídas: ESLint e build de produção do ADM, previews da Vercel, deploy da `main`, rota protegida no domínio oficial e leitura posterior do estado do usuário no Supabase Auth.
