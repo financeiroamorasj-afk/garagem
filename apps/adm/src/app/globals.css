@@ -37,6 +37,10 @@ a { color: inherit; text-decoration: none; }
 .button-link { border: 1px solid var(--gold); background: linear-gradient(110deg, var(--copper), var(--gold)); color: #0a0907; }
 .secondary-button { border: 1px solid var(--copper); color: var(--copper); }
 .alert { border: 1px solid rgba(224, 93, 69, .58); background: rgba(224, 93, 69, .1); color: #ff866e; padding: 1rem; line-height: 1.45; }
+.table-action-button { min-height: 2.35rem; border: 1px solid var(--copper); background: transparent; color: var(--copper); padding: .5rem .7rem; cursor: pointer; font-size: .7rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.table-action-button:hover { background: rgba(213, 122, 53, .1); }
+.table-action-button:disabled { cursor: wait; opacity: .6; }
+.table-action-unavailable { margin-top: 0; }
 
 .shell { min-height: 100vh; display: grid; grid-template-columns: 17rem 1fr; }
 .sidebar { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); background: rgba(8, 8, 7, .94); padding: 1.5rem 1rem; display: flex; flex-direction: column; }

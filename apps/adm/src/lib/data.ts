@@ -2,7 +2,23 @@ import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 
 export type Plan = { id: string; codigo: string; nome: string; descricao: string | null; status: string; preco_mensal: number | null; preco_anual: number | null; dias_trial: number; limite_usuarios: number | null };
-export type Barbershop = { id: string; nome: string; slug: string; criado_em: string };
+export type BarbershopAdminAccess = {
+  userId: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  authAvailable: boolean;
+  invitedAt: string | null;
+  acceptedAt: string | null;
+  firstLoginAt: string | null;
+};
+export type Barbershop = {
+  id: string;
+  nome: string;
+  slug: string;
+  criado_em: string;
+  admins: BarbershopAdminAccess[];
+};
 export type Subscription = { id: string; barbearia_id: string; plano_id: string; status: string; ciclo: string; preco_final: number; membro_fundador: boolean; gateway_provider: string | null; created_at: string };
 export type Checkout = { id: string; plano_id: string; nome_barbearia: string; nome_admin: string; email_admin: string; status: string; ciclo: string; preco_final: number; gateway_ambiente: string | null; created_at: string };
 export type GatewayEvent = { id: string; event_type: string; status: string; resource_id: string | null; erro_codigo: string | null; recebido_em: string };
@@ -81,9 +97,36 @@ export async function commercialCatalog() {
 }
 
 export async function listBarbershops() {
-  const { data, error } = await createAdminSupabase().from("barbearias").select("id,nome,slug,criado_em").order("criado_em", { ascending: false });
-  if (error) throw new Error("Não foi possível listar as barbearias.");
-  return (data ?? []) as Barbershop[];
+  const supabase = createAdminSupabase();
+  const [shopsResult, adminsResult] = await Promise.all([
+    supabase.from("barbearias").select("id,nome,slug,criado_em").order("criado_em", { ascending: false }),
+    supabase.from("profiles").select("id,barbearia_id,nome,email,ativo").eq("role", "admin"),
+  ]);
+  if (shopsResult.error || adminsResult.error) throw new Error("Não foi possível listar as barbearias.");
+
+  const admins = await Promise.all((adminsResult.data ?? []).map(async (profile) => {
+    const { data, error } = await supabase.auth.admin.getUserById(profile.id);
+    const user = error ? null : data.user;
+    return {
+      userId: profile.id,
+      barbershopId: profile.barbearia_id,
+      nome: profile.nome,
+      email: profile.email,
+      ativo: profile.ativo !== false,
+      authAvailable: Boolean(user),
+      invitedAt: user?.invited_at ?? null,
+      acceptedAt: user?.email_confirmed_at ?? user?.confirmed_at ?? null,
+      firstLoginAt: user?.last_sign_in_at ?? null,
+    };
+  }));
+
+  return (shopsResult.data ?? []).map((shop) => ({
+    ...shop,
+    admins: admins
+      .filter((admin) => admin.barbershopId === shop.id)
+      .map(({ barbershopId: _barbershopId, ...admin }) => admin)
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+  })) as Barbershop[];
 }
 
 export async function listSubscriptions() {
