@@ -7,6 +7,14 @@ export function shortDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 }
 
+export function shortDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
+}
+
 export function badgeTone(status: string) {
   if (["ativo", "concluido", "pago", "processado"].includes(status)) return "green";
   if (["cancelado", "falhou", "expirado"].includes(status)) return "red";
