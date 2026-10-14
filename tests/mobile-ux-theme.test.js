@@ -12,6 +12,13 @@ test('admin tem só cinco atalhos na base e menu completo permanece no topo', as
   assert.doesNotMatch(nav, /className="fixed/)
 })
 
+test('cabeçalho e atalhos administrativos respeitam as áreas seguras do iPhone', async () => {
+  const layout = await readFile(new URL('../src/components/layout/AdminLayout.jsx', import.meta.url), 'utf8')
+  assert.match(layout, /env\(safe-area-inset-top\)/)
+  assert.match(layout, /env\(safe-area-inset-bottom\)-1rem/)
+  assert.match(layout, /min-h-14/)
+})
+
 test('shells móveis mantêm navegação dentro do aplicativo e evitam zoom automático em campos', async () => {
   const [css, portal, barber] = await Promise.all([
     readFile(new URL('../src/index.css', import.meta.url), 'utf8'),

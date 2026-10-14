@@ -181,7 +181,7 @@ function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
 function MobileBottomNavigation() {
   return (
     <nav
-      className="z-30 grid shrink-0 grid-cols-5 border-t border-line bg-surface-1 pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="z-30 grid shrink-0 grid-cols-5 border-t border-line bg-surface-1 pb-[max(0.375rem,calc(env(safe-area-inset-bottom)-1rem))] lg:hidden"
       aria-label="Atalhos administrativos"
     >
       {mobileNavItems.map((item) => {
@@ -192,7 +192,7 @@ function MobileBottomNavigation() {
             to={item.href}
             end
             className={({ isActive }) =>
-              `flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold transition-colors ${
+              `flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold transition-colors ${
                 isActive ? 'text-copper' : 'text-steel'
               }`
             }
@@ -286,7 +286,7 @@ export default function AdminLayout() {
       <DesktopSidebar isCollapsed={isCollapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface-1/90 px-4 backdrop-blur-sm lg:px-6">
+        <header className="sticky top-0 z-20 flex min-h-[calc(4rem+env(safe-area-inset-top))] shrink-0 items-center justify-between border-b border-line bg-surface-1/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-sm lg:min-h-16 lg:px-6 lg:pt-0">
           <button
             type="button"
             aria-label="Abrir menu"
