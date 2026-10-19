@@ -31,7 +31,7 @@ test('recepção confere o carrinho e cobra com estoque, comissão e financeiro 
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,comissao_percentual) VALUES($1,$2,'Corte cobrança',70,45,50)", [serviceId, tenantId])
     await db.query("INSERT INTO public.produtos(id,barbearia_id,nome,preco_venda,preco_custo,estoque_quantidade,ativo,comissao_percentual) VALUES($1,$2,'Pomada cobrança',30,10,5,true,NULL)", [productId, tenantId])
     await db.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status,valor_final) VALUES($1,$2,$3,$4,$5,now(),'em_atendimento',70)", [appointmentId, tenantId, professionalId, customerId, serviceId])
-    await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Caixa cobrança','caixa',true)", [tenantId])
+    await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Recebimentos da maquininha','cartao',true)", [tenantId])
     await db.query("INSERT INTO public.financeiro_categorias(barbearia_id,nome,tipo,grupo_dre) VALUES($1,'Serviços cobrança','entrada','receita_servicos'),($1,'Produtos cobrança','entrada','receita_produtos')", [tenantId])
 
     await setUser(db, barberUserId)

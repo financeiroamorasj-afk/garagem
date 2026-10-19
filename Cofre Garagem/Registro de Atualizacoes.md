@@ -389,3 +389,12 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O formulário administrativo de novo corte deixou de aceitar horário livre digitado e agora apresenta somente os horários realmente disponíveis para o barbeiro, serviço e data escolhidos.
 - O portal do cliente, o encaixe do barbeiro e o encaixe do administrador continuam usando o mesmo motor de horários e receberam testes específicos para impedir agendamentos durante o intervalo de almoço.
 - Registros históricos e atendimentos já em andamento não são alterados pela nova proteção.
+
+# 19/10/2026 — Dinheiro, maquininha e contas de recebimento separadas
+
+- O fechamento do barbeiro passou a exigir uma confirmação explícita antes de concluir pagamentos presenciais: dinheiro somente após o operador confirmar que recebeu e conferiu o valor; débito e crédito somente após confirmar que a maquininha exibiu **APROVADO**.
+- O Garagem não captura dados do cartão nem integra a adquirente nesta fase. A maquininha continua sendo operada externamente e o sistema registra a confirmação manual, a taxa e a data prevista de recebimento.
+- Pagamentos em dinheiro são direcionados exclusivamente para uma conta financeira ativa do tipo `caixa`; débito e crédito são direcionados para uma conta ativa do tipo `cartao`; PIX e outras modalidades permanecem na conta principal.
+- O ADM financeiro ganhou indicadores para **Dinheiro no caixa** e **Débito e crédito**, com atalhos de cadastro já preenchidos com o tipo necessário.
+- Se a conta específica não estiver cadastrada, o pagamento é bloqueado com orientação ao ADM, sem lançar o valor silenciosamente na conta principal.
+- A mesma regra de destino foi aplicada aos checkouts do barbeiro, às cobranças da recepção e às vendas avulsas do balcão.
