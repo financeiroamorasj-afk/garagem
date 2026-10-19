@@ -236,16 +236,17 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
       open={open}
       onClose={() => !saving && onClose()}
       title={receptionMode ? 'Finalizar parte técnica' : 'Concluir atendimento'}
+      fullScreenMobile
       className="sm:max-w-4xl"
       footer={(
         <>
-          {completionHint && <p className="col-span-2 text-body-sm text-warning sm:mr-auto sm:self-center">{completionHint}</p>}
+          {completionHint && <p className="text-body-sm text-warning min-[440px]:col-span-2 sm:mr-auto sm:self-center">{completionHint}</p>}
           <Button variant="secondary" disabled={saving} onClick={onClose}>Voltar</Button>
           <Button type="submit" form="cut-completion-form" loading={saving} disabled={checkingMode || loadingMaterials || compressing || style.trim().length < 2 || grossTotal <= 0 || (!receptionMode && paymentMethod === 'pix' && !pixReady)}><CheckCircle2 size={17} /> {receptionMode ? 'Enviar para cobrança' : paymentMethod === 'pix' ? 'Confirmar PIX' : `Confirmar ${formatarBRL(finalTotal)}`}</Button>
         </>
       )}
     >
-      <form id="cut-completion-form" className="space-y-5" onSubmit={submit}>
+      <form id="cut-completion-form" className="min-w-0 max-w-full space-y-5 overflow-x-hidden" onSubmit={submit}>
         <div className="rounded-sm border border-line bg-surface-1 p-3">
           <p className="text-label text-copper">CLIENTE</p>
           <p className="mt-1 text-h3 text-warm-white">{appointment?.cliente_nome}</p>

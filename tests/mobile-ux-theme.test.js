@@ -61,10 +61,11 @@ test('modo claro possui tokens próprios e troca persistida', async () => {
 })
 
 test('componentes compartilhados não forçam largura de desktop no celular', async () => {
-  const [table, chart, modal, finance, map] = await Promise.all([
+  const [table, chart, modal, cutModal, finance, map] = await Promise.all([
     readFile(new URL('../src/components/ui/DataTable.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/ui/FinancialChart.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/ui/Modal.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/CutCompletionModal.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/financeiro/FinanceOverview.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/MapaBarbearia.jsx', import.meta.url), 'utf8'),
   ])
@@ -73,6 +74,9 @@ test('componentes compartilhados não forçam largura de desktop no celular', as
   assert.match(chart, /min-w-0 flex-1/)
   assert.doesNotMatch(finance, /min-w-\[720px\]/)
   assert.match(modal, /grid-cols-1.*min-\[440px\]:grid-cols-2/)
+  assert.match(modal, /overscroll-contain touch-pan-y/)
+  assert.match(cutModal, /fullScreenMobile/)
+  assert.match(cutModal, /min-\[440px\]:col-span-2/)
   assert.doesNotMatch(map, /'-m-6 h-\[calc\(100vh-4rem\)\]'/)
 })
 

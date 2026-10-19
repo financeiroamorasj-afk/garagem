@@ -1,4 +1,4 @@
-# Registro de Atualizações - Sistema Garagem
+﻿# Registro de Atualizações - Sistema Garagem
 
 Este documento registra as implementações, melhorias e novas funcionalidades integradas recentemente no ecossistema do Garagem System, refletindo os últimos avanços do projeto.
 
@@ -375,9 +375,10 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - A validação em produção foi executada somente na unidade de homologação: tipo `invite`, redirecionamento para `https://app.garagemsystem.com.br/definir-senha`, usuário ainda não confirmado e auditoria registrada. O token de teste não foi exibido nem armazenado.
 - Verificações concluídas: ESLint, build de produção, previews da Vercel, deploy da `main` e geração controlada contra o Supabase Auth de produção.
 
-# 19/10/2026 — Correção do valor do serviço e geração do PIX no encerramento do atendimento
+# 19/10/2026 — Correção do valor do serviço, geração do PIX e shell mobile nativo no encerramento do atendimento
 
 - Corrigido o fluxo em que o atendimento ativo do barbeiro (carregarAtendimentoAtivo) perdia alor_final, duracao_minutos, dados do cliente e memória do último corte após recarga ou evento Realtime da agenda.
 - A camada de dados da agenda (src/lib/agenda/api.js) agora mescla o atendimento ativo com a projeção completa da agenda do dia e hidrata alor_final a partir do agendamento ou, como fallback automático, do preço cadastrado em servicos.preco.
 - O modal de conclusão (src/components/CutCompletionModal.jsx) passou a recuperar automaticamente o valor do serviço no banco caso o objeto do atendimento chegue sem alor_final preenchido.
 - O painel de cobrança PIX (src/components/PixPaymentPanel.jsx) deixou de exibir spinner infinito quando o valor total está zerado, exibindo orientação explícita e gerando o QR Code imediatamente assim que o valor do serviço é carregado.
+- A tela de fechamento do atendimento passou a operar no celular como shell nativo de aplicativo em tela cheia (`fullScreenMobile` em `src/components/ui/Modal.jsx` e `src/components/CutCompletionModal.jsx`), com cabeçalho e rodapé fixos respeitando as áreas seguras (`safe-area-inset`), rolagem vertical isolada (`overscroll-contain touch-pan-y`), `overflow-x-hidden` e correção do `col-span-2` no rodapé que gerava largura implícita extra e deixava a tela flutuando lateralmente ao toque.
