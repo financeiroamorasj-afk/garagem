@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  ImagePlus,
   KeyRound,
   Mail,
   Pencil,
@@ -12,6 +13,7 @@ import {
   UserPlus,
   Users,
   UserX,
+  Trash2,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
@@ -20,8 +22,9 @@ import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
-import { atualizarBarbeiro, criarBarbeiroComAcesso, listarBarbeiros, reenviarConviteBarbeiro } from '../lib/barbeiros/api'
+import { atualizarBarbeiro, criarBarbeiroComAcesso, listarBarbeiros, reenviarConviteBarbeiro, removerFotoBarbeiro, salvarFotoBarbeiro } from '../lib/barbeiros/api'
 import { mensagemErroBarbeiro } from '../lib/barbeiros/ui'
+import { compactarImagem, formatarTamanho } from '../lib/clientes/imagem'
 
 function initialForm(row) {
   return {
@@ -49,6 +52,11 @@ export default function AdminBarbers() {
   const [formModal, setFormModal] = useState(null)
   const [statusTarget, setStatusTarget] = useState(null)
   const [form, setForm] = useState(initialForm())
+  const [photo, setPhoto] = useState(null)
+  const [photoPreview, setPhotoPreview] = useState('')
+  const [removePhoto, setRemovePhoto] = useState(false)
+  const [compressingPhoto, setCompressingPhoto] = useState(false)
+  const [photoInfo, setPhotoInfo] = useState('')
   const [errors, setErrors] = useState({})
   const [pageError, setPageError] = useState('')
   const [status, setStatus] = useState('')
@@ -87,14 +95,49 @@ export default function AdminBarbers() {
   function openForm(row = null) {
     setFormModal(row ? { mode: 'edit', row } : { mode: 'create', row: null })
     setForm(initialForm(row))
+    setPhoto(null)
+    setPhotoPreview(row?.foto_url ?? '')
+    setRemovePhoto(false)
+    setPhotoInfo('')
     setErrors({})
     setStatus('')
   }
 
   function closeForm() {
-    if (submitting) return
+    if (submitting || compressingPhoto) return
+    if (photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview)
     setFormModal(null)
     setErrors({})
+  }
+
+  async function selectPhoto(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setCompressingPhoto(true)
+    setErrors((current) => ({ ...current, photo: '' }))
+    try {
+      const image = await compactarImagem(file, { maxDimension: 900, maxBytes: 500 * 1024 })
+      setPhoto(image)
+      setPhotoPreview((current) => {
+        if (current.startsWith('blob:')) URL.revokeObjectURL(current)
+        return URL.createObjectURL(image.blob)
+      })
+      setRemovePhoto(false)
+      setPhotoInfo(`${formatarTamanho(file.size)} → ${formatarTamanho(image.bytes)}`)
+    } catch (error) {
+      setErrors((current) => ({ ...current, photo: error instanceof TypeError ? error.message : 'Não foi possível preparar a foto.' }))
+    } finally {
+      setCompressingPhoto(false)
+    }
+  }
+
+  function markPhotoForRemoval() {
+    if (photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview)
+    setPhoto(null)
+    setPhotoPreview('')
+    setPhotoInfo('A foto será removida ao salvar.')
+    setRemovePhoto(true)
   }
 
   function validateForm() {
@@ -122,8 +165,10 @@ export default function AdminBarbers() {
     setErrors({})
     try {
       const row = formModal.row
+      let profissionalId = row?.id
       if (!row?.user_id) {
-        await criarBarbeiroComAcesso({ ...form, id: row?.id })
+        const created = await criarBarbeiroComAcesso({ ...form, id: row?.id })
+        profissionalId = created?.professional?.id ?? profissionalId
       } else {
         await atualizarBarbeiro({
           ...form,
@@ -132,13 +177,22 @@ export default function AdminBarbers() {
           expectedUpdatedAt: row.updated_at,
         })
       }
+      let photoFailure = null
+      try {
+        if (photo) await salvarFotoBarbeiro(profissionalId, photo)
+        else if (removePhoto && row?.foto_url) await removerFotoBarbeiro(profissionalId)
+      } catch (error) {
+        photoFailure = error
+      }
       await load()
+      if (photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview)
       setFormModal(null)
       setStatus(row
         ? row.user_id
           ? `${displayName(row)} foi atualizado.`
           : `Acesso criado e convite enviado para ${form.email.trim().toLowerCase()}.`
         : `Barbeiro cadastrado e convite enviado para ${form.email.trim().toLowerCase()}.`)
+      if (photoFailure) setPageError('O cadastro foi salvo, mas não foi possível atualizar a foto. Abra o barbeiro e tente novamente.')
     } catch (error) {
       const mapped = mensagemErroBarbeiro(error)
       setErrors({ submit: mapped.message, conflict: mapped.conflict })
@@ -258,9 +312,9 @@ export default function AdminBarbers() {
               <Card key={barber.id} className={`flex min-w-0 flex-col gap-5 p-4 sm:p-6 ${barber.ativo ? '' : 'opacity-70'}`}>
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-copper/30 bg-copper/10 text-h2 text-copper">
-                      {displayName(barber).charAt(0).toUpperCase()}
-                    </div>
+                    {barber.foto_url
+                      ? <img src={barber.foto_url} alt="" className="h-12 w-12 shrink-0 rounded-md border border-line object-cover" />
+                      : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-copper/30 bg-copper/10 text-h2 text-copper">{displayName(barber).charAt(0).toUpperCase()}</div>}
                     <div className="min-w-0">
                       <h2 className="truncate text-h3 text-warm-white">{displayName(barber)}</h2>
                       <p className="truncate text-body-sm text-steel">{barber.nome}</p>
@@ -324,9 +378,9 @@ export default function AdminBarbers() {
           className="sm:max-w-xl"
           footer={(
             <>
-              <Button variant="ghost" onClick={closeForm} disabled={submitting}>Cancelar</Button>
+              <Button variant="ghost" onClick={closeForm} disabled={submitting || compressingPhoto}>Cancelar</Button>
               {errors.conflict && <Button variant="secondary" onClick={load} disabled={submitting}>Recarregar</Button>}
-              <Button type="submit" form="barber-form" loading={submitting}>
+              <Button type="submit" form="barber-form" loading={submitting} disabled={compressingPhoto}>
                 {formModal.row?.user_id ? 'Salvar' : 'Cadastrar e convidar'}
               </Button>
             </>
@@ -339,6 +393,26 @@ export default function AdminBarbers() {
               </div>
             )}
             {errors.submit && <div role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{errors.submit}</div>}
+            <section className="flex flex-col gap-4 rounded-md border border-line bg-surface-1 p-4 sm:flex-row sm:items-center">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-surface-0">
+                {photoPreview
+                  ? <img src={photoPreview} alt="Prévia da foto do barbeiro" className="h-full w-full object-cover" />
+                  : <UserPlus size={30} className="text-steel" aria-hidden="true" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-label text-copper">FOTO DO PERFIL</p>
+                <p className="mt-1 text-body-sm text-steel">A foto aparece na equipe e na escolha do profissional no app do cliente.</p>
+                {photoInfo && <p className="mt-2 text-label text-success">{photoInfo}</p>}
+                {errors.photo && <p role="alert" className="mt-2 text-body-sm text-danger">{errors.photo}</p>}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <label className={`inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-sm border border-copper px-3 text-body-sm font-semibold text-copper ${compressingPhoto || submitting ? 'pointer-events-none opacity-40' : ''}`}>
+                    {compressingPhoto ? <Spinner size={15} /> : <ImagePlus size={16} />} {photoPreview ? 'Trocar foto' : 'Escolher foto'}
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="sr-only" disabled={compressingPhoto || submitting} onChange={selectPhoto} />
+                  </label>
+                  {photoPreview && <Button type="button" size="sm" variant="danger" disabled={compressingPhoto || submitting} onClick={markPhotoForRemoval}><Trash2 size={15} /> Remover</Button>}
+                </div>
+              </div>
+            </section>
             <Input label="Nome completo" required value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} error={errors.nome} maxLength={120} disabled={submitting} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input label="Apelido" value={form.apelido} onChange={(event) => setForm({ ...form, apelido: event.target.value })} error={errors.apelido} maxLength={60} disabled={submitting} />

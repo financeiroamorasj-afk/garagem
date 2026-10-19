@@ -55,3 +55,19 @@ test('administrador pode reenviar convite somente ao barbeiro ainda não confirm
   assert.match(edge, /email_confirmed_at.*confirmed_at/s)
   assert.match(edge, /inviteUserByEmail/)
 })
+
+test('administrador cadastra foto pública do barbeiro para o portal', async () => {
+  const [page, api, migration] = await Promise.all([
+    readFile(new URL('../src/pages/AdminBarbers.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/lib/barbeiros/api.js', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/migrations/20261019100000_fotos_perfil_barbeiros.sql', import.meta.url), 'utf8'),
+  ])
+
+  assert.match(page, /FOTO DO PERFIL/)
+  assert.match(page, /compactarImagem/)
+  assert.match(page, /salvarFotoBarbeiro/)
+  assert.match(api, /BARBER_PHOTOS_BUCKET = 'barbeiros-fotos'/)
+  assert.match(api, /foto_url: fotoUrl/)
+  assert.match(migration, /public\.get_my_role\(\)='admin'/)
+  assert.match(migration, /public\.get_my_barbearia_id\(\)/)
+})

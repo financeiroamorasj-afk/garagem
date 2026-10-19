@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  DollarSign, Headset, LogOut, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
+  DollarSign, Headset, LogOut, Minimize2, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
   ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
@@ -100,14 +100,16 @@ function AppointmentCard({ appointment, activeAppointmentId, isToday, busy, now,
 
 function SectionNavigation({ value, onChange, sections }) {
   const columns = sections.length === 5 ? 'grid-cols-5' : 'grid-cols-4'
-  return <>
-    <nav className={`mx-auto hidden max-w-5xl gap-2 px-4 py-3 sm:grid ${columns}`} aria-label="Área do barbeiro">
+  return <nav className={`mx-auto hidden w-full max-w-5xl shrink-0 gap-2 px-4 py-3 sm:grid ${columns}`} aria-label="Área do barbeiro">
       {sections.map((item) => { const Icon = item.icon; const active = value === item.value; return <button key={item.value} type="button" onClick={() => onChange(item.value)} className={`flex min-h-11 items-center justify-center gap-2 rounded-sm border text-body-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper ${active ? 'border-copper bg-copper/10 text-copper' : 'border-line bg-surface-1 text-steel hover:text-warm-white'}`}><Icon size={17} />{item.label}</button> })}
     </nav>
-    <nav className={`fixed inset-x-0 bottom-0 z-40 grid border-t border-line bg-surface-1/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden ${columns}`} aria-label="Área do barbeiro">
+}
+
+function MobileSectionNavigation({ value, onChange, sections }) {
+  const columns = sections.length === 5 ? 'grid-cols-5' : 'grid-cols-4'
+  return <nav className={`z-30 grid shrink-0 border-t border-line bg-surface-1 pb-[env(safe-area-inset-bottom)] sm:hidden ${columns}`} aria-label="Área do barbeiro">
       {sections.map((item) => { const Icon = item.icon; const active = value === item.value; return <button key={item.value} type="button" onClick={() => onChange(item.value)} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-copper ${active ? 'text-copper' : 'text-steel'}`}><Icon size={21} /><span>{item.label}</span></button> })}
     </nav>
-  </>
 }
 
 function PeriodNavigator({ selectedDate, onChange }) {
@@ -116,6 +118,85 @@ function PeriodNavigator({ selectedDate, onChange }) {
     <label className="relative min-w-0 cursor-pointer text-center"><CalendarDays size={16} className="mx-auto mb-1 text-copper" aria-hidden="true" /><span className="block truncate text-body-sm font-semibold capitalize text-warm-white">{formatarDataAgenda(selectedDate)}</span><span className="text-label text-steel">{selectedDate === dataLocalKey() ? 'Hoje' : 'Toque para escolher'}</span><input type="date" value={selectedDate} onChange={(event) => event.target.value && onChange(event.target.value)} className="absolute inset-0 cursor-pointer opacity-0" aria-label="Escolher data da agenda" /></label>
     <button type="button" className="flex h-11 w-11 items-center justify-center rounded-sm text-steel hover:bg-surface-2 hover:text-warm-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" aria-label="Próximo dia" onClick={() => onChange(deslocarDataKey(selectedDate, 1))}><ChevronRight size={22} /></button>
   </section>
+}
+
+function AnalogServiceClock({ startedAt, now, durationMinutes }) {
+  const started = new Date(startedAt).getTime()
+  const elapsedSeconds = Number.isFinite(started) ? Math.max(0, Math.floor((now.getTime() - started) / 1000)) : 0
+  const secondsAngle = (elapsedSeconds % 60) * 6
+  const minutesAngle = ((elapsedSeconds / 60) % 60) * 6
+  const hoursAngle = ((elapsedSeconds / 3600) % 12) * 30
+  const expectedSeconds = Math.max(60, Number(durationMinutes || 0) * 60)
+  const progress = Math.min(1, elapsedSeconds / expectedSeconds)
+  const circumference = 2 * Math.PI * 70
+  const overtime = elapsedSeconds > expectedSeconds
+
+  return (
+    <div className="relative mx-auto aspect-square w-full max-w-[min(62vw,340px)]" aria-hidden="true">
+      <svg viewBox="0 0 160 160" className="h-full w-full overflow-visible drop-shadow-[0_18px_40px_rgba(0,0,0,.45)]">
+        <circle cx="80" cy="80" r="76" fill="var(--color-surface-1)" stroke="var(--color-line-strong)" strokeWidth="1" />
+        <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-surface-3)" strokeWidth="3" />
+        <circle cx="80" cy="80" r="70" fill="none" stroke={overtime ? 'var(--color-warning)' : 'var(--color-copper)'} strokeWidth="3" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)} transform="rotate(-90 80 80)" />
+        {Array.from({ length: 60 }, (_, index) => {
+          const major = index % 5 === 0
+          return <line key={index} x1="80" y1={major ? 12 : 15} x2="80" y2={major ? 20 : 18} transform={`rotate(${index * 6} 80 80)`} stroke={major ? 'var(--color-warm-white)' : 'var(--color-steel)'} strokeWidth={major ? 1.5 : 0.7} opacity={major ? 0.8 : 0.45} />
+        })}
+        <text x="80" y="29" textAnchor="middle" fill="var(--color-steel)" fontSize="8" fontFamily="var(--font-mono)">12</text>
+        <text x="132" y="83" textAnchor="middle" fill="var(--color-steel)" fontSize="8" fontFamily="var(--font-mono)">3</text>
+        <text x="80" y="137" textAnchor="middle" fill="var(--color-steel)" fontSize="8" fontFamily="var(--font-mono)">6</text>
+        <text x="28" y="83" textAnchor="middle" fill="var(--color-steel)" fontSize="8" fontFamily="var(--font-mono)">9</text>
+        <line x1="80" y1="80" x2="80" y2="49" transform={`rotate(${hoursAngle} 80 80)`} stroke="var(--color-warm-white)" strokeWidth="4" strokeLinecap="round" />
+        <line x1="80" y1="80" x2="80" y2="34" transform={`rotate(${minutesAngle} 80 80)`} stroke="var(--color-warm-white)" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="80" y1="88" x2="80" y2="25" transform={`rotate(${secondsAngle} 80 80)`} stroke="var(--color-copper)" strokeWidth="1.2" strokeLinecap="round" />
+        <circle cx="80" cy="80" r="4.5" fill="var(--color-copper)" stroke="var(--color-surface-1)" strokeWidth="2" />
+      </svg>
+    </div>
+  )
+}
+
+function ActiveAppointmentExperience({ appointment, busy, businessName, onMinimize, onComplete }) {
+  const [timerNow, setTimerNow] = useState(() => new Date())
+  useEffect(() => {
+    const interval = window.setInterval(() => setTimerNow(new Date()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+  const elapsed = tempoAtendimento(appointment.iniciado_em, timerNow) || '00:00:00'
+  const elapsedMinutes = Math.max(0, Math.floor((timerNow.getTime() - new Date(appointment.iniciado_em).getTime()) / 60000))
+  const overtime = elapsedMinutes > Number(appointment.duracao_minutos || 0)
+
+  return (
+    <section className="fixed inset-0 z-40 flex h-[100dvh] flex-col overflow-hidden bg-surface-0 text-warm-white" aria-label="Atendimento em andamento">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface-1 px-4 py-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6">
+        <div className="min-w-0">
+          <p className="text-label text-copper">ATENDIMENTO EM ANDAMENTO</p>
+          <p className="mt-1 truncate text-body-sm text-steel">{businessName || 'Garagem System'}</p>
+        </div>
+        <button type="button" onClick={onMinimize} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-line text-steel hover:border-copper hover:text-copper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" aria-label="Minimizar atendimento" title="Minimizar atendimento">
+          <Minimize2 size={20} aria-hidden="true" />
+        </button>
+      </header>
+      <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-8">
+        <div className="pointer-events-none absolute inset-0 opacity-30 atmosphere-vignette" aria-hidden="true" />
+        <div className="relative mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center text-center">
+          <div className="mb-4 flex items-center gap-2 text-label text-steel"><Scissors size={15} className="text-copper" /> {appointment.servico_nome}</div>
+          <h1 className="break-words text-display text-warm-white sm:text-[44px]">{appointment.cliente_nome}</h1>
+          <div className="my-5 w-full">
+            <AnalogServiceClock startedAt={appointment.iniciado_em} now={timerNow} durationMinutes={appointment.duracao_minutos} />
+            <span className="mt-4 block text-label text-steel">TEMPO DE ATENDIMENTO</span>
+            <time className="mt-2 block font-mono text-[38px] font-medium leading-none tabular-nums text-warm-white sm:text-[52px]" dateTime={elapsed}>{elapsed}</time>
+            <p className={`mt-3 text-body-sm ${overtime ? 'text-warning' : 'text-steel'}`}>{overtime ? `${elapsedMinutes - Number(appointment.duracao_minutos || 0)} min além da previsão` : `Previsão do serviço: ${appointment.duracao_minutos} min`}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-body-sm text-steel">
+            <span>Horário marcado: {formatarHorario(appointment.data_hora)}</span>
+            {appointment.cliente_telefone && <a href={`tel:${appointment.cliente_telefone}`} className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-line px-4 text-info"><Phone size={16} /> Ligar</a>}
+          </div>
+        </div>
+      </div>
+      <footer className="shrink-0 border-t border-line bg-surface-1 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div className="mx-auto max-w-3xl"><Button size="lg" className="w-full" loading={busy} onClick={onComplete}><CheckCircle2 size={19} /> Encerrar atendimento</Button></div>
+      </footer>
+    </section>
+  )
 }
 
 export default function BarberDashboard() {
@@ -146,6 +227,7 @@ export default function BarberDashboard() {
   const [canAccessReception, setCanAccessReception] = useState(false)
   const [canControlTv, setCanControlTv] = useState(false)
   const [activeAppointment, setActiveAppointment] = useState(null)
+  const [activeViewMinimized, setActiveViewMinimized] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -157,6 +239,10 @@ export default function BarberDashboard() {
     window.addEventListener('focus', checkReception)
     return () => { active = false; window.removeEventListener('focus', checkReception) }
   }, [])
+
+  useEffect(() => {
+    if (!activeAppointment) setActiveViewMinimized(false)
+  }, [activeAppointment])
 
   useEffect(() => {
     let active = true
@@ -254,7 +340,7 @@ export default function BarberDashboard() {
       const applyStatus = (current) => current.map((row) => row.id === appointment.id ? { ...row, status: updated.status, iniciado_em: updated.iniciado_em } : row)
       setAppointments(applyStatus)
       setWeekAppointments(applyStatus)
-      if (newStatus === 'em_atendimento') setActiveAppointment({ ...appointment, ...updated })
+      if (newStatus === 'em_atendimento') { setActiveAppointment({ ...appointment, ...updated }); setActiveViewMinimized(false) }
       setNotice(newStatus === 'cancelado'
         ? 'Horário cancelado.'
         : newStatus === 'nao_compareceu'
@@ -286,14 +372,18 @@ export default function BarberDashboard() {
 
   async function logout() { await supabase.auth.signOut(); navigate('/login', { replace: true }) }
 
-  return <div className="min-h-dvh overflow-x-hidden bg-surface-0 pb-24 text-warm-white sm:pb-8">
-    <header className="sticky top-0 z-30 border-b border-line bg-surface-0/95 px-4 py-3 backdrop-blur-sm"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1">{canAccessReception && <Button variant="secondary" size="sm" onClick={() => navigate('/reception/board')}><Headset size={17} /> Balcão</Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
+  const changeSection = (value) => {
+    if (value !== 'week') setSelectedDate(today)
+    setSection(value); setError(''); setActionError(null); setNotice('')
+  }
+
+  return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0 text-warm-white">
+    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1">{canAccessReception && <Button variant="secondary" size="sm" onClick={() => navigate('/reception/board')}><Headset size={17} /> Balcão</Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
     <SectionNavigation value={section} sections={sections} onChange={(value) => {
-      if (value !== 'week') setSelectedDate(today)
-      setSection(value); setError(''); setActionError(null); setNotice('')
+      changeSection(value)
     }} />
     {incomingNotice && (
-      <div role="alert" aria-live="assertive" className="fixed inset-x-3 top-20 z-50 mx-auto max-w-lg rounded-md border-2 border-copper bg-surface-1 p-4 shadow-2xl shadow-black/70 sm:right-5 sm:left-auto sm:top-5 sm:w-[420px]">
+      <div role="alert" aria-live="assertive" className="fixed inset-x-3 top-20 z-[70] mx-auto max-w-lg rounded-md border-2 border-copper bg-surface-1 p-4 shadow-overlay sm:right-5 sm:left-auto sm:top-5 sm:w-[420px]">
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-copper/15 text-copper"><BellRing size={23} aria-hidden="true" /></span>
           <div className="min-w-0 flex-1">
@@ -305,13 +395,14 @@ export default function BarberDashboard() {
         </div>
       </div>
     )}
-    <main className="mx-auto w-full max-w-5xl space-y-5 px-4 py-5">
+    <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
+      <div className="mx-auto max-w-5xl space-y-5 px-4 py-5">
       <PushNotificationPrompt />
-      {activeAppointment && (
+      {activeAppointment && activeViewMinimized && (
         <section className="flex flex-col gap-3 rounded-md border border-copper bg-copper/10 p-4 sm:flex-row sm:items-center" aria-live="polite">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-copper/15 text-copper"><Play size={20} aria-hidden="true" /></span>
           <div className="min-w-0 flex-1"><p className="text-label text-copper">ATENDIMENTO EM ANDAMENTO</p><p className="mt-1 truncate text-body font-semibold text-warm-white">{activeAppointment.cliente_nome} · {activeAppointment.servico_nome}</p><p className="mt-1 text-body-sm text-steel">Iniciado {activeAppointment.iniciado_em ? `às ${formatarHorario(activeAppointment.iniciado_em)}` : 'agora'}. Conclua este corte antes de iniciar outro.</p></div>
-          <Button variant="secondary" onClick={() => { setSection('today'); setSelectedDate(dataHoraLocalKey(activeAppointment.data_hora)) }}><CalendarDays size={17} /> Abrir atendimento</Button>
+          <Button variant="secondary" onClick={() => { setSelectedDate(dataHoraLocalKey(activeAppointment.data_hora)); setActiveViewMinimized(false) }}><Play size={17} /> Retomar atendimento</Button>
         </section>
       )}
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-3 text-body-sm text-success">{notice}</div>}
@@ -322,7 +413,11 @@ export default function BarberDashboard() {
       {section === 'summary' && <SummarySection selectedDate={selectedDate} summary={summary} loading={sectionLoading} />}
       {section === 'sales' && <SalesSection products={products} loading={sectionLoading} onSale={openSale} />}
       {section === 'tv' && <TvControlPanel />}
+      </div>
     </main>
+    <MobileSectionNavigation value={section} sections={sections} onChange={changeSection} />
+
+    {activeAppointment && !activeViewMinimized && <ActiveAppointmentExperience appointment={activeAppointment} busy={busyId === activeAppointment.id} businessName={context?.barbearia_nome} onMinimize={() => setActiveViewMinimized(true)} onComplete={() => setCompletionTarget(activeAppointment)} />}
 
     {cancelTarget && <Modal open onClose={() => !busyId && setCancelTarget(null)} title="Cancelar horário" footer={<><Button variant="ghost" disabled={Boolean(busyId)} onClick={() => setCancelTarget(null)}>Voltar</Button><Button variant="danger" loading={busyId === cancelTarget.id} onClick={() => changeStatus(cancelTarget, 'cancelado')}>Cancelar horário</Button></>}><p className="text-body text-steel">Cancelar o horário de <strong className="text-warm-white">{cancelTarget.cliente_nome}</strong> às {formatarHorario(cancelTarget.data_hora)}? Esta ação ficará registrada na agenda.</p></Modal>}
     <WalkInModal open={walkInOpen} onClose={() => setWalkInOpen(false)} onSuccess={async (_result, slot) => { const professional = slot.profissional_apelido || slot.profissional_nome || 'barbeiro disponível'; setNotice(`Encaixe confirmado com ${professional} às ${formatarHorario(slot.inicio)}.`); if (slot.profissional_id === context?.id) setSelectedDate(dataLocalKey(new Date(slot.inicio))); await loadDay({ quiet: true }) }} />
