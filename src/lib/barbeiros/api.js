@@ -1,5 +1,7 @@
 import { supabase } from '../supabase'
 
+export const BARBER_PHOTOS_BUCKET = 'barbeiros-fotos'
+
 function text(value, label, min, max) {
   const normalized = String(value ?? '').trim()
   if (normalized.length < min || normalized.length > max) throw new TypeError(`${label} inválido`)
@@ -89,6 +91,53 @@ export async function atualizarBarbeiro(input) {
     p_expected_updated_at: input.expectedUpdatedAt,
   })
   if (error) throw error
+  return data
+}
+
+async function carregarBarbeariaAtual() {
+  const { data, error } = await supabase.from('barbearias').select('id').single()
+  if (error) throw error
+  return data
+}
+
+export async function salvarFotoBarbeiro(profissionalId, imagem) {
+  if (!profissionalId || !imagem?.blob || !imagem?.mime) throw new TypeError('Foto do barbeiro inválida')
+  const barbearia = await carregarBarbeariaAtual()
+  const path = `${barbearia.id}/${profissionalId}/perfil`
+  const { error: uploadError } = await supabase.storage.from(BARBER_PHOTOS_BUCKET).upload(path, imagem.blob, {
+    contentType: imagem.mime,
+    cacheControl: '3600',
+    upsert: true,
+  })
+  if (uploadError) throw uploadError
+
+  const { data: publicData } = supabase.storage.from(BARBER_PHOTOS_BUCKET).getPublicUrl(path)
+  const fotoUrl = `${publicData.publicUrl}?v=${Date.now()}`
+  const { data, error } = await supabase
+    .from('profissionais')
+    .update({ foto_url: fotoUrl })
+    .eq('id', profissionalId)
+    .eq('barbearia_id', barbearia.id)
+    .select('id,foto_url,updated_at')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function removerFotoBarbeiro(profissionalId) {
+  if (!profissionalId) throw new TypeError('Cadastro de barbeiro inválido')
+  const barbearia = await carregarBarbeariaAtual()
+  const path = `${barbearia.id}/${profissionalId}/perfil`
+  const { data, error } = await supabase
+    .from('profissionais')
+    .update({ foto_url: null })
+    .eq('id', profissionalId)
+    .eq('barbearia_id', barbearia.id)
+    .select('id,foto_url,updated_at')
+    .single()
+  if (error) throw error
+  const { error: storageError } = await supabase.storage.from(BARBER_PHOTOS_BUCKET).remove([path])
+  if (storageError && !/not found/i.test(storageError.message ?? '')) throw storageError
   return data
 }
 
