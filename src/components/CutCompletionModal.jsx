@@ -12,6 +12,7 @@ import { compactarFotoCorte, formatarTamanho } from '../lib/clientes/imagem'
 import { listarProdutosBarbeiro } from '../lib/produtos/api'
 import { formatarBRL } from '../lib/financeiro/moeda'
 import { verificarAcessoModulo } from '../lib/configuracoes/modulos-api'
+import { obterValorServicoAtendimento } from '../lib/agenda/api'
 
 const STYLES = ['Degradê', 'Social', 'Navalhado', 'Tesoura', 'Buzz cut']
 const FINISHES = ['Navalha', 'Máquina', 'Tesoura', 'Natural']
@@ -80,6 +81,7 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
 
   useEffect(() => {
     if (!open || !appointment) return
+    let active = true
     setStyle(lastCut?.estilo ?? '')
     setCombs(lastCut?.pentes ?? '')
     setFinish(lastCut?.acabamento ?? '')
@@ -92,7 +94,13 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     setProductQuantities({})
     setMaterials([])
     setMaterialQuantities({})
-    setServiceValue(String(Number(appointment.valor_final ?? 0).toFixed(2)))
+    const initialPrice = Number(appointment.valor_final ?? 0)
+    setServiceValue(String(initialPrice.toFixed(2)))
+    if (!(initialPrice > 0) && appointment.id) {
+      obterValorServicoAtendimento(appointment.id)
+        .then((preco) => { if (active && Number(preco) > 0) setServiceValue(String(Number(preco).toFixed(2))) })
+        .catch(() => {})
+    }
     setDiscount('0')
     setFee('0')
     setPaymentMethod('pix')
@@ -100,22 +108,24 @@ export default function CutCompletionModal({ appointment, open, onClose, onSucce
     setIdempotencyKey(crypto.randomUUID())
     setCheckingMode(true)
     verificarAcessoModulo('recepcao')
-      .then(setReceptionMode)
-      .catch(() => setReceptionMode(false))
-      .finally(() => setCheckingMode(false))
+      .then((allowed) => { if (active) setReceptionMode(allowed) })
+      .catch(() => { if (active) setReceptionMode(false) })
+      .finally(() => { if (active) setCheckingMode(false) })
     setLoadingProducts(true)
     listarProdutosBarbeiro()
-      .then((rows) => setProducts(rows ?? []))
-      .catch(() => setProducts([]))
-      .finally(() => setLoadingProducts(false))
+      .then((rows) => { if (active) setProducts(rows ?? []) })
+      .catch(() => { if (active) setProducts([]) })
+      .finally(() => { if (active) setLoadingProducts(false) })
     setLoadingMaterials(true)
     listarMateriaisUsoAtendimento(appointment.id)
       .then((rows) => {
+        if (!active) return
         setMaterials(rows ?? [])
         setMaterialQuantities(Object.fromEntries((rows ?? []).map((item) => [item.material_id, Number(item.quantidade_prevista)])))
       })
-      .catch(() => setMaterials([]))
-      .finally(() => setLoadingMaterials(false))
+      .catch(() => { if (active) setMaterials([]) })
+      .finally(() => { if (active) setLoadingMaterials(false) })
+    return () => { active = false }
   }, [appointment, lastCut, open])
 
   useEffect(() => {

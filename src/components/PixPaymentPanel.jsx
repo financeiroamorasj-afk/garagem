@@ -59,6 +59,7 @@ export default function PixPaymentPanel({ active, amount, onReadyChange }) {
   if (!config && !error) return <div className="flex min-h-36 items-center justify-center gap-3 rounded-md border border-line bg-surface-0 text-body-sm text-steel"><Spinner size={18} /> Preparando cobrança PIX...</div>
   if (error || payloadState.error) return <div role="alert" className="rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger">{error || payloadState.error}</div>
   if (!config?.configurado) return <div role="alert" className="rounded-md border border-warning/40 bg-warning/10 p-4 text-body-sm text-warning"><strong className="block text-warm-white">PIX ainda não configurado</strong>O proprietário precisa cadastrar a chave em Configurações antes de receber por QR Code.</div>
+  if (Number(amount) <= 0) return <div role="status" className="rounded-md border border-warning/40 bg-warning/10 p-4 text-body-sm text-warning"><strong className="block text-warm-white">Informe o valor da cobrança</strong>Defina um valor maior que zero no atendimento para gerar o QR Code PIX.</div>
 
   return (
     <section aria-label="Cobrança PIX" className="grid gap-4 rounded-md border border-copper/40 bg-copper/5 p-4 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import { dataHoraLocalKey } from './ui'
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 
@@ -18,7 +19,19 @@ export async function listarAgendaBarbeiro(data) {
 export async function carregarAtendimentoAtivo() {
   const { data, error } = await supabase.rpc('barbeiro_atendimento_ativo')
   if (error) throw error
-  return data ?? null
+  if (!data) return null
+  const completo = await mesclarMemoriaAtendimentoAtivo(data)
+  const [hidratado] = await incluirInicioAtendimento([completo])
+  return hidratado ?? completo
+}
+
+async function mesclarMemoriaAtendimentoAtivo(ativo) {
+  const dataKey = dataHoraLocalKey(ativo.data_hora)
+  if (!DATE_KEY.test(dataKey)) return ativo
+  const { data: rows, error } = await supabase.rpc('barbeiro_agenda_listar_memoria', { p_data: dataKey })
+  if (error) return ativo
+  const encontrado = (rows ?? []).find((item) => item.id === ativo.id)
+  return encontrado ? { ...encontrado, ...ativo } : ativo
 }
 
 export async function listarAgendaBarbeiroPeriodo(dataInicial, dataFinal) {
@@ -34,12 +47,53 @@ export async function listarAgendaBarbeiroPeriodo(dataInicial, dataFinal) {
 }
 
 async function incluirInicioAtendimento(rows) {
-  const activeIds = rows.filter((row) => row.status === 'em_atendimento').map((row) => row.id)
-  if (activeIds.length === 0) return rows
-  const { data: starts, error } = await supabase.from('agendamentos').select('id,iniciado_em').in('id', activeIds)
+  const comAgendamento = await hidratarCamposAgendamento(rows)
+  return preencherPrecoCatalogoServico(comAgendamento)
+}
+
+async function hidratarCamposAgendamento(rows) {
+  const ids = rows.filter((r) => r.status === 'em_atendimento' || !(Number(r.valor_final) > 0) || !r.servico_id).map((r) => r.id)
+  if (ids.length === 0) return rows
+  const { data: extras, error } = await supabase.from('agendamentos').select('id,iniciado_em,valor_final,servico_id,cliente_id,duracao_minutos_snapshot').in('id', ids)
   if (error) return rows
-  const startById = new Map((starts ?? []).map((item) => [item.id, item.iniciado_em]))
-  return rows.map((row) => ({ ...row, iniciado_em: startById.get(row.id) ?? null }))
+  const porId = new Map((extras ?? []).map((item) => [item.id, item]))
+  return rows.map((row) => mesclarLinhaAgendamento(row, porId.get(row.id)))
+}
+
+function mesclarLinhaAgendamento(row, extra) {
+  if (!extra) return row
+  return {
+    ...row,
+    iniciado_em: extra.iniciado_em ?? row.iniciado_em ?? null,
+    servico_id: row.servico_id ?? extra.servico_id ?? null,
+    cliente_id: row.cliente_id ?? extra.cliente_id ?? null,
+    duracao_minutos: row.duracao_minutos ?? extra.duracao_minutos_snapshot ?? 30,
+    valor_final: Number(row.valor_final) > 0 ? row.valor_final : extra.valor_final,
+  }
+}
+
+async function preencherPrecoCatalogoServico(rows) {
+  const servicoIds = [...new Set(rows.filter((r) => !(Number(r.valor_final) > 0) && r.servico_id).map((r) => r.servico_id))]
+  if (servicoIds.length === 0) return rows
+  const { data: servicos, error } = await supabase.from('servicos').select('id,preco,duracao_minutos').in('id', servicoIds)
+  if (error) return rows
+  const servicoPorId = new Map((servicos ?? []).map((item) => [item.id, item]))
+  return rows.map((row) => aplicarFallbackServico(row, servicoPorId.get(row.servico_id)))
+}
+
+function aplicarFallbackServico(row, servico) {
+  if (!servico) return row
+  return {
+    ...row,
+    duracao_minutos: row.duracao_minutos ?? servico.duracao_minutos ?? 30,
+    valor_final: Number(row.valor_final) > 0 ? row.valor_final : servico.preco,
+  }
+}
+
+export async function obterValorServicoAtendimento(appointmentId) {
+  if (!appointmentId) return null
+  const [hidratado] = await incluirInicioAtendimento([{ id: appointmentId, status: 'em_atendimento' }])
+  return Number(hidratado?.valor_final) > 0 ? Number(hidratado.valor_final) : null
 }
 
 export async function carregarResumoBarbeiro(dataInicial, dataFinal) {

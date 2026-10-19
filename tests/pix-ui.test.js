@@ -16,6 +16,8 @@ test('PIX da unidade é configurável e aparece nos três fluxos de cobrança', 
   assert.match(panel, /gerarPayloadPix/)
   assert.match(panel, /Copiar PIX/)
   assert.match(cut, /PixPaymentPanel/)
+  assert.match(cut, /obterValorServicoAtendimento/)
+  assert.match(panel, /Informe o valor da cobrança/)
   assert.match(reception, /PixPaymentPanel/)
   assert.match(sale, /PixPaymentPanel/)
   assert.match(migration, /configuracoes_pix_obter/)
