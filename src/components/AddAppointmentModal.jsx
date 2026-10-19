@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import Modal from './ui/Modal'
 import Input from './ui/Input'
@@ -8,12 +8,18 @@ import Label from './ui/Label'
 import CurrencyInput from './ui/CurrencyInput'
 import ClientSearch from './ClientSearch'
 import { dataLocalKey, mensagemErroAgenda } from '../lib/agenda/ui'
+import { listarHorariosLivres } from '../lib/agenda/encaixe-api'
 
 function todayDateString() {
     return dataLocalKey()
 }
 
+function formatarHorario(value) {
+    return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+}
+
 export default function AddAppointmentModal({ isOpen, onClose, onSuccess, professionalId = null, initialDate = null }) {
+    const slotRequest = useRef(0)
     const [barbeariaId, setBarbeariaId] = useState(null)
     const [servicos, setServicos] = useState([])
     const [clientes, setClientes] = useState([])
@@ -24,8 +30,11 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
     const [servicoId, setServicoId] = useState('')
     const [valorFinal, setValorFinal] = useState(null)
     const [date, setDate] = useState(todayDateString())
-    const [time, setTime] = useState('')
     const [selectedProfessionalId, setSelectedProfessionalId] = useState(professionalId || '')
+    const [slots, setSlots] = useState([])
+    const [selectedSlot, setSelectedSlot] = useState(null)
+    const [slotsLoading, setSlotsLoading] = useState(false)
+    const [slotsRevision, setSlotsRevision] = useState(0)
 
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -99,16 +108,53 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
             setServicoId('')
             setValorFinal(0)
             setDate(initialDate || todayDateString())
-            setTime('')
             setSelectedProfessionalId(professionalId || '')
+            setSlots([])
+            setSelectedSlot(null)
             setError(null)
         }
     }, [initialDate, isOpen, professionalId])
+
+    useEffect(() => {
+        if (!isOpen || !servicoId || !selectedProfessionalId || !date) {
+            setSlots([])
+            setSelectedSlot(null)
+            return
+        }
+
+        const request = ++slotRequest.current
+        setError(null)
+        setSlotsLoading(true)
+        listarHorariosLivres({
+            servicoId,
+            dataInicial: date,
+            profissionalId: selectedProfessionalId,
+            dias: 1,
+            limite: 50,
+        })
+            .then((rows) => {
+                if (request !== slotRequest.current) return
+                setSlots(rows)
+                setSelectedSlot((current) => rows.find((slot) => slot.inicio === current?.inicio) ?? null)
+            })
+            .catch((slotError) => {
+                if (request !== slotRequest.current) return
+                setSlots([])
+                setSelectedSlot(null)
+                setError(mensagemErroAgenda(slotError))
+            })
+            .finally(() => {
+                if (request === slotRequest.current) setSlotsLoading(false)
+            })
+
+        return () => { slotRequest.current += 1 }
+    }, [date, isOpen, selectedProfessionalId, servicoId, slotsRevision])
 
     const handleServicoChange = (e) => {
         const id = e.target.value
         setServicoId(id)
         const servico = servicos.find((s) => s.id === id)
+        setSelectedSlot(null)
         // Preenche o valor sugerido, mas o campo continua editável (desconto pontual etc.)
         if (servico) setValorFinal(Number(servico.preco))
     }
@@ -120,11 +166,11 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
         if (!selectedProfessionalId) { setError('Profissional não selecionado'); return }
         if (!selectedClient) { setError('Selecione ou cadastre um cliente'); return }
         if (!servicoId) { setError('Selecione um serviço'); return }
-        if (!date || !time) { setError('Informe data e horário'); return }
+        if (!date || !selectedSlot) { setError('Escolha um dos horários disponíveis'); return }
 
         setLoading(true)
         try {
-            const dataHora = new Date(`${date}T${time}:00`)
+            const dataHora = new Date(selectedSlot.inicio)
             if (Number.isNaN(dataHora.getTime())) throw new Error('Data ou horário inválido')
 
             // Cliente sem match no ClientSearch (sentinel 'new') vira um cadastro
@@ -163,6 +209,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
         } catch (err) {
             console.error(err)
             setError(mensagemErroAgenda(err))
+            setSlotsRevision((current) => current + 1)
         } finally {
             setLoading(false)
         }
@@ -201,7 +248,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                         <Label>Barbeiro</Label>
                         <select
                             value={selectedProfessionalId}
-                            onChange={(event) => setSelectedProfessionalId(event.target.value)}
+                            onChange={(event) => { setSelectedProfessionalId(event.target.value); setSelectedSlot(null) }}
                             disabled={loadingOptions}
                             className="w-full appearance-none rounded-sm border border-line-strong bg-surface-2 px-4 py-3 text-warm-white outline-none transition-colors duration-100 ease-brand focus:border-copper"
                         >
@@ -244,20 +291,34 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                     )}
                 </section>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Input
                         label="Data"
                         type="date"
                         value={date}
-                        onChange={(e) => setDate(e.target.value)}
+                        onChange={(e) => { setDate(e.target.value); setSelectedSlot(null) }}
                     />
-                    <Input
-                        label="Horário"
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                    />
+                    <label className="block text-label text-steel">
+                        <span className="mb-2 block">Horário disponível</span>
+                        <select
+                            value={selectedSlot?.inicio || ''}
+                            onChange={(event) => setSelectedSlot(slots.find((slot) => slot.inicio === event.target.value) ?? null)}
+                            disabled={!servicoId || !selectedProfessionalId || !date || slotsLoading}
+                            className="h-12 w-full appearance-none rounded-sm border border-line-strong bg-surface-2 px-4 text-warm-white outline-none transition-colors duration-100 ease-brand focus:border-copper"
+                        >
+                            <option value="">
+                                {slotsLoading ? 'Consultando disponibilidade...' : slots.length ? 'Selecione um horário...' : 'Nenhum horário disponível'}
+                            </option>
+                            {slots.map((slot) => <option key={slot.inicio} value={slot.inicio}>{formatarHorario(slot.inicio)}</option>)}
+                        </select>
+                    </label>
                 </div>
+
+                {servicoId && selectedProfessionalId && date && !slotsLoading && slots.length === 0 && (
+                    <p className="rounded-sm border border-warning/40 bg-warning/10 p-3 text-body-sm text-warning">
+                        Não há espaço livre nessa data. Jornada, intervalo, bloqueios e atendimentos existentes foram considerados.
+                    </p>
+                )}
 
                 <section className="space-y-2">
                     <CurrencyInput label="Valor" value={valorFinal} onValueChange={setValorFinal} />

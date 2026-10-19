@@ -60,10 +60,11 @@ const ERRORS = {
   AGENDA_VALOR_INVALIDO: 'Informe um valor válido.',
   AGENDA_HORARIO_INDISPONIVEL: 'Este horário acabou de ser ocupado. Escolha uma das opções atualizadas.',
   AGENDA_HORARIO_OCUPADO: 'Este horário acabou de ser ocupado. Escolha outra opção.',
+  AGENDA_FORA_DISPONIBILIDADE: 'Este horário está dentro de uma pausa, folga ou bloqueio do barbeiro. Escolha outra opção.',
 }
 
 export function mensagemErroEncaixe(error) {
   const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ')
   const code = Object.keys(ERRORS).find((key) => detail.includes(key))
-  return { message: code ? ERRORS[code] : error instanceof TypeError ? error.message : 'Não foi possível concluir o encaixe.', occupied: code === 'AGENDA_HORARIO_INDISPONIVEL' || code === 'AGENDA_HORARIO_OCUPADO' }
+  return { message: code ? ERRORS[code] : error instanceof TypeError ? error.message : 'Não foi possível concluir o encaixe.', occupied: ['AGENDA_HORARIO_INDISPONIVEL', 'AGENDA_HORARIO_OCUPADO', 'AGENDA_FORA_DISPONIBILIDADE'].includes(code) }
 }
