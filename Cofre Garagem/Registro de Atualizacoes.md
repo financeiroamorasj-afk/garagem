@@ -382,3 +382,10 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O modal de conclusão (src/components/CutCompletionModal.jsx) passou a recuperar automaticamente o valor do serviço no banco caso o objeto do atendimento chegue sem alor_final preenchido.
 - O painel de cobrança PIX (src/components/PixPaymentPanel.jsx) deixou de exibir spinner infinito quando o valor total está zerado, exibindo orientação explícita e gerando o QR Code imediatamente assim que o valor do serviço é carregado.
 - A tela de fechamento do atendimento passou a operar no celular como shell nativo de aplicativo em tela cheia (`fullScreenMobile` em `src/components/ui/Modal.jsx` e `src/components/CutCompletionModal.jsx`), com cabeçalho e rodapé fixos respeitando as áreas seguras (`safe-area-inset`), rolagem vertical isolada (`overscroll-contain touch-pan-y`), `overflow-x-hidden` e correção do `col-span-2` no rodapé que gerava largura implícita extra e deixava a tela flutuando lateralmente ao toque.
+
+# 19/10/2026 — Disponibilidade unificada nos agendamentos e encaixes
+
+- O banco passou a validar jornada semanal, intervalo, folga, bloqueios pontuais, horários extras e a margem operacional antes de aceitar uma nova reserva.
+- O formulário administrativo de novo corte deixou de aceitar horário livre digitado e agora apresenta somente os horários realmente disponíveis para o barbeiro, serviço e data escolhidos.
+- O portal do cliente, o encaixe do barbeiro e o encaixe do administrador continuam usando o mesmo motor de horários e receberam testes específicos para impedir agendamentos durante o intervalo de almoço.
+- Registros históricos e atendimentos já em andamento não são alterados pela nova proteção.

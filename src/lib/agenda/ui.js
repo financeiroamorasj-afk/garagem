@@ -12,6 +12,7 @@ const STATUS = {
 const ERROR_MESSAGES = {
   AGENDA_HORARIO_OCUPADO: 'Este horário conflita com outro atendimento ou com a margem de 5 minutos entre serviços. Escolha outro horário.',
   AGENDA_HORARIO_INDISPONIVEL: 'Este horário não está mais disponível. Escolha outra opção.',
+  AGENDA_FORA_DISPONIBILIDADE: 'Este horário está fora da jornada, do intervalo ou de um horário liberado para o barbeiro. Escolha outro horário.',
   AGENDA_ADMIN_NAO_AUTORIZADO: 'Seu usuário não possui permissão para consultar a agenda geral.',
   AGENDA_BARBEIRO_NAO_AUTORIZADO: 'Este acesso não pertence a um barbeiro.',
   AGENDA_BARBEIRO_INATIVO_OU_NAO_VINCULADO: 'Seu acesso à agenda está inativo. Fale com o administrador da barbearia.',

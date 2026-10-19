@@ -24,12 +24,16 @@ test('disponibilidade local salva jornada e bloqueios sem atravessar barbearias'
   const adminId = crypto.randomUUID()
   const professionalId = crypto.randomUUID()
   const otherProfessionalId = crypto.randomUUID()
+  const clientId = crypto.randomUUID()
+  const serviceId = crypto.randomUUID()
   await client.connect()
   try {
     await client.query("INSERT INTO public.barbearias(id,nome,slug) VALUES($1,'Tenant jornada',$2),($3,'Outro jornada',$4)", [tenantId, `availability-${tenantId}`, otherTenantId, `availability-other-${otherTenantId}`])
     await client.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [adminId, `availability-${adminId}@local.test`])
     await client.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email) VALUES($1,$2,'admin','Admin jornada',$3)", [adminId, tenantId, `availability-${adminId}@local.test`])
     await client.query("INSERT INTO public.profissionais(id,barbearia_id,nome,ativo) VALUES($1,$2,'Profissional jornada',true),($3,$4,'Outro profissional',true)", [professionalId, tenantId, otherProfessionalId, otherTenantId])
+    await client.query("INSERT INTO public.clientes(id,barbearia_id,nome) VALUES($1,$2,'Cliente jornada')", [clientId, tenantId])
+    await client.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,ativo) VALUES($1,$2,'Corte jornada',50,30,true)", [serviceId, tenantId])
     await client.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminId])
 
     await client.query('SELECT public.admin_jornadas_salvar($1,$2::jsonb)', [professionalId, JSON.stringify(week())])
@@ -37,6 +41,25 @@ test('disponibilidade local salva jornada e bloqueios sem atravessar barbearias'
     assert.equal(listed.rows.length, 7)
     assert.equal(listed.rows.filter((day) => day.ativo).length, 6)
     assert.equal(String(listed.rows.find((day) => day.dia_semana === 1).intervalo_inicio).slice(0, 5), '12:00')
+
+    const nextWorkingDay = await client.query(`
+      SELECT d::date data
+      FROM generate_series(
+        (now() AT TIME ZONE 'America/Sao_Paulo')::date+1,
+        (now() AT TIME ZONE 'America/Sao_Paulo')::date+7,
+        interval '1 day'
+      ) d
+      WHERE extract(dow FROM d) BETWEEN 1 AND 6
+      ORDER BY d
+      LIMIT 1
+    `)
+    const workingDay = nextWorkingDay.rows[0].data
+    await assert.rejects(
+      client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5::date+time '12:00') AT TIME ZONE 'America/Sao_Paulo','pendente')", [tenantId, professionalId, clientId, serviceId, workingDay]),
+      /AGENDA_FORA_DISPONIBILIDADE/,
+    )
+    const validAppointment = await client.query("INSERT INTO public.agendamentos(barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status) VALUES($1,$2,$3,$4,($5::date+time '13:00') AT TIME ZONE 'America/Sao_Paulo','pendente') RETURNING id", [tenantId, professionalId, clientId, serviceId, workingDay])
+    assert.ok(validAppointment.rows[0].id)
 
     const block = await client.query("SELECT public.admin_bloqueio_criar($1,'2026-10-01 12:00:00-03','2026-10-01 14:00:00-03','Consulta') result", [professionalId])
     const blockId = block.rows[0].result.id
@@ -50,8 +73,11 @@ test('disponibilidade local salva jornada e bloqueios sem atravessar barbearias'
     await client.query("UPDATE public.profiles SET role='barbeiro' WHERE id=$1", [adminId])
     await assert.rejects(client.query('SELECT * FROM public.admin_jornadas_listar($1)', [professionalId]), /DISPONIBILIDADE_NAO_AUTORIZADO/)
   } finally {
+    await client.query('DELETE FROM public.agendamentos WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
     await client.query('DELETE FROM public.profissionais_bloqueios WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
     await client.query('DELETE FROM public.profissionais_jornadas WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
+    await client.query('DELETE FROM public.clientes WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
+    await client.query('DELETE FROM public.servicos WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
     await client.query('DELETE FROM public.profissionais WHERE barbearia_id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})
     await client.query('DELETE FROM auth.users WHERE id=$1', [adminId]).catch(() => {})
     await client.query('DELETE FROM public.barbearias WHERE id = ANY($1)', [[tenantId, otherTenantId]]).catch(() => {})

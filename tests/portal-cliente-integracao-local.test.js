@@ -20,8 +20,8 @@ test('portal cria sessão segura, cadastra cliente e agenda sem choque de horár
     await db.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now())", [creatorId, `portal-${creatorId}@local.test`])
     await db.query("INSERT INTO public.profissionais(id,barbearia_id,nome,apelido,ativo) VALUES($1,$2,'João Portal','Jão',true)", [professionalId, tenantId])
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,ativo) VALUES($1,$2,'Corte Portal',50,30,true)", [serviceId, tenantId])
-    await db.query(`INSERT INTO public.profissionais_jornadas(barbearia_id,profissional_id,dia_semana,ativo,hora_inicio,hora_fim)
-      SELECT $1,$2,d,true,'09:00','18:00' FROM generate_series(0,6) d`, [tenantId, professionalId])
+    await db.query(`INSERT INTO public.profissionais_jornadas(barbearia_id,profissional_id,dia_semana,ativo,hora_inicio,hora_fim,intervalo_inicio,intervalo_fim)
+      SELECT $1,$2,d,true,'09:00','18:00','12:00','13:00' FROM generate_series(0,6) d`, [tenantId, professionalId])
 
     await db.query('SET ROLE anon')
     const publicData = await db.query('SELECT public.portal_barbearia_publica($1) result', [slug])
@@ -43,6 +43,15 @@ test('portal cria sessão segura, cadastra cliente e agenda sem choque de horár
 
     const slots = await db.query("SELECT * FROM public.portal_horarios_livres($1,$2,current_date+1,NULL,3,20)", [token, serviceId])
     assert.ok(slots.rows.length > 0)
+    assert.ok(slots.rows.every((row) => {
+      const start = new Date(row.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Sao_Paulo' })
+      const end = new Date(row.fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Sao_Paulo' })
+      return end <= '12:00' || start >= '13:00'
+    }))
+    await assert.rejects(
+      db.query("SELECT public.portal_agendamento_criar($1,$2,$3,(current_date+1+time '12:00') AT TIME ZONE 'America/Sao_Paulo')", [token, serviceId, professionalId]),
+      /PORTAL_HORARIO_INDISPONIVEL/,
+    )
     const slot = slots.rows[0]
     const created = await db.query('SELECT public.portal_agendamento_criar($1,$2,$3,$4) result', [token, serviceId, professionalId, slot.inicio])
     assert.equal(created.rows[0].result.status, 'pendente')
