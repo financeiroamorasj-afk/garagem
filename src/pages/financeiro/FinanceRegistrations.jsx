@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Landmark, Tags } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, Tags } from 'lucide-react'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -23,10 +23,18 @@ import { mensagemErroCadastro } from '../../lib/financeiro/cadastros-ui'
 import { formatarBRL } from '../../lib/financeiro/moeda'
 import { GRUPOS_DRE, TIPOS_CATEGORIA, TIPOS_CONTA } from '../../lib/financeiro/schemas'
 
+const ACCOUNT_TYPE_LABELS = {
+  corrente: 'Conta corrente',
+  poupanca: 'Poupança',
+  caixa: 'Caixa (dinheiro)',
+  carteira_digital: 'Carteira digital',
+  cartao: 'Recebimentos de cartão',
+}
+
 const accountColumns = [
   { key: 'nome', header: 'Nome' },
   { key: 'instituicao', header: 'Instituição', render: (value) => value || 'Não informada' },
-  { key: 'tipo', header: 'Tipo' },
+  { key: 'tipo', header: 'Tipo', render: (value) => ACCOUNT_TYPE_LABELS[value] ?? value },
   { key: 'saldo_inicial', header: 'Saldo inicial', align: 'right', dataType: true, render: formatarBRL },
   { key: 'ativa', header: 'Situação', render: (value) => <Badge variant={value ? 'success' : 'neutral'}>{value ? 'Ativa' : 'Inativa'}</Badge> },
   { key: 'conta_principal', header: 'Principal', render: (value) => <Badge variant={value ? 'info' : 'neutral'}>{value ? 'Principal' : 'Secundária'}</Badge> },
@@ -62,7 +70,7 @@ function labelize(value) {
 
 function initialForm(modal) {
   const row = modal?.row
-  if (modal?.entity === 'account') return { nome: row?.nome ?? '', instituicao: row?.instituicao ?? '', tipo: row?.tipo ?? '', saldoValue: row ? Number(row.saldo_inicial ?? 0) : null, negativeConfirmed: false }
+  if (modal?.entity === 'account') return { nome: row?.nome ?? '', instituicao: row?.instituicao ?? '', tipo: row?.tipo ?? modal?.presetType ?? '', saldoValue: row ? Number(row.saldo_inicial ?? 0) : null, negativeConfirmed: false }
   return { nome: row?.nome ?? '', tipo: row?.tipo ?? '', grupoDre: row?.grupo_dre ?? '' }
 }
 
@@ -110,6 +118,8 @@ export default function FinanceRegistrations() {
   useEffect(() => { loadActiveTab() }, [loadActiveTab])
 
   const activeAccounts = useMemo(() => accounts.filter((account) => account.ativa), [accounts])
+  const cashAccount = activeAccounts.find((account) => account.tipo === 'caixa')
+  const cardAccount = activeAccounts.find((account) => account.tipo === 'cartao')
 
   function openModal(nextModal) {
     if (nextModal.kind === 'form' && nextModal.mode === 'create') createIntentRef.current = crypto.randomUUID()
@@ -218,7 +228,13 @@ export default function FinanceRegistrations() {
     </div>
   }
 
-  const accountContent = <RegistrationSection filter={accountFilter} setFilter={setAccountFilter} onCreate={() => openModal({ kind: 'form', entity: 'account', mode: 'create' })} createLabel="Nova conta"><DataTable columns={accountColumns} rows={accounts} loading={loading} caption="Contas bancárias cadastradas" emptyIcon={Landmark} emptyTitle="Nenhuma conta bancária" emptyDescription="Cadastre uma conta para iniciar o controle financeiro." renderAction={renderAccountActions} /></RegistrationSection>
+  const accountContent = <RegistrationSection filter={accountFilter} setFilter={setAccountFilter} onCreate={() => openModal({ kind: 'form', entity: 'account', mode: 'create' })} createLabel="Nova conta">
+    <div className="grid gap-4 lg:grid-cols-2">
+      <PaymentDestinationCard icon={<Banknote size={20} />} title="Dinheiro no caixa" account={cashAccount} description="Todo pagamento em dinheiro será lançado nesta conta caixa." createLabel="Cadastrar conta caixa" onCreate={() => openModal({ kind: 'form', entity: 'account', mode: 'create', presetType: 'caixa' })} />
+      <PaymentDestinationCard icon={<CreditCard size={20} />} title="Débito e crédito" account={cardAccount} description="Os pagamentos aprovados na maquininha serão lançados nesta conta." createLabel="Cadastrar conta de cartão" onCreate={() => openModal({ kind: 'form', entity: 'account', mode: 'create', presetType: 'cartao' })} />
+    </div>
+    <DataTable columns={accountColumns} rows={accounts} loading={loading} caption="Contas bancárias cadastradas" emptyIcon={Landmark} emptyTitle="Nenhuma conta bancária" emptyDescription="Cadastre uma conta para iniciar o controle financeiro." renderAction={renderAccountActions} />
+  </RegistrationSection>
   const categoryContent = <RegistrationSection filter={categoryFilter} setFilter={setCategoryFilter} onCreate={() => openModal({ kind: 'form', entity: 'category', mode: 'create' })} createLabel="Nova categoria"><DataTable columns={categoryColumns} rows={categories} loading={loading} caption="Categorias financeiras cadastradas" emptyIcon={Tags} emptyTitle="Nenhuma categoria financeira" emptyDescription="Cadastre categorias para classificar os movimentos financeiros." renderAction={renderCategoryActions} /></RegistrationSection>
 
   return <div className="mx-auto max-w-7xl space-y-8">
@@ -232,6 +248,10 @@ export default function FinanceRegistrations() {
 
 function RegistrationSection({ filter, setFilter, onCreate, createLabel, children }) {
   return <section className="space-y-4"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-2"><Button size="sm" variant={filter === 'active' ? 'secondary' : 'ghost'} onClick={() => setFilter('active')}>Ativas</Button><Button size="sm" variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>Todas</Button></div><Button onClick={onCreate}>{createLabel}</Button></div>{children}</section>
+}
+
+function PaymentDestinationCard({ icon, title, account, description, createLabel, onCreate }) {
+  return <Card className="flex flex-col justify-between gap-4"><div className="flex items-start gap-3"><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-sm ${account ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}>{icon}</span><div><div className="flex flex-wrap items-center gap-2"><h2 className="text-h3 text-warm-white">{title}</h2><Badge variant={account ? 'success' : 'warning'}>{account ? 'Configurada' : 'Pendente'}</Badge></div><p className="mt-2 text-body-sm text-steel">{description}</p>{account && <p className="mt-2 text-body-sm text-warm-white">Destino: <strong>{account.nome}</strong></p>}</div></div>{!account && <Button size="sm" variant="secondary" onClick={onCreate}>{createLabel}</Button>}</Card>
 }
 
 function RegistrationModal({ modal, form, setForm, errors, substituteId, setSubstituteId, activeAccounts, submitting, onClose, onSubmit, onReload }) {
@@ -253,7 +273,7 @@ function RegistrationModal({ modal, form, setForm, errors, substituteId, setSubs
 
 function AccountForm({ modal, form, setForm, errors, disabled }) {
   const negative = modal.mode === 'create' && form.saldoValue < 0
-  return <><Input label="Nome" value={form.nome} onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))} error={errors.nome} maxLength={100} required disabled={disabled} /><Input label="Instituição" value={form.instituicao} onChange={(event) => setForm((current) => ({ ...current, instituicao: event.target.value }))} error={errors.instituicao} helpText="Opcional, até 100 caracteres." maxLength={100} disabled={disabled} /><SelectField id="account-type" label="Tipo" value={form.tipo} onChange={(event) => setForm((current) => ({ ...current, tipo: event.target.value }))} options={TIPOS_CONTA.map((value) => ({ value, label: labelize(value) }))} error={errors.tipo} disabled={disabled} />{modal.mode === 'create' ? <CurrencyInput label="Saldo inicial" value={form.saldoValue} onValueChange={(value) => setForm((current) => ({ ...current, saldoValue: value, negativeConfirmed: value < 0 ? current.negativeConfirmed : false }))} allowNegative error={errors.saldo} helpText="Digite apenas algarismos. A primeira conta ativa será definida como principal automaticamente." disabled={disabled} /> : <Card><p className="text-label text-steel">Saldo inicial imutável</p><p className="mt-2 text-data text-warm-white">{formatarBRL(modal.row.saldo_inicial)}</p><p className="mt-2 text-body-sm text-steel">Correções devem ocorrer por movimento de ajuste auditável.</p></Card>}{negative && <div className="space-y-3 rounded-md border border-warning bg-warning/12 p-4"><p className="text-body-sm text-warning">Saldo negativo representa uma conta que inicia devedora.</p><label className="flex items-start gap-3 text-body-sm text-warm-white"><input type="checkbox" checked={form.negativeConfirmed} onChange={(event) => setForm((current) => ({ ...current, negativeConfirmed: event.target.checked }))} disabled={disabled} aria-invalid={errors.negativeConfirmed ? true : undefined} className="mt-1 h-4 w-4 rounded-sm border border-line-strong accent-copper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" /><span>Confirmo que esta conta inicia com saldo negativo.</span></label>{errors.negativeConfirmed && <p className="text-body-sm text-danger">{errors.negativeConfirmed}</p>}</div>}</>
+  return <><Input label="Nome" value={form.nome} onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))} error={errors.nome} maxLength={100} required disabled={disabled} /><Input label="Instituição" value={form.instituicao} onChange={(event) => setForm((current) => ({ ...current, instituicao: event.target.value }))} error={errors.instituicao} helpText="Opcional, até 100 caracteres." maxLength={100} disabled={disabled} /><SelectField id="account-type" label="Tipo" value={form.tipo} onChange={(event) => setForm((current) => ({ ...current, tipo: event.target.value }))} options={TIPOS_CONTA.map((value) => ({ value, label: ACCOUNT_TYPE_LABELS[value] ?? labelize(value) }))} error={errors.tipo} helpText={form.tipo === 'caixa' ? 'Obrigatória para fechar pagamentos em dinheiro.' : form.tipo === 'cartao' ? 'Obrigatória para débito e crédito confirmados na maquininha.' : undefined} disabled={disabled} />{modal.mode === 'create' ? <CurrencyInput label="Saldo inicial" value={form.saldoValue} onValueChange={(value) => setForm((current) => ({ ...current, saldoValue: value, negativeConfirmed: value < 0 ? current.negativeConfirmed : false }))} allowNegative error={errors.saldo} helpText="Digite apenas algarismos. A primeira conta ativa será definida como principal automaticamente." disabled={disabled} /> : <Card><p className="text-label text-steel">Saldo inicial imutável</p><p className="mt-2 text-data text-warm-white">{formatarBRL(modal.row.saldo_inicial)}</p><p className="mt-2 text-body-sm text-steel">Correções devem ocorrer por movimento de ajuste auditável.</p></Card>}{negative && <div className="space-y-3 rounded-md border border-warning bg-warning/12 p-4"><p className="text-body-sm text-warning">Saldo negativo representa uma conta que inicia devedora.</p><label className="flex items-start gap-3 text-body-sm text-warm-white"><input type="checkbox" checked={form.negativeConfirmed} onChange={(event) => setForm((current) => ({ ...current, negativeConfirmed: event.target.checked }))} disabled={disabled} aria-invalid={errors.negativeConfirmed ? true : undefined} className="mt-1 h-4 w-4 rounded-sm border border-line-strong accent-copper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" /><span>Confirmo que esta conta inicia com saldo negativo.</span></label>{errors.negativeConfirmed && <p className="text-body-sm text-danger">{errors.negativeConfirmed}</p>}</div>}</>
 }
 
 function CategoryForm({ form, setForm, errors, disabled }) {

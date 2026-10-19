@@ -60,6 +60,10 @@ export function listarContasBancarias() {
   return executarRpc('financeiro_listar_contas_bancarias', {})
 }
 
+export function obterDestinosRecebimento() {
+  return executarRpc('financeiro_destinos_recebimento', {})
+}
+
 export function listarContasBancariasCadastro({ incluirInativas = false } = {}) {
   return executarRpc('financeiro_listar_contas_bancarias_cadastro', { p_incluir_inativas: exigirBooleano(incluirInativas, 'Filtro de contas inativas') })
 }

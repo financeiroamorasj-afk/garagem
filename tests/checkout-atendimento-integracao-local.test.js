@@ -16,6 +16,7 @@ test('checkout é atômico, idempotente e estorno recompõe estoque e financeiro
   const serviceId = crypto.randomUUID()
   const appointmentId = crypto.randomUUID()
   const productId = crypto.randomUUID()
+  const cardAccountId = crypto.randomUUID()
   const checkoutKey = crypto.randomUUID()
   await db.connect()
   try {
@@ -29,7 +30,7 @@ test('checkout é atômico, idempotente e estorno recompõe estoque e financeiro
     await db.query('INSERT INTO public.servicos_materiais(barbearia_id,servico_id,material_id,quantidade) VALUES($1,$2,$3,1)', [tenantId, serviceId, materialId])
     await db.query("INSERT INTO public.produtos(id,barbearia_id,nome,preco_venda,preco_custo,estoque_quantidade,comissao_percentual) VALUES($1,$2,'Pomada checkout',30,10,5,10)", [productId, tenantId])
     await db.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status,valor_final) VALUES($1,$2,$3,$4,$5,now(),'em_atendimento',80)", [appointmentId, tenantId, professionalId, clientId, serviceId])
-    await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Caixa principal','corrente',true)", [tenantId])
+    await db.query("INSERT INTO public.financeiro_contas_bancarias(id,barbearia_id,nome,tipo,conta_principal) VALUES(extensions.uuid_generate_v4(),$1,'Conta principal','corrente',true),($2,$1,'Recebimentos da maquininha','cartao',false)", [tenantId, cardAccountId])
     await db.query("INSERT INTO public.financeiro_categorias(barbearia_id,nome,tipo,grupo_dre) VALUES($1,'Serviços','entrada','receita_servicos'),($1,'Produtos','entrada','receita_produtos')", [tenantId])
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [barberUserId])
 
@@ -62,11 +63,13 @@ test('checkout é atômico, idempotente e estorno recompõe estoque e financeiro
     assert.equal(Number(sale.rows[0].comissao_valor), 2.7)
     assert.equal(sale.rows[0].status, 'concluida')
 
-    const receivables = await db.query('SELECT origem,valor_bruto,taxa,status FROM public.financeiro_contas_receber WHERE fechamento_id=$1 ORDER BY origem', [closure.id])
+    const receivables = await db.query('SELECT origem,valor_bruto,taxa,status,conta_destino_id FROM public.financeiro_contas_receber WHERE fechamento_id=$1 ORDER BY origem', [closure.id])
     assert.equal(receivables.rows.length, 2)
     assert.equal(receivables.rows.reduce((total, row) => total + Number(row.valor_bruto), 0), 99)
     assert.equal(receivables.rows.reduce((total, row) => total + Number(row.taxa), 0), 4.95)
     assert.ok(receivables.rows.every((row) => row.status === 'liquidado'))
+    assert.ok(receivables.rows.every((row) => row.conta_destino_id === cardAccountId))
+    assert.ok((await db.query('SELECT conta_bancaria_id FROM public.financeiro_movimentacoes WHERE fechamento_id=$1', [closure.id])).rows.every((row) => row.conta_bancaria_id === cardAccountId))
     assert.equal(Number((await db.query("SELECT COALESCE(sum(CASE WHEN direcao='entrada' THEN valor ELSE -valor END),0) saldo FROM public.financeiro_movimentacoes WHERE fechamento_id=$1", [closure.id])).rows[0].saldo), 94.05)
     assert.equal((await db.query('SELECT count(*)::int total FROM public.estoque_movimentacoes WHERE fechamento_id=$1', [closure.id])).rows[0].total, 1)
     const materialUse = await db.query('SELECT quantidade_prevista,quantidade_utilizada,ajustado FROM public.atendimento_materiais_uso WHERE agendamento_id=$1', [appointmentId])

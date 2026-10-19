@@ -35,7 +35,7 @@ test('recepção devolve atendimento com histórico e conclui venda avulsa atôm
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos) VALUES($1,$2,'Corte balcão',70,45)", [serviceId, tenantId])
     await db.query("INSERT INTO public.produtos(id,barbearia_id,nome,preco_venda,preco_custo,estoque_quantidade,ativo,comissao_percentual) VALUES($1,$2,'Pomada balcão',30,10,5,true,NULL),($3,$2,'Óleo balcão',20,8,4,true,20)", [firstProductId, tenantId, secondProductId])
     await db.query("INSERT INTO public.agendamentos(id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,status,valor_final) VALUES($1,$2,$3,$4,$5,now(),'em_atendimento',70)", [appointmentId, tenantId, professionalId, customerId, serviceId])
-    await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Caixa balcão','caixa',true)", [tenantId])
+    await db.query("INSERT INTO public.financeiro_contas_bancarias(barbearia_id,nome,tipo,conta_principal) VALUES($1,'Recebimentos da maquininha','cartao',true)", [tenantId])
     await db.query("INSERT INTO public.financeiro_categorias(barbearia_id,nome,tipo,grupo_dre) VALUES($1,'Produtos balcão','entrada','receita_produtos')", [tenantId])
 
     await setUser(db, barberUserId)
