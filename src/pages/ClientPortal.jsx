@@ -67,6 +67,14 @@ function statusLabel(status) {
   return { pendente: 'Aguardando confirmação', confirmado: 'Confirmado', encaixe: 'Encaixe', em_atendimento: 'Em atendimento', aguardando_pagamento: 'Aguardando pagamento', concluido: 'Concluído', cancelado: 'Cancelado', nao_compareceu: 'Não compareceu' }[status] || status
 }
 
+function statusStyle(status) {
+  if (['confirmado', 'concluido'].includes(status)) return 'bg-success/12 text-success'
+  if (status === 'em_atendimento') return 'bg-copper/12 text-copper'
+  if (status === 'aguardando_pagamento') return 'bg-info/12 text-info'
+  if (['cancelado', 'nao_compareceu'].includes(status)) return 'bg-danger/12 text-danger'
+  return 'bg-warning/12 text-warning'
+}
+
 function Brand({ shop, compact = false }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
@@ -124,7 +132,7 @@ function AccessScreen({ shop, slug, onAuthenticated }) {
   }
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-surface-0 px-4 py-6 sm:px-6 lg:flex lg:items-center lg:py-10">
+    <main className="relative min-h-dvh overflow-hidden bg-surface-0 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-6 lg:flex lg:items-center lg:py-10">
       <div className="atmosphere-vignette absolute inset-0 opacity-40" />
       <div className="absolute left-0 top-0 h-1 w-full bg-linear-to-r from-copper via-gold-aged to-copper" />
       <div className="relative mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
@@ -169,19 +177,31 @@ function AppointmentCard({ appointment, cancelling, onCancel }) {
   const canCancel = ['pendente','confirmado'].includes(appointment.status) && new Date(appointment.data_hora) > new Date()
   return (
     <article className="rounded-md border border-line bg-surface-1 p-4 sm:p-5">
-      <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-sm bg-copper/10 text-copper"><span className="text-[10px] font-mono uppercase">{shortDate(appointment.data_hora).split(' ')[1]}</span><strong className="text-lg leading-none">{new Date(appointment.data_hora).getDate()}</strong></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><h3 className="text-h3 text-warm-white">{appointment.servico_nome}</h3><span className={`rounded-full px-2 py-1 text-[10px] font-mono uppercase tracking-wide ${appointment.status === 'confirmado' ? 'bg-success/12 text-success' : 'bg-warning/12 text-warning'}`}>{statusLabel(appointment.status)}</span></div><p className="mt-1 text-body-sm text-steel">{fullDate(appointment.data_hora)} às {time(appointment.data_hora)}</p><p className="mt-1 text-body-sm text-steel">com <span className="text-warm-white">{appointment.profissional_nome}</span> · {money(appointment.valor_final)}</p></div></div>
+      <div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-sm bg-copper/10 text-copper"><span className="text-[10px] font-mono uppercase">{shortDate(appointment.data_hora).split(' ')[1]}</span><strong className="text-lg leading-none">{new Date(appointment.data_hora).getDate()}</strong></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><h3 className="text-h3 text-warm-white">{appointment.servico_nome}</h3><span className={`rounded-full px-2 py-1 text-[10px] font-mono uppercase tracking-wide ${statusStyle(appointment.status)}`}>{statusLabel(appointment.status)}</span></div><p className="mt-1 text-body-sm text-steel">{fullDate(appointment.data_hora)} às {time(appointment.data_hora)}</p><p className="mt-1 text-body-sm text-steel">com <span className="text-warm-white">{appointment.profissional_nome}</span> · {money(appointment.valor_final)}</p></div></div>
       {canCancel && <div className="mt-4 border-t border-line pt-3 text-right"><Button size="sm" variant="ghost" loading={cancelling} onClick={() => onCancel(appointment)}>Cancelar horário</Button></div>}
     </article>
   )
 }
 
 function HomeView({ data, token, onNavigate, onCancel, cancelling }) {
-  const next = data.agendamentos.filter((item) => new Date(item.data_hora) >= new Date())
+  const now = new Date()
+  const today = localDateKey(now)
+  const visibleAppointments = data.agendamentos
+    .filter((item) => {
+      const statusKeepsVisible = ['em_atendimento', 'aguardando_pagamento'].includes(item.status)
+      const completedToday = item.status === 'concluido' && localDateKey(new Date(item.data_hora)) === today
+      return statusKeepsVisible || completedToday || new Date(item.data_hora) >= now
+    })
+    .sort((first, second) => {
+      const priority = { em_atendimento: 0, aguardando_pagamento: 1, concluido: 2 }
+      const priorityDifference = (priority[first.status] ?? 3) - (priority[second.status] ?? 3)
+      return priorityDifference || new Date(first.data_hora) - new Date(second.data_hora)
+    })
   const lastCut = data.historico[0]
   return (
     <div className="space-y-6">
       <section className="rounded-md border border-copper/25 bg-linear-to-br from-copper/14 to-surface-1 p-5 sm:p-7"><p className="text-label text-copper">OLÁ, {data.cliente.nome.split(' ')[0].toUpperCase()}</p><h1 className="mt-2 font-display text-3xl font-semibold text-warm-white">Pronto para o próximo corte?</h1><p className="mt-2 text-body-sm text-steel">Escolha o serviço e encontre o melhor horário para você.</p><Button size="lg" className="mt-6 w-full sm:w-auto" onClick={() => onNavigate('agendar')}><CalendarDays size={18} /> Agendar agora</Button></section>
-      <section><div className="mb-3 flex items-center justify-between"><div><p className="text-label text-steel">PRÓXIMOS HORÁRIOS</p><h2 className="mt-1 text-h2 text-warm-white">Sua agenda</h2></div><CalendarCheck className="text-copper" size={22} /></div>{next.length ? <div className="space-y-3">{next.slice(0,3).map((item) => <AppointmentCard key={item.id} appointment={item} cancelling={cancelling === item.id} onCancel={onCancel} />)}</div> : <Card className="p-5 text-center"><CalendarDays size={25} className="mx-auto text-steel" /><p className="mt-3 text-body font-semibold text-warm-white">Nenhum horário marcado</p><p className="mt-1 text-body-sm text-steel">Sua agenda está livre para o próximo cuidado.</p></Card>}</section>
+      <section><div className="mb-3 flex items-center justify-between"><div><p className="text-label text-steel">SEUS ATENDIMENTOS</p><h2 className="mt-1 text-h2 text-warm-white">Sua agenda</h2></div><CalendarCheck className="text-copper" size={22} /></div>{visibleAppointments.length ? <div className="space-y-3">{visibleAppointments.slice(0,3).map((item) => <AppointmentCard key={item.id} appointment={item} cancelling={cancelling === item.id} onCancel={onCancel} />)}</div> : <Card className="p-5 text-center"><CalendarDays size={25} className="mx-auto text-steel" /><p className="mt-3 text-body font-semibold text-warm-white">Nenhum horário marcado</p><p className="mt-1 text-body-sm text-steel">Sua agenda está livre para o próximo cuidado.</p></Card>}</section>
       <section><div className="mb-3"><p className="text-label text-steel">MEMÓRIA DO SEU ESTILO</p><h2 className="mt-1 text-h2 text-warm-white">Último corte</h2></div>{lastCut ? <Card className="p-5"><div className="flex items-start gap-4"><PortalCutPhoto token={token} cut={lastCut} size="h-14 w-14" /><div className="min-w-0"><h3 className="text-h3 text-warm-white">{lastCut.estilo}</h3><p className="mt-1 text-body-sm text-steel">{shortDate(lastCut.criado_em)} · {lastCut.profissional_nome}</p><p className="mt-2 text-body-sm text-warm-white">{[lastCut.pentes,lastCut.acabamento,lastCut.barba].filter(Boolean).join(' · ') || 'Detalhes registrados pela equipe'}</p></div></div><Button variant="secondary" className="mt-4 w-full" onClick={() => onNavigate('historico')}>Ver histórico completo</Button></Card> : <Card className="p-5 text-center"><Sparkles size={24} className="mx-auto text-copper" /><p className="mt-3 text-body font-semibold text-warm-white">Seu histórico começa no próximo corte</p><p className="mt-1 text-body-sm text-steel">A equipe poderá registrar detalhes para repetir seu estilo favorito.</p></Card>}</section>
     </div>
   )
@@ -263,17 +283,45 @@ function PortalApp({ token, initialData, onLogout }) {
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState('')
-  const refresh = useCallback(async () => { const fresh = await carregarDadosPortal(token); setData(fresh); return fresh }, [token])
+  const [refreshing, setRefreshing] = useState(false)
+  const dataRef = useRef(initialData)
+  const refreshPromiseRef = useRef(null)
+  const refresh = useCallback(async () => {
+    if (refreshPromiseRef.current) return refreshPromiseRef.current
+    setRefreshing(true)
+    const request = carregarDadosPortal(token)
+      .then((fresh) => {
+        const previousStatuses = new Map((dataRef.current?.agendamentos || []).map((item) => [item.id, item.status]))
+        const justCompleted = fresh.agendamentos.find((item) => item.status === 'concluido' && previousStatuses.has(item.id) && previousStatuses.get(item.id) !== 'concluido')
+        dataRef.current = fresh
+        setData(fresh)
+        if (justCompleted) setNotice('Atendimento concluído. Seu histórico já foi atualizado.')
+        return fresh
+      })
+      .finally(() => { refreshPromiseRef.current = null; setRefreshing(false) })
+    refreshPromiseRef.current = request
+    return request
+  }, [token])
   useEffect(() => {
     let active = true
     const update = () => {
       if (document.visibilityState !== 'visible') return
       refresh().catch((requestError) => { if (active) setError(erroPortal(requestError).message) })
     }
-    const interval = window.setInterval(update, 30000)
+    const interval = window.setInterval(update, 10000)
     const onVisibilityChange = () => { if (document.visibilityState === 'visible') update() }
     document.addEventListener('visibilitychange', onVisibilityChange)
-    return () => { active = false; window.clearInterval(interval); document.removeEventListener('visibilitychange', onVisibilityChange) }
+    window.addEventListener('focus', update)
+    window.addEventListener('pageshow', update)
+    window.addEventListener('online', update)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', update)
+      window.removeEventListener('pageshow', update)
+      window.removeEventListener('online', update)
+    }
   }, [refresh])
   useEffect(() => {
     if (tab !== 'historico') return
@@ -284,7 +332,7 @@ function PortalApp({ token, initialData, onLogout }) {
   async function cancel(appointment) { if (!window.confirm(`Cancelar ${appointment.servico_nome} em ${shortDate(appointment.data_hora)} às ${time(appointment.data_hora)}?`)) return; setCancelling(appointment.id); setError(''); try { await cancelarAgendamentoPortal(token, appointment.id); await refresh(); setNotice('Agendamento cancelado.') } catch (requestError) { setError(erroPortal(requestError).message) } finally { setCancelling('') } }
   async function booked() { await refresh(); setNotice('Horário solicitado com sucesso. Acompanhe a confirmação por aqui.'); setTab('inicio'); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   function navigate(next) { setTab(next); setNotice(''); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0"><header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3 sm:px-6"><div className="mx-auto flex max-w-4xl items-center justify-between gap-3"><Brand compact shop={data.barbearia} /><button type="button" aria-label="Sair" className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper" onClick={onLogout}><LogOut size={18} /></button></div></header><main className="min-h-0 flex-1 overscroll-contain overflow-y-auto overflow-x-hidden"><div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8"><Feedback>{error}</Feedback><Feedback type="success">{notice}</Feedback><div className={(error || notice) ? 'mt-5' : ''}>{tab === 'inicio' && <HomeView data={data} token={token} onNavigate={navigate} onCancel={cancel} cancelling={cancelling} />}{tab === 'agendar' && <BookingView data={data} token={token} onBooked={booked} />}{tab === 'historico' && <HistoryView history={data.historico} token={token} />}{tab === 'equipe' && <TeamView team={data.equipe} favoriteId={data.cliente.barbeiro_favorito_id} />}{tab === 'perfil' && <ProfileView data={data} token={token} onUpdated={refresh} onLogout={onLogout} />}</div></div></main><nav className="z-40 shrink-0 border-t border-line bg-surface-1 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2" aria-label="Navegação do portal"><div className="mx-auto grid max-w-xl grid-cols-5">{TABS.map(({ id, label, icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-sm px-1 text-[10px] font-semibold ${tab === id ? 'bg-copper/10 text-copper' : 'text-steel hover:text-warm-white'}`}>{icon}<span className="max-w-full truncate">{label}</span></button>)}</div></nav></div>
+  return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0"><header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6"><div className="mx-auto flex max-w-4xl items-center justify-between gap-3"><Brand compact shop={data.barbearia} /><div className="flex items-center gap-1"><button type="button" aria-label="Atualizar atendimentos" disabled={refreshing} className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper disabled:opacity-60" onClick={() => { setError(''); refresh().catch((requestError) => setError(erroPortal(requestError).message)) }}><RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} /></button><button type="button" aria-label="Sair" className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper" onClick={onLogout}><LogOut size={18} /></button></div></div></header><main className="min-h-0 flex-1 overscroll-contain overflow-y-auto overflow-x-hidden"><div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8"><Feedback>{error}</Feedback><Feedback type="success">{notice}</Feedback><div className={(error || notice) ? 'mt-5' : ''}>{tab === 'inicio' && <HomeView data={data} token={token} onNavigate={navigate} onCancel={cancel} cancelling={cancelling} />}{tab === 'agendar' && <BookingView data={data} token={token} onBooked={booked} />}{tab === 'historico' && <HistoryView history={data.historico} token={token} />}{tab === 'equipe' && <TeamView team={data.equipe} favoriteId={data.cliente.barbeiro_favorito_id} />}{tab === 'perfil' && <ProfileView data={data} token={token} onUpdated={refresh} onLogout={onLogout} />}</div></div></main><nav className="z-40 shrink-0 border-t border-line bg-surface-1 px-2 pb-[max(0.375rem,calc(env(safe-area-inset-bottom)-1rem))] pt-1" aria-label="Navegação do portal"><div className="mx-auto grid max-w-xl grid-cols-5">{TABS.map(({ id, label, icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-sm px-1 text-[10px] font-semibold ${tab === id ? 'bg-copper/10 text-copper' : 'text-steel hover:text-warm-white'}`}>{icon}<span className="max-w-full truncate">{label}</span></button>)}</div></nav></div>
 }
 
 export default function ClientPortal() {
