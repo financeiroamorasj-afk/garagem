@@ -16,7 +16,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Badge from '../components/ui/Badge'
 import AddAppointmentModal from '../components/AddAppointmentModal'
 import WalkInModal from '../components/WalkInModal'
@@ -96,10 +96,14 @@ function corStatus(status) {
   return 'bg-warning'
 }
 
-function AgendaItem({ appointment }) {
+function AgendaItem({ appointment, highlighted = false }) {
   const status = statusAgenda(appointment.status)
   return (
-    <article className={`rounded-md border bg-surface-0 p-4 ${appointment.status === 'em_atendimento' ? 'border-copper' : 'border-line'}`}>
+    <article
+      id={`agendamento-${appointment.id}`}
+      className={`scroll-mt-6 rounded-md border bg-surface-0 p-4 ${highlighted || appointment.status === 'em_atendimento' ? 'border-copper ring-2 ring-copper/25' : 'border-line'}`}
+    >
+      {highlighted && <p className="mb-3 text-label text-copper">PENDÊNCIA INDICADA NO MAPA</p>}
       <div className="flex min-w-0 items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-sm bg-surface-2 text-copper">
           <Clock3 size={14} aria-hidden="true" />
@@ -144,11 +148,11 @@ function CompactAppointment({ appointment }) {
   )
 }
 
-function DayView({ appointments }) {
+function DayView({ appointments, highlightedAppointmentId }) {
   if (appointments.length === 0) return <EmptyCalendar />
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-      {appointments.map((appointment) => <AgendaItem key={appointment.id} appointment={appointment} />)}
+      {appointments.map((appointment) => <AgendaItem key={appointment.id} appointment={appointment} highlighted={appointment.id === highlightedAppointmentId} />)}
     </div>
   )
 }
@@ -231,10 +235,14 @@ function EmptyCalendar() {
 
 export default function AdminAgenda() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const today = dataLocalKey()
+  const linkedDateParam = searchParams.get('data') || ''
+  const linkedDate = /^\d{4}-\d{2}-\d{2}$/.test(linkedDateParam) ? linkedDateParam : ''
+  const highlightedAppointmentId = searchParams.get('agendamento') || ''
   const [activeArea, setActiveArea] = useState('calendario')
-  const [selectedDate, setSelectedDate] = useState(today)
-  const [view, setView] = useState('semana')
+  const [selectedDate, setSelectedDate] = useState(linkedDate || today)
+  const [view, setView] = useState(linkedDate ? 'dia' : 'semana')
   const [showPastDays, setShowPastDays] = useState(false)
   const [professionalFilter, setProfessionalFilter] = useState('todos')
   const [statusFilter, setStatusFilter] = useState('todos')
@@ -259,6 +267,20 @@ export default function AdminAgenda() {
     reason: '',
   })
   const range = useMemo(() => intervaloAgenda(selectedDate, view), [selectedDate, view])
+
+  useEffect(() => {
+    if (!linkedDate) return
+    setActiveArea('calendario')
+    setSelectedDate(linkedDate)
+    setView('dia')
+  }, [linkedDate])
+
+  useEffect(() => {
+    if (loading || !highlightedAppointmentId) return
+    const target = document.getElementById(`agendamento-${highlightedAppointmentId}`)
+    if (!target) return
+    window.requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }, [appointments, highlightedAppointmentId, loading])
 
   const load = useCallback(async ({ quiet = false } = {}) => {
     if (!quiet) setLoading(true)
@@ -480,7 +502,7 @@ export default function AdminAgenda() {
         {loading ? (
           <Card className="flex min-h-64 items-center justify-center gap-3 text-body text-steel"><Spinner size={24} /> Carregando calendário</Card>
         ) : error ? null : view === 'dia' ? (
-          <DayView appointments={appointmentsByDay.get(selectedDate) ?? []} />
+          <DayView appointments={appointmentsByDay.get(selectedDate) ?? []} highlightedAppointmentId={highlightedAppointmentId} />
         ) : view === 'semana' ? (
           <WeekView days={range.days} selectedDate={selectedDate} appointmentsByDay={appointmentsByDay} today={today} showPastDays={showPastDays} onTogglePastDays={() => setShowPastDays((current) => !current)} />
         ) : (
