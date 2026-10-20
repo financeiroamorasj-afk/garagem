@@ -16,6 +16,8 @@ const messages = {
   BARBEIROS_CADASTRO_FALHOU: 'Não foi possível concluir o cadastro do barbeiro.',
   BARBEIROS_NAO_ENCONTRADO: 'O cadastro não foi encontrado ou foi removido.',
   BARBEIROS_CONFLITO_VERSAO: 'Este cadastro foi alterado em outra sessão. Recarregue antes de tentar novamente.',
+  DONO_PROFISSIONAL_NAO_AUTORIZADO: 'Seu usuário não pode criar um perfil profissional para o administrador.',
+  DONO_PROFISSIONAL_PERFIL_INVALIDO: 'Complete o nome do proprietário nas configurações antes de adicioná-lo à agenda.',
   RECEPCAO_ULTIMO_OPERADOR: 'Este é o último operador do balcão. Habilite outra pessoa ou desative a Recepção antes de desativar o barbeiro.',
 }
 

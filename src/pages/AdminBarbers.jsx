@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  BarChart3,
+  BriefcaseBusiness,
   ImagePlus,
   KeyRound,
   Mail,
@@ -22,7 +24,8 @@ import EmptyState from '../components/ui/EmptyState'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
-import { atualizarBarbeiro, criarBarbeiroComAcesso, listarBarbeiros, reenviarConviteBarbeiro, removerFotoBarbeiro, salvarFotoBarbeiro } from '../lib/barbeiros/api'
+import BarberStatementModal from '../components/BarberStatementModal'
+import { atualizarBarbeiro, criarBarbeiroComAcesso, listarBarbeiros, obterUsuarioAtualId, reenviarConviteBarbeiro, removerFotoBarbeiro, salvarFotoBarbeiro, vincularAdminComoProfissional } from '../lib/barbeiros/api'
 import { mensagemErroBarbeiro } from '../lib/barbeiros/ui'
 import { compactarImagem, formatarTamanho } from '../lib/clientes/imagem'
 
@@ -49,6 +52,8 @@ export default function AdminBarbers() {
   const [invitingId, setInvitingId] = useState(null)
   const [filter, setFilter] = useState('active')
   const [query, setQuery] = useState('')
+  const [currentUserId, setCurrentUserId] = useState(null)
+  const [statementBarber, setStatementBarber] = useState(null)
   const [formModal, setFormModal] = useState(null)
   const [statusTarget, setStatusTarget] = useState(null)
   const [form, setForm] = useState(initialForm())
@@ -65,7 +70,12 @@ export default function AdminBarbers() {
     setLoading(true)
     setPageError('')
     try {
-      setBarbers(await listarBarbeiros({ incluirInativos: true }))
+      const [rows, userId] = await Promise.all([
+        listarBarbeiros({ incluirInativos: true }),
+        obterUsuarioAtualId(),
+      ])
+      setBarbers(rows)
+      setCurrentUserId(userId)
     } catch (error) {
       setPageError(mensagemErroBarbeiro(error).message)
     } finally {
@@ -236,6 +246,23 @@ export default function AdminBarbers() {
     }
   }
 
+  async function addOwnerToSchedule() {
+    setSubmitting(true)
+    setPageError('')
+    setStatus('')
+    try {
+      const professional = await vincularAdminComoProfissional()
+      await load()
+      setStatus(`${professional.nome} agora também aparece como profissional na agenda.`)
+    } catch (error) {
+      setPageError(mensagemErroBarbeiro(error).message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const ownerAlreadyLinked = Boolean(currentUserId && barbers.some((barber) => barber.user_id === currentUserId))
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 lg:space-y-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -282,6 +309,19 @@ export default function AdminBarbers() {
         </Card>
       </section>
 
+      {!loading && currentUserId && !ownerAlreadyLinked && (
+        <section className="flex flex-col gap-4 rounded-md border border-copper/30 bg-copper/8 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <BriefcaseBusiness size={22} className="mt-0.5 shrink-0 text-copper" aria-hidden="true" />
+            <div>
+              <h2 className="text-h3 text-warm-white">O dono também atende?</h2>
+              <p className="mt-1 max-w-2xl text-body-sm text-steel">Crie seu perfil profissional com o mesmo acesso administrativo. Você entrará na agenda e poderá configurar seus horários sem manter outro login.</p>
+            </div>
+          </div>
+          <Button variant="secondary" loading={submitting} onClick={addOwnerToSchedule} className="w-full shrink-0 sm:w-auto"><Scissors size={16} /> Eu também atendo</Button>
+        </section>
+      )}
+
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex gap-2">
@@ -311,7 +351,7 @@ export default function AdminBarbers() {
             {visibleBarbers.map((barber) => (
               <Card key={barber.id} className={`flex min-w-0 flex-col gap-5 p-4 sm:p-6 ${barber.ativo ? '' : 'opacity-70'}`}>
                 <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
+                  <button type="button" onClick={() => setStatementBarber(barber)} className="flex min-w-0 items-center gap-3 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" aria-label={`Abrir extrato de ${displayName(barber)}`}>
                     {barber.foto_url
                       ? <img src={barber.foto_url} alt="" className="h-12 w-12 shrink-0 rounded-md border border-line object-cover" />
                       : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-copper/30 bg-copper/10 text-h2 text-copper">{displayName(barber).charAt(0).toUpperCase()}</div>}
@@ -319,7 +359,7 @@ export default function AdminBarbers() {
                       <h2 className="truncate text-h3 text-warm-white">{displayName(barber)}</h2>
                       <p className="truncate text-body-sm text-steel">{barber.nome}</p>
                     </div>
-                  </div>
+                  </button>
                   <Badge variant={barber.ativo ? 'success' : 'neutral'}>{barber.ativo ? 'Ativo' : 'Inativo'}</Badge>
                 </div>
 
@@ -351,6 +391,9 @@ export default function AdminBarbers() {
                     {barber.user_id ? 'Acesso vinculado' : 'Acesso pendente'}
                   </Badge>
                   <div className="flex flex-wrap justify-end gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => setStatementBarber(barber)}>
+                      <BarChart3 size={15} aria-hidden="true" /> Ver extrato
+                    </Button>
                     {barber.user_id && barber.email && (
                       <Button size="sm" variant="ghost" loading={invitingId === barber.id} disabled={Boolean(invitingId)} onClick={() => resendInvite(barber)}>
                         <Send size={15} aria-hidden="true" /> Reenviar convite
@@ -439,6 +482,8 @@ export default function AdminBarbers() {
           </form>
         </Modal>
       )}
+
+      {statementBarber && <BarberStatementModal barber={statementBarber} onClose={() => setStatementBarber(null)} />}
 
       {statusTarget && (
         <Modal
