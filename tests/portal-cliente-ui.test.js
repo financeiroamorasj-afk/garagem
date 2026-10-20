@@ -33,6 +33,7 @@ test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe
   assert.match(page, /barber\.foto_url/)
   assert.match(page, /Primeiro disponível/)
   assert.match(page, /grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4/)
+  assert.match(page, /col-span-full flex min-h-16/)
   assert.doesNotMatch(page, /flex snap-x gap-3 overflow-x-auto/)
   assert.match(page, /aria-pressed=\{barberId === barber\.id\}/)
   assert.match(api, /persistSession: false/)
