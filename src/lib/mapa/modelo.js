@@ -199,6 +199,7 @@ function grupoAgenda(ags, hoje, agora) {
     itens.push({
       id: `agenda-${a.id}`, rawId: a.id, name: `${rotuloDia(a.dia, hoje)} ${a.hora} · ${a.cliente}`, value,
       sub: `${a.servico} · ${a.profissional}`, alert: !!alertLabel, alertLabel,
+      route: `/admin/agenda?data=${a.dia}&agendamento=${encodeURIComponent(a.id)}`,
     })
   }
   return itens
@@ -285,7 +286,8 @@ function atendimentoMicro(a, { comissao = false } = {}) {
     date: a.dia,
     amount: comissao ? (pct == null ? null : (a.valor * pct) / 100) : a.valor,
     sub: comissao ? (pct == null ? 'Sem percentual definido' : `Comissão de ${pct}%`) : `com ${a.profissional}`,
-    alert: comissao && pct == null, route: '/reception/board',
+    alert: comissao && pct == null,
+    route: `/admin/agenda?data=${a.dia}&agendamento=${encodeURIComponent(a.id)}`,
   }
 }
 

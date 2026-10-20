@@ -105,6 +105,8 @@ test('agenda: não confirmado amanhã, atendimento passado sem fechar e cancelad
   const agenda = m.sectors.find((s) => s.key === 'agenda').items
   assert.ok(agenda.some((i) => i.name === 'Amanhã 14:00 · Diego' && i.alertLabel === 'Não confirmou presença'))
   assert.ok(agenda.some((i) => i.name === 'Ontem 14:00 · André' && i.alertLabel === 'Atendimento não fechado'))
+  assert.equal(agenda.find((i) => i.rawId === 'a8').route, '/admin/agenda?data=2026-09-22&agendamento=a8')
+  assert.equal(m.sectors.find((s) => s.key === 'agenda').route, '/admin/agenda')
   assert.equal(agenda.filter((i) => i.name.includes('André') && !i.alert).length, 0, 'cancelado não aparece')
 })
 
@@ -123,6 +125,7 @@ test('micro-conexões: títulos liquidados da conta, atendimentos e movimentos d
   assert.deepEqual(conta.map((x) => x.amount), [-50, -200])
   const comissao = microDoModelo(porNome(m, 'comissoes', 'João'), m.ctx)
   assert.deepEqual(comissao.map((x) => x.amount), [25, 40])
+  assert.equal(comissao[0].route, '/admin/agenda?data=2026-09-16&agendamento=a2')
   const mov = movimentoEnvelopeMicro({ id: 'x', tipo: 'resgate', direcao: 'debito', valor: 30, saldo_depois: 70, data_brt: '2026-09-20' })
   assert.equal(mov.amount, -30)
   assert.equal(mov.name, 'Resgate')

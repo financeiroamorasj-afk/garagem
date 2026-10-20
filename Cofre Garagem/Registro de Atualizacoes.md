@@ -398,3 +398,12 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O ADM financeiro ganhou indicadores para **Dinheiro no caixa** e **Débito e crédito**, com atalhos de cadastro já preenchidos com o tipo necessário.
 - Se a conta específica não estiver cadastrada, o pagamento é bloqueado com orientação ao ADM, sem lançar o valor silenciosamente na conta principal.
 - A mesma regra de destino foi aplicada aos checkouts do barbeiro, às cobranças da recepção e às vendas avulsas do balcão.
+
+# 20/10/2026 — Mapa conectado à agenda administrativa e equipe visível no Portal
+
+- O alerta de agendamento pendente no **Mapa da barbearia** deixou de encaminhar o gestor ao balcão operacional da Recepção. O núcleo Agenda e as conexões de atendimentos agora abrem a agenda administrativa.
+- Cada item do mapa leva a data e o identificador do agendamento na navegação. A agenda abre diretamente a visão do dia, rola até o registro correspondente e destaca a pendência indicada.
+- A correção preserva a separação de permissões: o gestor não recebe acesso implícito ao balcão da Recepção, que continua restrito aos operadores autorizados do módulo.
+- No agendamento do **Portal do Cliente**, a escolha de barbeiro deixou de depender de rolagem lateral. “Primeiro disponível” e todos os profissionais são exibidos em uma grade responsiva, com duas colunas no celular e três ou quatro em telas maiores.
+- Fotos, indicação de barbeiro favorito, estado selecionado e avanço guiado entre serviço, profissional e data foram preservados.
+- Foram adicionados testes para o destino contextual do mapa, a abertura da agenda administrativa e a ausência do carrossel horizontal na equipe do portal.

@@ -18,7 +18,7 @@ export const SECTOR_DEFS = [
   { key: 'comissoes', label: 'Comissões', route: '/admin/barbeiros', icon: 'comissoes', color: MAPA_SVG.oliva },
   { key: 'equipe', label: 'Equipe', route: '/admin/barbeiros', icon: 'equipe', color: MAPA_SVG.aco },
   { key: 'clientes', label: 'Clientes', route: null, icon: 'clientes', color: MAPA_SVG.ameixa },
-  { key: 'agenda', label: 'Agenda', route: '/reception/board', icon: 'agenda', color: MAPA_SVG.osso },
+  { key: 'agenda', label: 'Agenda', route: '/admin/agenda', icon: 'agenda', color: MAPA_SVG.osso },
 ]
 
 export const WEDGE = 360 / SECTOR_DEFS.length
