@@ -54,6 +54,47 @@ export async function listarBarbeiros({ incluirInativos = false } = {}) {
   return data ?? []
 }
 
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
+
+export async function carregarExtratoBarbeiro(profissionalId, dataInicial, dataFinal) {
+  if (!profissionalId || !DATE_KEY.test(String(dataInicial ?? '')) || !DATE_KEY.test(String(dataFinal ?? ''))) {
+    throw new TypeError('Período do extrato inválido')
+  }
+  const { data, error } = await supabase.rpc('admin_barbeiro_extrato', {
+    p_profissional_id: profissionalId,
+    p_data_inicial: dataInicial,
+    p_data_final: dataFinal,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function atualizarDuracaoServicoPeloExtrato({ servicoId, duracaoMinutos, expectedUpdatedAt }) {
+  const duration = Number(duracaoMinutos)
+  if (!servicoId || !expectedUpdatedAt || !Number.isInteger(duration) || duration < 5 || duration > 480) {
+    throw new TypeError('A duração deve ficar entre 5 e 480 minutos.')
+  }
+  const { data, error } = await supabase.rpc('admin_servico_duracao_atualizar', {
+    p_servico_id: servicoId,
+    p_duracao_minutos: duration,
+    p_expected_updated_at: expectedUpdatedAt,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function vincularAdminComoProfissional() {
+  const { data, error } = await supabase.rpc('admin_vincular_como_profissional')
+  if (error) throw error
+  return data
+}
+
+export async function obterUsuarioAtualId() {
+  const { data, error } = await supabase.auth.getUser()
+  if (error) throw error
+  return data.user?.id ?? null
+}
+
 export async function criarBarbeiroComAcesso(input) {
   const payload = barberPayload(input)
   const email = String(input.email ?? '').trim().toLowerCase()
