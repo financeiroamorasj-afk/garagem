@@ -15,6 +15,8 @@ import {
   listarBloqueios,
   listarJornadas,
   mensagemErroDisponibilidade,
+  obterIntervaloAtendimentos,
+  salvarIntervaloAtendimentos,
   salvarJornadas,
 } from '../lib/disponibilidade/api'
 
@@ -81,6 +83,9 @@ export default function AdminAvailability() {
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [intervalMinutes, setIntervalMinutes] = useState('5')
+  const [intervalLoading, setIntervalLoading] = useState(true)
+  const [intervalSaving, setIntervalSaving] = useState(false)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [blockOpen, setBlockOpen] = useState(false)
@@ -126,6 +131,20 @@ export default function AdminAvailability() {
 
   useEffect(() => { loadAvailability() }, [loadAvailability])
 
+  const loadInterval = useCallback(async () => {
+    setIntervalLoading(true)
+    try {
+      const value = await obterIntervaloAtendimentos()
+      setIntervalMinutes(String(value ?? 5))
+    } catch (requestError) {
+      setError(mensagemErroDisponibilidade(requestError))
+    } finally {
+      setIntervalLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadInterval() }, [loadInterval])
+
   const selectedProfessional = professionals.find((item) => item.id === professionalId)
   const summary = useMemo(() => ({
     workDays: week.filter((day) => day.ativo).length,
@@ -157,6 +176,24 @@ export default function AdminAvailability() {
       setError(mensagemErroDisponibilidade(requestError))
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function saveInterval(event) {
+    event.preventDefault()
+    setIntervalSaving(true)
+    setError('')
+    setStatus('')
+    try {
+      const value = await salvarIntervaloAtendimentos(intervalMinutes)
+      setIntervalMinutes(String(value))
+      setStatus(value === 0
+        ? 'Intervalo entre atendimentos desativado para novos agendamentos.'
+        : `Intervalo de ${value} ${value === 1 ? 'minuto' : 'minutos'} salvo para novos agendamentos.`)
+    } catch (requestError) {
+      setError(mensagemErroDisponibilidade(requestError))
+    } finally {
+      setIntervalSaving(false)
     }
   }
 
@@ -211,7 +248,27 @@ export default function AdminAvailability() {
       </header>
 
       {status && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-4 text-body-sm text-success">{status}</div>}
-      {error && <div role="alert" className="flex flex-col gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><Button size="sm" variant="secondary" onClick={loadAvailability}><RefreshCw size={15} /> Tentar novamente</Button></div>}
+      {error && <div role="alert" className="flex flex-col gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => { loadInterval(); loadAvailability() }}><RefreshCw size={15} /> Tentar novamente</Button></div>}
+
+      <section aria-labelledby="appointment-interval-title">
+        <Card className="p-5 sm:p-6">
+          <form className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between" onSubmit={saveInterval}>
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-copper/30 bg-copper/10 text-copper"><Clock3 size={20} /></span>
+                <div><h2 id="appointment-interval-title" className="text-h2 text-warm-white">Intervalo entre atendimentos</h2><p className="mt-1 text-body-sm text-steel">Tempo reservado após cada serviço para limpeza, organização ou preparação do próximo cliente.</p></div>
+              </div>
+              <p className="mt-4 text-body-sm text-steel">A mudança atualiza os horários disponíveis no portal, nos encaixes e nos novos agendamentos. Horários já marcados mantêm o intervalo original.</p>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end lg:max-w-md">
+              <div className="min-w-0 flex-1">
+                <Input label="Minutos" type="number" min="0" max="60" step="1" inputMode="numeric" value={intervalMinutes} onChange={(event) => { setIntervalMinutes(event.target.value); setStatus('') }} helpText="Use 0 para não reservar intervalo." required disabled={intervalLoading || intervalSaving} />
+              </div>
+              <Button type="submit" loading={intervalSaving} disabled={intervalLoading}><Save size={16} /> Salvar intervalo</Button>
+            </div>
+          </form>
+        </Card>
+      </section>
 
       {!loadingTeam && professionals.length === 0 ? (
         <Card><EmptyState icon={UserRound} title="Nenhum barbeiro ativo" description="Cadastre ou reative um barbeiro antes de configurar a jornada." /></Card>

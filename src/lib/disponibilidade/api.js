@@ -24,6 +24,18 @@ export function listarJornadas(profissionalId) {
   return rpc('admin_jornadas_listar', { p_profissional_id: profissionalId })
 }
 
+export function obterIntervaloAtendimentos() {
+  return rpc('admin_intervalo_atendimentos_obter')
+}
+
+export function salvarIntervaloAtendimentos(intervaloMinutos) {
+  const value = Number(intervaloMinutos)
+  if (!Number.isInteger(value) || value < 0 || value > 60) {
+    throw new TypeError('Informe um intervalo entre 0 e 60 minutos.')
+  }
+  return rpc('admin_intervalo_atendimentos_salvar', { p_intervalo_minutos: value })
+}
+
 export function salvarJornadas({ profissionalId, dias }) {
   if (!profissionalId || !Array.isArray(dias) || dias.length !== 7) throw new TypeError('Jornada inválida')
   return rpc('admin_jornadas_salvar', {
@@ -81,6 +93,7 @@ const ERRORS = {
   DISPONIBILIDADE_MOTIVO_INVALIDO: 'O motivo pode ter no máximo 200 caracteres.',
   DISPONIBILIDADE_BLOQUEIO_NAO_ENCONTRADO: 'Este bloqueio já foi removido.',
   DISPONIBILIDADE_VISUALIZACAO_NAO_AUTORIZADA: 'Seu usuário não pode consultar esta disponibilidade.',
+  DISPONIBILIDADE_INTERVALO_INVALIDO: 'Informe um intervalo entre 0 e 60 minutos.',
 }
 
 export function mensagemErroDisponibilidade(error) {
