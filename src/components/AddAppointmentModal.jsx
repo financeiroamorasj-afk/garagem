@@ -286,7 +286,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                     )}
                     {servicoId && (
                         <p className="text-body-sm text-steel">
-                            A agenda reserva a duração do serviço mais 5 minutos de margem operacional.
+                            A agenda reserva a duração do serviço mais o intervalo definido pela gestão.
                         </p>
                     )}
                 </section>
