@@ -24,6 +24,9 @@ const ERROR_MESSAGES = {
   AGENDA_DATA_INVALIDA: 'Não foi possível abrir essa data.',
   AGENDA_PERIODO_INVALIDO: 'Não foi possível abrir esse período.',
   AGENDA_PERIODO_MUITO_LONGO: 'O período solicitado é maior que o limite da agenda.',
+  AGENDA_CLIENTE_INVALIDO: 'Selecione ou cadastre o cliente.',
+  AGENDA_SERVICO_INVALIDO: 'Selecione um serviço ativo.',
+  AGENDA_VALOR_INVALIDO: 'Informe um valor válido.',
 }
 
 function dateFromKey(data) {
