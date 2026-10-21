@@ -3,11 +3,12 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe e perfil', async () => {
-  const [app, page, api, migration] = await Promise.all([
+  const [app, page, api, migration, confirmationMigration] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/ClientPortal.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/portal/api.js', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20260923230000_portal_cliente.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/migrations/20261020160000_portal_agendamento_confirmado.sql', import.meta.url), 'utf8'),
   ])
   assert.match(app, /path="\/portal\/:slug" element={<ClientPortal/)
   assert.match(page, /Portal do cliente/i)
@@ -38,10 +39,15 @@ test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe
   assert.match(page, /object-\[center_28%\]/)
   assert.doesNotMatch(page, /flex snap-x gap-3 overflow-x-auto/)
   assert.match(page, /aria-pressed=\{barberId === barber\.id\}/)
+  assert.match(page, /Agendamento confirmado\. Seu horário já está reservado na agenda da barbearia\./)
+  assert.doesNotMatch(page, /Acompanhe a confirmação por aqui/)
   assert.match(api, /persistSession: false/)
   assert.match(api, /portal_agendamento_criar/)
   assert.match(migration, /portal_sessoes/)
   assert.match(migration, /extensions\.digest/)
   assert.match(migration, /'portal_cliente'/)
   assert.doesNotMatch(migration, /ADD COLUMN IF NOT EXISTS cpf\s/)
+  assert.match(confirmationMigration, /v_preco,'confirmado','portal_cliente'/)
+  assert.match(confirmationMigration, /'status','confirmado'/)
+  assert.match(confirmationMigration, /origem = 'portal_cliente'[\s\S]*status = 'pendente'[\s\S]*data_hora > now\(\)/)
 })

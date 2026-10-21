@@ -34,7 +34,7 @@ export default function PushNotificationPrompt() {
         <strong className="block text-body text-warm-white">Avisos de novos agendamentos</strong>
         <p className="mt-1 text-body-sm text-steel">{status === 'bloqueado'
           ? 'As notificações estão bloqueadas neste navegador. Libere-as nas configurações do site.'
-          : 'Ative para receber avisos do portal mesmo quando o Garagem não estiver aberto.'}</p>
+          : 'Ative para receber avisos de qualquer novo agendamento mesmo quando o Garagem não estiver aberto.'}</p>
         {error && <p role="alert" className="mt-2 text-body-sm text-danger">{error}</p>}
       </div>
       {status === 'disponivel' && <Button size="sm" loading={busy} onClick={enable}><BellRing size={16} /> Ativar avisos</Button>}

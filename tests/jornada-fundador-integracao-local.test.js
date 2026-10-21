@@ -62,7 +62,7 @@ test('jornada do fundador liga portal, agendas, checkout PIX, estoque, comissão
       [token, serviceId, professionalId, slot.inicio],
     )
     const appointmentId = created.rows[0].result.id
-    assert.equal(created.rows[0].result.status, 'pendente')
+    assert.equal(created.rows[0].result.status, 'confirmado')
 
     await db.query('RESET ROLE')
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminUserId])
@@ -75,7 +75,7 @@ test('jornada do fundador liga portal, agendas, checkout PIX, estoque, comissão
     const barberAgenda = await db.query('SELECT * FROM public.barbeiro_agenda_listar_memoria($1)', [slot.data_local])
     assert.equal(barberAgenda.rows.some((item) => item.id === appointmentId), true)
     const started = await db.query(
-      "SELECT public.barbeiro_agendamento_mudar_status($1,'pendente','em_atendimento') result",
+      "SELECT public.barbeiro_agendamento_mudar_status($1,'confirmado','em_atendimento') result",
       [appointmentId],
     )
     assert.equal(started.rows[0].result.status, 'em_atendimento')
