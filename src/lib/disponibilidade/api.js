@@ -84,6 +84,68 @@ export function excluirBloqueio(id) {
   return rpc('admin_bloqueio_excluir', { p_id: id })
 }
 
+function normalizarDias(dias) {
+  if (!Array.isArray(dias) || dias.length !== 7) throw new TypeError('Jornada inválida')
+  return dias.map((day) => ({
+    dia_semana: Number(day.dia_semana),
+    ativo: Boolean(day.ativo),
+    hora_inicio: day.ativo ? day.hora_inicio : null,
+    hora_fim: day.ativo ? day.hora_fim : null,
+    intervalo_inicio: day.ativo && day.intervalo_inicio ? day.intervalo_inicio : null,
+    intervalo_fim: day.ativo && day.intervalo_fim ? day.intervalo_fim : null,
+  }))
+}
+
+export function obterContextoMinhaDisponibilidade() {
+  return rpc('barbeiro_disponibilidade_contexto')
+}
+
+export function listarMinhasJornadas() {
+  return rpc('barbeiro_jornadas_listar')
+}
+
+export function analisarMinhaJornada(dias) {
+  return rpc('barbeiro_jornada_analisar', { p_dias: normalizarDias(dias) })
+}
+
+export function salvarMinhasJornadas({ dias, confirmarConflitos = false }) {
+  return rpc('barbeiro_jornadas_salvar', {
+    p_dias: normalizarDias(dias),
+    p_confirmar_conflitos: Boolean(confirmarConflitos),
+  })
+}
+
+export function listarMeusBloqueios({ dataInicial = dataLocalKey(), dataFinal = dateAfterDays(366) } = {}) {
+  return rpc('barbeiro_bloqueios_listar', { p_data_inicial: dataInicial, p_data_final: dataFinal })
+}
+
+function normalizarPeriodoBloqueio({ inicio, fim }) {
+  const start = new Date(inicio)
+  const end = new Date(fim)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) throw new TypeError('O término precisa ser posterior ao início.')
+  return { inicio: start.toISOString(), fim: end.toISOString() }
+}
+
+export function analisarMeuBloqueio(input) {
+  const period = normalizarPeriodoBloqueio(input)
+  return rpc('barbeiro_bloqueio_analisar', { p_inicio: period.inicio, p_fim: period.fim })
+}
+
+export function criarMeuBloqueio({ inicio, fim, motivo, confirmarConflitos = false }) {
+  const period = normalizarPeriodoBloqueio({ inicio, fim })
+  return rpc('barbeiro_bloqueio_criar', {
+    p_inicio: period.inicio,
+    p_fim: period.fim,
+    p_motivo: String(motivo ?? '').trim() || null,
+    p_confirmar_conflitos: Boolean(confirmarConflitos),
+  })
+}
+
+export function excluirMeuBloqueio(id) {
+  if (!id) throw new TypeError('Bloqueio inválido')
+  return rpc('barbeiro_bloqueio_excluir', { p_id: id })
+}
+
 const ERRORS = {
   DISPONIBILIDADE_NAO_AUTORIZADO: 'Seu usuário não pode administrar a disponibilidade da equipe.',
   DISPONIBILIDADE_PROFISSIONAL_INVALIDO: 'Selecione um barbeiro ativo.',
@@ -94,6 +156,9 @@ const ERRORS = {
   DISPONIBILIDADE_BLOQUEIO_NAO_ENCONTRADO: 'Este bloqueio já foi removido.',
   DISPONIBILIDADE_VISUALIZACAO_NAO_AUTORIZADA: 'Seu usuário não pode consultar esta disponibilidade.',
   DISPONIBILIDADE_INTERVALO_INVALIDO: 'Informe um intervalo entre 0 e 60 minutos.',
+  DISPONIBILIDADE_AUTOSSERVICO_NAO_AUTORIZADO: 'Seu acesso não está vinculado a um profissional ativo.',
+  DISPONIBILIDADE_GESTAO_RESPONSAVEL: 'Sua disponibilidade é administrada pela gestão da barbearia.',
+  DISPONIBILIDADE_CONFLITOS_CONFIRMAR: 'Esta alteração afeta clientes já agendados. Revise e confirme antes de salvar.',
 }
 
 export function mensagemErroDisponibilidade(error) {

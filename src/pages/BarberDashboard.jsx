@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  DollarSign, Headset, LayoutDashboard, LogOut, Minimize2, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
+  DollarSign, Headset, LayoutDashboard, LogOut, Menu, Minimize2, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
   ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
@@ -221,6 +221,7 @@ export default function BarberDashboard() {
   const [cancelTarget, setCancelTarget] = useState(null)
   const [walkInOpen, setWalkInOpen] = useState(false)
   const [newCutOpen, setNewCutOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [completionTarget, setCompletionTarget] = useState(null)
   const [saleProduct, setSaleProduct] = useState(null)
   const [saleForm, setSaleForm] = useState({ quantidade: 1, agendamentoId: '', formaPagamento: 'pix', chaveIdempotencia: '' })
@@ -398,7 +399,7 @@ export default function BarberDashboard() {
   }
 
   return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0 text-warm-white">
-    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1">{canReturnToManagement && <Button variant="secondary" size="sm" aria-label="Voltar para gestão" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={17} /> <span className="hidden sm:inline">Gestão</span></Button>}{canAccessReception && <Button variant="secondary" size="sm" onClick={() => navigate('/reception/board')}><Headset size={17} /> Balcão</Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
+    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1"><Button variant="secondary" size="sm" aria-label="Abrir menu do meu espaço" onClick={() => setMenuOpen(true)}><Menu size={18} /></Button>{canReturnToManagement && <Button variant="secondary" size="sm" aria-label="Voltar para gestão" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={17} /> <span className="hidden sm:inline">Gestão</span></Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
     <SectionNavigation value={section} sections={sections} onChange={(value) => {
       changeSection(value)
     }} />
@@ -440,6 +441,7 @@ export default function BarberDashboard() {
     {activeAppointment && !activeViewMinimized && <ActiveAppointmentExperience appointment={activeAppointment} busy={busyId === activeAppointment.id} businessName={context?.barbearia_nome} onMinimize={() => setActiveViewMinimized(true)} onComplete={() => setCompletionTarget(activeAppointment)} />}
 
     {cancelTarget && <Modal open onClose={() => !busyId && setCancelTarget(null)} title="Cancelar horário" footer={<><Button variant="ghost" disabled={Boolean(busyId)} onClick={() => setCancelTarget(null)}>Voltar</Button><Button variant="danger" loading={busyId === cancelTarget.id} onClick={() => changeStatus(cancelTarget, 'cancelado')}>Cancelar horário</Button></>}><p className="text-body text-steel">Cancelar o horário de <strong className="text-warm-white">{cancelTarget.cliente_nome}</strong> às {formatarHorario(cancelTarget.data_hora)}? Esta ação ficará registrada na agenda.</p></Modal>}
+    <Modal open={menuOpen} onClose={() => setMenuOpen(false)} title="Meu espaço"><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><Button variant="secondary" className="justify-start" onClick={() => { setMenuOpen(false); navigate('/barber/disponibilidade') }}><CalendarDays size={18} /> Minha disponibilidade</Button>{canAccessReception && <Button variant="secondary" className="justify-start" onClick={() => navigate('/reception/board')}><Headset size={18} /> Balcão</Button>}{canControlTv && <Button variant="secondary" className="justify-start" onClick={() => { setMenuOpen(false); changeSection('tv') }}><MonitorPlay size={18} /> Controle da TV</Button>}{canReturnToManagement && <Button variant="secondary" className="justify-start" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={18} /> Gestão</Button>}<Button variant="ghost" className="justify-start sm:col-span-2" onClick={logout}><LogOut size={18} /> Sair</Button></div></Modal>
     <AddAppointmentModal isOpen={newCutOpen} onClose={() => setNewCutOpen(false)} professionalId={context?.id} initialDate={selectedDate < today ? today : selectedDate} mode="barber" onSuccess={async (result) => { const targetDate = dataHoraLocalKey(result.inicio); setSelectedDate(targetDate); setNotice(`Novo corte confirmado para ${formatarHorario(result.inicio)}.`); if (targetDate === selectedDate) await loadDay({ quiet: true }) }} />
     <WalkInModal open={walkInOpen} onClose={() => setWalkInOpen(false)} onSuccess={async (_result, slot) => { const professional = slot.profissional_apelido || slot.profissional_nome || 'barbeiro disponível'; setNotice(`Encaixe confirmado com ${professional} às ${formatarHorario(slot.inicio)}.`); if (slot.profissional_id === context?.id) setSelectedDate(dataLocalKey(new Date(slot.inicio))); await loadDay({ quiet: true }) }} />
     <CutCompletionModal open={Boolean(completionTarget)} appointment={completionTarget} onClose={() => !busyId && setCompletionTarget(null)} onSuccess={async (result) => { setCompletionTarget(null); setNotice(result?.modo === 'recepcao' ? 'Parte técnica concluída. Atendimento enviado para cobrança na recepção.' : 'Atendimento, pagamento e estoque atualizados com sucesso.'); await loadDay({ quiet: true }) }} />
