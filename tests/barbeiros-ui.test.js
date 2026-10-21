@@ -56,6 +56,14 @@ test('administrador pode reenviar convite somente ao barbeiro ainda não confirm
   assert.match(edge, /inviteUserByEmail/)
 })
 
+test('card do barbeiro distribui as ações em uma grade móvel', async () => {
+  const page = await readFile(new URL('../src/pages/AdminBarbers.jsx', import.meta.url), 'utf8')
+
+  assert.match(page, /space-y-3 border-t border-line pt-4/)
+  assert.match(page, /grid grid-cols-2 gap-2/)
+  assert.match(page, /AÇÕES/)
+})
+
 test('administrador cadastra foto pública do barbeiro para o portal', async () => {
   const [page, api, migration] = await Promise.all([
     readFile(new URL('../src/pages/AdminBarbers.jsx', import.meta.url), 'utf8'),

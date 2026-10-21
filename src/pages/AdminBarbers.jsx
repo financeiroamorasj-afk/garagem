@@ -393,23 +393,26 @@ export default function AdminBarbers() {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-3">
-                  <Badge variant={barber.user_id ? 'info' : 'warning'}>
-                    {barber.user_id ? 'Acesso vinculado' : 'Acesso pendente'}
-                  </Badge>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => setStatementBarber(barber)}>
+                <div className="space-y-3 border-t border-line pt-4">
+                  <div className="flex min-h-8 items-center justify-between gap-3">
+                    <Badge variant={barber.user_id ? 'info' : 'warning'}>
+                      {barber.user_id ? 'Acesso vinculado' : 'Acesso pendente'}
+                    </Badge>
+                    <span className="text-label text-steel">AÇÕES</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="sm" variant="secondary" className="w-full" onClick={() => setStatementBarber(barber)}>
                       <BarChart3 size={15} aria-hidden="true" /> Ver extrato
                     </Button>
+                    <Button size="sm" variant="ghost" className="w-full border border-line" onClick={() => openForm(barber)}>
+                      <Pencil size={15} aria-hidden="true" /> {barber.user_id ? 'Editar' : 'Criar acesso'}
+                    </Button>
                     {barber.user_id && barber.email && (
-                      <Button size="sm" variant="ghost" loading={invitingId === barber.id} disabled={Boolean(invitingId)} onClick={() => resendInvite(barber)}>
+                      <Button size="sm" variant="ghost" className="w-full border border-line" loading={invitingId === barber.id} disabled={Boolean(invitingId)} onClick={() => resendInvite(barber)}>
                         <Send size={15} aria-hidden="true" /> Reenviar convite
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => openForm(barber)}>
-                      <Pencil size={15} aria-hidden="true" /> {barber.user_id ? 'Editar' : 'Criar acesso'}
-                    </Button>
-                    <Button size="sm" variant={barber.ativo ? 'danger' : 'secondary'} onClick={() => { setErrors({}); setStatusTarget(barber) }}>
+                    <Button size="sm" className="w-full" variant={barber.ativo ? 'danger' : 'secondary'} onClick={() => { setErrors({}); setStatusTarget(barber) }}>
                       {barber.ativo ? 'Desativar' : 'Reativar'}
                     </Button>
                   </div>
