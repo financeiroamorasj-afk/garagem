@@ -38,6 +38,8 @@ function initialForm(row) {
     especialidade: row?.especialidade ?? '',
     comissao_percentual: row?.comissao_percentual ?? '',
     comissao_produtos_percentual: row?.comissao_produtos_percentual ?? '',
+    tipo_vinculo: row?.tipo_vinculo ?? 'clt',
+    responsavel_disponibilidade: row?.responsavel_disponibilidade ?? 'gestao',
   }
 }
 
@@ -385,6 +387,10 @@ export default function AdminBarbers() {
                     <Percent size={15} className="shrink-0 text-info" aria-hidden="true" />
                     <span>{barber.comissao_produtos_percentual === null ? 'Produtos: não definida' : `Produtos: ${Number(barber.comissao_produtos_percentual).toLocaleString('pt-BR')}%`}</span>
                   </p>
+                  <p className="flex flex-wrap gap-2 text-body-sm text-steel">
+                    <Badge variant="neutral">{barber.tipo_vinculo === 'clt' ? 'CLT' : barber.tipo_vinculo === 'pj' ? 'PJ' : barber.tipo_vinculo === 'freelancer' ? 'Freelancer' : barber.tipo_vinculo === 'parceiro' ? 'Parceiro' : 'Outro vínculo'}</Badge>
+                    <Badge variant={barber.responsavel_disponibilidade === 'profissional' ? 'info' : 'neutral'}>{barber.responsavel_disponibilidade === 'profissional' ? 'Agenda pelo profissional' : 'Agenda pela gestão'}</Badge>
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between gap-3">
@@ -473,6 +479,24 @@ export default function AdminBarbers() {
               disabled={submitting || Boolean(formModal.row?.user_id)}
             />
             <Input label="Especialidade" value={form.especialidade} onChange={(event) => setForm({ ...form, especialidade: event.target.value })} maxLength={100} disabled={submitting} />
+            <div className="rounded-md border border-line bg-surface-1 p-4">
+              <p className="mb-3 text-label text-copper">VÍNCULO E DISPONIBILIDADE</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="text-label text-steel">
+                  <span className="mb-2 block">Tipo de vínculo</span>
+                  <select value={form.tipo_vinculo} disabled={submitting} onChange={(event) => { const tipo = event.target.value; setForm({ ...form, tipo_vinculo: tipo, responsavel_disponibilidade: ['freelancer', 'pj'].includes(tipo) ? 'profissional' : 'gestao' }) }} className="h-12 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white outline-none focus:border-copper">
+                    <option value="clt">CLT</option><option value="freelancer">Freelancer</option><option value="pj">PJ</option><option value="parceiro">Parceiro</option><option value="outro">Outro</option>
+                  </select>
+                </label>
+                <label className="text-label text-steel">
+                  <span className="mb-2 block">Quem controla os horários</span>
+                  <select value={form.responsavel_disponibilidade} disabled={submitting} onChange={(event) => setForm({ ...form, responsavel_disponibilidade: event.target.value })} className="h-12 w-full rounded-sm border border-line-strong bg-surface-0 px-3 text-body text-warm-white outline-none focus:border-copper">
+                    <option value="gestao">Gestão da barbearia</option><option value="profissional">Próprio profissional</option>
+                  </select>
+                </label>
+              </div>
+              <p className="mt-3 text-body-sm text-steel">CLT começa sob controle da gestão; freelancer e PJ começam sob controle do profissional. Você pode alterar a exceção separadamente.</p>
+            </div>
             <div className="rounded-md border border-line bg-surface-1 p-4">
               <p className="mb-3 text-label text-copper">COMISSÕES DO BARBEIRO</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

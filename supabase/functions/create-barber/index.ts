@@ -71,6 +71,8 @@ Deno.serve(async (request) => {
     const especialidade = optionalText(input.especialidade, 100)
     const commissionInput = input.comissao_percentual
     const productCommissionInput = input.comissao_produtos_percentual
+    const tipoVinculo = String(input.tipo_vinculo ?? 'clt')
+    const responsavelDisponibilidade = String(input.responsavel_disponibilidade ?? (['freelancer', 'pj'].includes(tipoVinculo) ? 'profissional' : 'gestao'))
     const comissao = commissionInput === '' || commissionInput === null || commissionInput === undefined
       ? null
       : Number(commissionInput)
@@ -87,6 +89,10 @@ Deno.serve(async (request) => {
     }
     if (comissaoProdutos !== null && (!Number.isFinite(comissaoProdutos) || comissaoProdutos < 0 || comissaoProdutos > 100)) {
       throw new Error('BARBEIROS_COMISSAO_PRODUTOS_INVALIDA')
+    }
+    if (!['clt', 'freelancer', 'pj', 'parceiro', 'outro'].includes(tipoVinculo)
+      || !['gestao', 'profissional'].includes(responsavelDisponibilidade)) {
+      throw new Error('BARBEIROS_VINCULO_INVALIDO')
     }
 
     if (professionalId) {
@@ -146,6 +152,8 @@ Deno.serve(async (request) => {
       especialidade,
       comissao_percentual: comissao,
       comissao_produtos_percentual: comissaoProdutos,
+      tipo_vinculo: tipoVinculo,
+      responsavel_disponibilidade: responsavelDisponibilidade,
       ativo: true,
       updated_at: new Date().toISOString(),
     }

@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import ModuleGate from './components/ModuleGate'
 import AdminDashboard from './pages/AdminDashboard'
 import BarberDashboard from './pages/BarberDashboard'
+import BarberAvailability from './pages/BarberAvailability'
 import ReceptionBoard from './pages/ReceptionBoard'
 import FinanceOverview from './pages/financeiro/FinanceOverview'
 import FinanceTitles from './pages/financeiro/FinanceTitles'
@@ -44,6 +45,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/barber/dashboard" element={<BarberDashboard />} />
+          <Route path="/barber/disponibilidade" element={<BarberAvailability />} />
           <Route path="/reception/board" element={<ModuleGate modulo="recepcao" accessRpc="recepcao_acesso_operador_verificar"><ReceptionBoard /></ModuleGate>} />
           <Route path="/admin/agenda/tv" element={<AdminAgendaTv />} />
           <Route path="/admin" element={<AdminLayout />}>

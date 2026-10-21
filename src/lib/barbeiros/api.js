@@ -27,6 +27,10 @@ function barberPayload(input) {
   const telefone = optionalText(input.telefone, 'Telefone', 30)
   if (apelido && apelido.length < 2) throw new TypeError('Apelido inválido')
   if (telefone && telefone.length < 8) throw new TypeError('Telefone inválido')
+  const tipoVinculo = String(input.tipo_vinculo ?? 'clt')
+  const responsavelDisponibilidade = String(input.responsavel_disponibilidade ?? 'gestao')
+  if (!['clt', 'freelancer', 'pj', 'parceiro', 'outro'].includes(tipoVinculo)) throw new TypeError('Tipo de vínculo inválido')
+  if (!['gestao', 'profissional'].includes(responsavelDisponibilidade)) throw new TypeError('Responsável pela disponibilidade inválido')
   return {
     nome: text(input.nome, 'Nome', 2, 120),
     apelido,
@@ -34,6 +38,8 @@ function barberPayload(input) {
     especialidade: optionalText(input.especialidade, 'Especialidade', 100),
     comissao_percentual: commission(input.comissao_percentual),
     comissao_produtos_percentual: commission(input.comissao_produtos_percentual),
+    tipo_vinculo: tipoVinculo,
+    responsavel_disponibilidade: responsavelDisponibilidade,
   }
 }
 
@@ -128,6 +134,8 @@ export async function atualizarBarbeiro(input) {
     p_especialidade: payload.especialidade,
     p_comissao_percentual: payload.comissao_percentual,
     p_comissao_produtos_percentual: payload.comissao_produtos_percentual,
+    p_tipo_vinculo: payload.tipo_vinculo,
+    p_responsavel_disponibilidade: payload.responsavel_disponibilidade,
     p_ativo: input.ativo,
     p_expected_updated_at: input.expectedUpdatedAt,
   })
