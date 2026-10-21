@@ -328,11 +328,7 @@ export default function BarberDashboard() {
       }, (change) => {
         loadDay({ quiet: true })
         if (section === 'week' || section === 'summary') loadSection()
-        if (change.eventType === 'INSERT') {
-          setIncomingNotice(change.new?.origem === 'portal_cliente'
-            ? 'Novo cliente agendou pelo portal. Sua agenda foi atualizada.'
-            : 'Novo agendamento recebido. Sua agenda foi atualizada.')
-        }
+        if (change.eventType === 'INSERT') setIncomingNotice('Novo agendamento para você. Sua agenda foi atualizada.')
       })
       .subscribe()
 

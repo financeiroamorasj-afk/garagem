@@ -5,7 +5,7 @@ type WebhookPayload = {
   type?: string
   table?: string
   schema?: string
-  record?: { id?: string; origem?: string }
+  record?: { id?: string }
 }
 
 function json(status: number, body: Record<string, unknown>) {
@@ -50,10 +50,10 @@ Deno.serve(async (request) => {
   })
   const { data: appointment, error: appointmentError } = await admin
     .from('agendamentos')
-    .select('id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora,origem')
+    .select('id,barbearia_id,profissional_id,cliente_id,servico_id,data_hora')
     .eq('id', appointmentId)
     .maybeSingle()
-  if (appointmentError || !appointment || appointment.origem !== 'portal_cliente') {
+  if (appointmentError || !appointment) {
     return json(202, { ignored: true })
   }
 
@@ -109,7 +109,7 @@ Deno.serve(async (request) => {
         endpoint: subscription.endpoint,
         keys: { p256dh: subscription.p256dh, auth: subscription.auth },
       }, JSON.stringify({
-        title: 'Novo agendamento pelo portal', body, url: destination,
+        title: 'Novo agendamento na sua agenda', body, url: destination,
         tag: `agendamento-${appointment.id}`,
       }), { TTL: 300, urgency: 'high' })
       sent += 1

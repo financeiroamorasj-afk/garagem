@@ -54,7 +54,7 @@ test('portal cria sessão segura, cadastra cliente e agenda sem choque de horár
     )
     const slot = slots.rows[0]
     const created = await db.query('SELECT public.portal_agendamento_criar($1,$2,$3,$4) result', [token, serviceId, professionalId, slot.inicio])
-    assert.equal(created.rows[0].result.status, 'pendente')
+    assert.equal(created.rows[0].result.status, 'confirmado')
 
     await assert.rejects(
       db.query('SELECT public.portal_agendamento_criar($1,$2,$3,$4)', [token, serviceId, professionalId, slot.inicio]),
@@ -62,7 +62,8 @@ test('portal cria sessão segura, cadastra cliente e agenda sem choque de horár
     )
 
     await db.query('RESET ROLE')
-    const stored = await db.query('SELECT origem,pagamento_status,margem_minutos_snapshot,ocupacao_fim-data_hora ocupacao FROM public.agendamentos WHERE id=$1', [created.rows[0].result.id])
+    const stored = await db.query('SELECT status,origem,pagamento_status,margem_minutos_snapshot,ocupacao_fim-data_hora ocupacao FROM public.agendamentos WHERE id=$1', [created.rows[0].result.id])
+    assert.equal(stored.rows[0].status, 'confirmado')
     assert.equal(stored.rows[0].origem, 'portal_cliente')
     assert.equal(stored.rows[0].pagamento_status, 'nao_solicitado')
     assert.equal(stored.rows[0].margem_minutos_snapshot, 5)
