@@ -29,6 +29,8 @@ test('shells móveis mantêm navegação dentro do aplicativo e evitam zoom auto
   assert.match(portal, /flex h-\[100dvh\].*flex-col overflow-hidden/)
   assert.doesNotMatch(portal, /fixed inset-x-0 bottom-0/)
   assert.match(barber, /function MobileSectionNavigation/)
+  const barberHeader = barber.match(/<header className="[^"]*"[^>]*><div className="mx-auto flex max-w-5xl[\s\S]*?GARAGEM · MEU ESPAÇO/)?.[0] ?? ''
+  assert.match(barberHeader, /env\(safe-area-inset-top\)/)
   assert.doesNotMatch(barber, /fixed inset-x-0 bottom-0/)
 })
 
