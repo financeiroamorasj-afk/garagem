@@ -48,8 +48,19 @@ export function criarEncaixe({ clienteId, servicoId, profissionalId, inicio, val
   })
 }
 
+export function criarAgendamentoBarbeiro({ clienteId, servicoId, inicio, valorFinal }) {
+  if (!clienteId || !servicoId || !inicio) throw new TypeError('Complete os dados do novo corte.')
+  return rpc('barbeiro_agendamento_criar', {
+    p_cliente_id: clienteId,
+    p_servico_id: servicoId,
+    p_inicio: inicio,
+    p_valor_final: valorFinal == null ? null : Number(valorFinal),
+  })
+}
+
 const ERRORS = {
   AGENDA_ENCAIXE_NAO_AUTORIZADO: 'Seu usuário não pode criar encaixes.',
+  AGENDA_DATA_INVALIDA: 'Escolha uma data e um horário disponíveis.',
   AGENDA_BARBEIRO_INATIVO_OU_NAO_VINCULADO: 'O acesso deste barbeiro está inativo ou sem vínculo.',
   AGENDA_ENCAIXE_FILTRO_INVALIDO: 'Revise o serviço e o período da busca.',
   AGENDA_ENCAIXE_SOMENTE_HOJE: 'Encaixes são atendimentos para hoje. Para outro dia, use o agendamento normal.',

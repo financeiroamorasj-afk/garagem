@@ -12,6 +12,7 @@ import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
 import ThemeToggle from '../components/ui/ThemeToggle'
 import WalkInModal from '../components/WalkInModal'
+import AddAppointmentModal from '../components/AddAppointmentModal'
 import AvailabilityOverview from '../components/AvailabilityOverview'
 import CutCompletionModal from '../components/CutCompletionModal'
 import PixPaymentPanel from '../components/PixPaymentPanel'
@@ -219,6 +220,7 @@ export default function BarberDashboard() {
   const [incomingNotice, setIncomingNotice] = useState('')
   const [cancelTarget, setCancelTarget] = useState(null)
   const [walkInOpen, setWalkInOpen] = useState(false)
+  const [newCutOpen, setNewCutOpen] = useState(false)
   const [completionTarget, setCompletionTarget] = useState(null)
   const [saleProduct, setSaleProduct] = useState(null)
   const [saleForm, setSaleForm] = useState({ quantidade: 1, agendamentoId: '', formaPagamento: 'pix', chaveIdempotencia: '' })
@@ -426,7 +428,7 @@ export default function BarberDashboard() {
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-3 text-body-sm text-success">{notice}</div>}
       {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => section === 'today' ? loadDay() : loadSection()}><RefreshCw size={15} /> Recarregar</Button></div>}
 
-      {section === 'today' && <TodaySection selectedDate={selectedDate} setSelectedDate={setSelectedDate} appointments={appointments} activeAppointmentId={activeAppointment?.id} availability={availability} loading={loading} error={error} actionError={actionError} summary={daySummary} isToday={isToday} busyId={busyId} now={now} onWalkIn={() => setWalkInOpen(true)} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={() => loadDay({ quiet: true })} />}
+      {section === 'today' && <TodaySection selectedDate={selectedDate} setSelectedDate={setSelectedDate} appointments={appointments} activeAppointmentId={activeAppointment?.id} availability={availability} loading={loading} error={error} actionError={actionError} summary={daySummary} isToday={isToday} busyId={busyId} now={now} onNewCut={() => setNewCutOpen(true)} onWalkIn={() => setWalkInOpen(true)} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={() => loadDay({ quiet: true })} />}
       {section === 'week' && <WeekSection selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekRange={weekRange} weekAppointments={weekAppointments} selectedAppointments={selectedWeekAppointments} activeAppointmentId={activeAppointment?.id} sectionLoading={sectionLoading} today={today} actionError={actionError} busyId={busyId} now={now} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={async () => { await loadDay({ quiet: true }); await loadSection() }} />}
       {section === 'summary' && <SummarySection selectedDate={selectedDate} summary={summary} loading={sectionLoading} />}
       {section === 'sales' && <SalesSection products={products} loading={sectionLoading} onSale={openSale} />}
@@ -438,14 +440,15 @@ export default function BarberDashboard() {
     {activeAppointment && !activeViewMinimized && <ActiveAppointmentExperience appointment={activeAppointment} busy={busyId === activeAppointment.id} businessName={context?.barbearia_nome} onMinimize={() => setActiveViewMinimized(true)} onComplete={() => setCompletionTarget(activeAppointment)} />}
 
     {cancelTarget && <Modal open onClose={() => !busyId && setCancelTarget(null)} title="Cancelar horário" footer={<><Button variant="ghost" disabled={Boolean(busyId)} onClick={() => setCancelTarget(null)}>Voltar</Button><Button variant="danger" loading={busyId === cancelTarget.id} onClick={() => changeStatus(cancelTarget, 'cancelado')}>Cancelar horário</Button></>}><p className="text-body text-steel">Cancelar o horário de <strong className="text-warm-white">{cancelTarget.cliente_nome}</strong> às {formatarHorario(cancelTarget.data_hora)}? Esta ação ficará registrada na agenda.</p></Modal>}
+    <AddAppointmentModal isOpen={newCutOpen} onClose={() => setNewCutOpen(false)} professionalId={context?.id} initialDate={selectedDate < today ? today : selectedDate} mode="barber" onSuccess={async (result) => { const targetDate = dataHoraLocalKey(result.inicio); setSelectedDate(targetDate); setNotice(`Novo corte confirmado para ${formatarHorario(result.inicio)}.`); if (targetDate === selectedDate) await loadDay({ quiet: true }) }} />
     <WalkInModal open={walkInOpen} onClose={() => setWalkInOpen(false)} onSuccess={async (_result, slot) => { const professional = slot.profissional_apelido || slot.profissional_nome || 'barbeiro disponível'; setNotice(`Encaixe confirmado com ${professional} às ${formatarHorario(slot.inicio)}.`); if (slot.profissional_id === context?.id) setSelectedDate(dataLocalKey(new Date(slot.inicio))); await loadDay({ quiet: true }) }} />
     <CutCompletionModal open={Boolean(completionTarget)} appointment={completionTarget} onClose={() => !busyId && setCompletionTarget(null)} onSuccess={async (result) => { setCompletionTarget(null); setNotice(result?.modo === 'recepcao' ? 'Parte técnica concluída. Atendimento enviado para cobrança na recepção.' : 'Atendimento, pagamento e estoque atualizados com sucesso.'); await loadDay({ quiet: true }) }} />
     {saleProduct && <SaleModal product={saleProduct} appointments={appointments} form={saleForm} setForm={setSaleForm} error={saleError} busy={busyId === 'sale'} onClose={() => setSaleProduct(null)} onSubmit={submitSale} />}
   </div>
 }
 
-function TodaySection({ selectedDate, setSelectedDate, appointments, activeAppointmentId, availability, loading, error, actionError, summary, isToday, busyId, now, onWalkIn, onAction, onCancel, onComplete, onPhotoChanged }) {
-  return <><PeriodNavigator selectedDate={selectedDate} onChange={setSelectedDate} /><Button size="lg" className="w-full" onClick={onWalkIn}><UserPlus size={18} /> Encaixe de hoje</Button><AvailabilityOverview rows={availability} loading={loading} compact title="Minha disponibilidade" />
+function TodaySection({ selectedDate, setSelectedDate, appointments, activeAppointmentId, availability, loading, error, actionError, summary, isToday, busyId, now, onNewCut, onWalkIn, onAction, onCancel, onComplete, onPhotoChanged }) {
+  return <><PeriodNavigator selectedDate={selectedDate} onChange={setSelectedDate} /><div className="grid grid-cols-2 gap-2"><Button size="lg" className="w-full" onClick={onNewCut}><Scissors size={18} /> Novo corte</Button><Button size="lg" variant="secondary" className="w-full" onClick={onWalkIn}><UserPlus size={18} /> Encaixe de hoje</Button></div><AvailabilityOverview rows={availability} loading={loading} compact title="Minha disponibilidade" />
     <section className="grid grid-cols-3 gap-2" aria-label="Resumo do dia">{[['Horários', summary.total], ['Restantes', summary.restantes], ['Concluídos', summary.concluidos]].map(([label, value]) => <div key={label} className="min-w-0 rounded-md border border-line bg-surface-1 p-3 text-center"><span className="block text-data-lg text-warm-white">{value}</span><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-steel">{label}</span></div>)}</section>
     <section aria-label="Horários do dia" className="space-y-3">{loading ? <Loading label="Carregando sua agenda" /> : !error && appointments.length === 0 ? <EmptyState icon={isToday ? UserRound : CalendarDays} title={isToday ? 'Agenda livre hoje' : 'Nenhum horário neste dia'} description={isToday ? 'Quando um cliente for agendado para você, ele aparecerá aqui.' : 'Escolha outro dia para consultar seus atendimentos.'} /> : appointments.map((appointment) => <AppointmentCard key={appointment.id} appointment={appointment} activeAppointmentId={activeAppointmentId} isToday={isToday} busy={busyId === appointment.id} now={now} actionError={actionError?.id === appointment.id ? actionError.message : null} onAction={onAction} onCancel={onCancel} onComplete={onComplete} onPhotoChanged={onPhotoChanged} />)}</section>
   </>

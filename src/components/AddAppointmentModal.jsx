@@ -8,7 +8,12 @@ import Label from './ui/Label'
 import CurrencyInput from './ui/CurrencyInput'
 import ClientSearch from './ClientSearch'
 import { dataLocalKey, mensagemErroAgenda } from '../lib/agenda/ui'
-import { listarHorariosLivres } from '../lib/agenda/encaixe-api'
+import {
+    carregarCatalogoEncaixe,
+    criarAgendamentoBarbeiro,
+    criarClienteRapido,
+    listarHorariosLivres,
+} from '../lib/agenda/encaixe-api'
 
 function todayDateString() {
     return dataLocalKey()
@@ -18,7 +23,8 @@ function formatarHorario(value) {
     return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
-export default function AddAppointmentModal({ isOpen, onClose, onSuccess, professionalId = null, initialDate = null }) {
+export default function AddAppointmentModal({ isOpen, onClose, onSuccess, professionalId = null, initialDate = null, mode = 'admin' }) {
+    const isBarberFlow = mode === 'barber'
     const slotRequest = useRef(0)
     const [barbeariaId, setBarbeariaId] = useState(null)
     const [servicos, setServicos] = useState([])
@@ -47,6 +53,15 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
             setLoadingOptions(true)
             setError(null)
             try {
+                if (isBarberFlow) {
+                    const catalog = await carregarCatalogoEncaixe()
+                    setServicos(catalog.servicos)
+                    setClientes(catalog.clientes)
+                    setProfissionais(catalog.profissionais)
+                    setSelectedProfessionalId(professionalId || '')
+                    return
+                }
+
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession()
                 if (sessionError) throw sessionError
                 if (!session) throw new Error('Não autenticado')
@@ -99,14 +114,14 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
         }
 
         loadOptions()
-    }, [isOpen, professionalId])
+    }, [isBarberFlow, isOpen, professionalId])
 
     // Reset ao fechar, pra não vazar estado de uma abertura pra outra.
     useEffect(() => {
         if (!isOpen) {
             setSelectedClient(null)
             setServicoId('')
-            setValorFinal(0)
+            setValorFinal(null)
             setDate(initialDate || todayDateString())
             setSelectedProfessionalId(professionalId || '')
             setSlots([])
@@ -178,33 +193,51 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
             // só como texto livre.
             let clienteId = selectedClient.id
             if (clienteId === 'new') {
-                const { data: novoCliente, error: clienteError } = await supabase
-                    .from('clientes')
-                    .insert([{ barbearia_id: barbeariaId, nome: selectedClient.nome }])
-                    .select('id')
-                    .single()
+                if (isBarberFlow) {
+                    const novoCliente = await criarClienteRapido({ nome: selectedClient.nome })
+                    clienteId = novoCliente.id
+                } else {
+                    const { data: novoCliente, error: clienteError } = await supabase
+                        .from('clientes')
+                        .insert([{ barbearia_id: barbeariaId, nome: selectedClient.nome }])
+                        .select('id')
+                        .single()
 
-                if (clienteError) throw new Error(`Erro ao cadastrar cliente: ${clienteError.message}`)
-                clienteId = novoCliente.id
+                    if (clienteError) throw new Error(`Erro ao cadastrar cliente: ${clienteError.message}`)
+                    clienteId = novoCliente.id
+                }
             }
 
-            const { error: insertError } = await supabase
-                .from('agendamentos')
-                .insert([
-                    {
-                        barbearia_id: barbeariaId,
-                        profissional_id: selectedProfessionalId,
-                        servico_id: servicoId,
-                        cliente_id: clienteId,
-                        data_hora: dataHora.toISOString(),
-                        valor_final: valorFinal,
-                        status: 'pendente',
-                    },
-                ])
+            let result
+            if (isBarberFlow) {
+                result = await criarAgendamentoBarbeiro({
+                    clienteId,
+                    servicoId,
+                    inicio: dataHora.toISOString(),
+                    valorFinal,
+                })
+            } else {
+                const { data: created, error: insertError } = await supabase
+                    .from('agendamentos')
+                    .insert([
+                        {
+                            barbearia_id: barbeariaId,
+                            profissional_id: selectedProfessionalId,
+                            servico_id: servicoId,
+                            cliente_id: clienteId,
+                            data_hora: dataHora.toISOString(),
+                            valor_final: valorFinal,
+                            status: 'pendente',
+                        },
+                    ])
+                    .select('id, status, profissional_id, data_hora')
+                    .single()
 
-            if (insertError) throw insertError
+                if (insertError) throw insertError
+                result = { ...created, inicio: created.data_hora }
+            }
 
-            await onSuccess?.()
+            await onSuccess?.(result, selectedSlot)
             onClose()
         } catch (err) {
             console.error(err)
@@ -219,18 +252,24 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
         <Modal
             open={isOpen}
             onClose={onClose}
-            title="Novo Agendamento"
+            title={isBarberFlow ? 'Novo corte' : 'Novo Agendamento'}
             footer={
                 <>
                     <Button variant="secondary" onClick={onClose}>Cancelar</Button>
                     <Button variant="primary" onClick={handleSubmit} loading={loading}>
-                        Agendar
+                        {isBarberFlow ? 'Confirmar corte' : 'Agendar'}
                     </Button>
                 </>
             }
         >
             <form onSubmit={handleSubmit} className="space-y-4">
                 {error && <p className="text-body-sm text-danger">{error}</p>}
+
+                {isBarberFlow && (
+                    <p className="rounded-sm border border-info/30 bg-info/10 p-3 text-body-sm text-info">
+                        Escolha um horário livre da sua agenda. O corte será confirmado na hora.
+                    </p>
+                )}
 
                 <section className="space-y-2">
                     <Label>Cliente</Label>
@@ -296,6 +335,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, profes
                         label="Data"
                         type="date"
                         value={date}
+                        min={todayDateString()}
                         onChange={(e) => { setDate(e.target.value); setSelectedSlot(null) }}
                     />
                     <label className="block text-label text-steel">
