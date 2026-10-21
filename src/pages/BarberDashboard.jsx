@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  DollarSign, Headset, LogOut, Minimize2, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
+  DollarSign, Headset, LayoutDashboard, LogOut, Minimize2, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
   ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
@@ -226,6 +226,7 @@ export default function BarberDashboard() {
   const [now, setNow] = useState(() => new Date())
   const [canAccessReception, setCanAccessReception] = useState(false)
   const [canControlTv, setCanControlTv] = useState(false)
+  const [canReturnToManagement, setCanReturnToManagement] = useState(false)
   const [activeAppointment, setActiveAppointment] = useState(null)
   const [activeViewMinimized, setActiveViewMinimized] = useState(false)
 
@@ -238,6 +239,27 @@ export default function BarberDashboard() {
     checkReception()
     window.addEventListener('focus', checkReception)
     return () => { active = false; window.removeEventListener('focus', checkReception) }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    async function checkManagementAccess() {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError) throw userError
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        if (profileError) throw profileError
+        if (active) setCanReturnToManagement(['admin', 'master'].includes(profile.role))
+      } catch {
+        if (active) setCanReturnToManagement(false)
+      }
+    }
+    checkManagementAccess()
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
@@ -271,7 +293,7 @@ export default function BarberDashboard() {
         listarDisponibilidadeOperacional({ dataInicial: selectedDate, dataFinal: selectedDate }),
         carregarAtendimentoAtivo(),
       ])
-      setContext(nextContext); setAppointments(nextAppointments); setAvailability(nextAvailability); setActiveAppointment(nextActiveAppointment)
+      setContext(nextContext); setAppointments(nextAppointments); setAvailability((nextAvailability ?? []).filter((row) => row.profissional_id === nextContext.id)); setActiveAppointment(nextActiveAppointment)
     } catch (loadError) { setError(mensagemErroAgenda(loadError)) } finally { if (!quiet) setLoading(false) }
   }, [context, selectedDate])
 
@@ -378,7 +400,7 @@ export default function BarberDashboard() {
   }
 
   return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0 text-warm-white">
-    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1">{canAccessReception && <Button variant="secondary" size="sm" onClick={() => navigate('/reception/board')}><Headset size={17} /> Balcão</Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
+    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1">{canReturnToManagement && <Button variant="secondary" size="sm" aria-label="Voltar para gestão" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={17} /> <span className="hidden sm:inline">Gestão</span></Button>}{canAccessReception && <Button variant="secondary" size="sm" onClick={() => navigate('/reception/board')}><Headset size={17} /> Balcão</Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
     <SectionNavigation value={section} sections={sections} onChange={(value) => {
       changeSection(value)
     }} />

@@ -254,6 +254,7 @@ export default function AdminBarbers() {
       const professional = await vincularAdminComoProfissional()
       await load()
       setStatus(`${professional.nome} agora também aparece como profissional na agenda.`)
+      window.dispatchEvent(new CustomEvent('garagem:professional-access-changed'))
     } catch (error) {
       setPageError(mensagemErroBarbeiro(error).message)
     } finally {

@@ -18,6 +18,7 @@ import {
   ShieldX,
   Tags,
   BellRing,
+  BriefcaseBusiness,
   WalletCards,
   Wrench,
   PackageSearch,
@@ -53,6 +54,7 @@ const navItems = [
     group: 'Operacional',
     items: [
       { label: 'Agenda', href: '/admin/agenda', icon: CalendarDays },
+      { label: 'Meu atendimento', href: '/barber/dashboard', icon: BriefcaseBusiness, professionalOnly: true },
       { label: 'Modo TV', href: '/admin/tv', icon: MonitorPlay },
       { label: 'Clientes', href: '/admin/clientes', icon: ContactRound },
       { label: 'Barbeiros', href: '/admin/barbeiros', icon: Scissors },
@@ -76,7 +78,7 @@ const mobileNavItems = [
   { label: 'Contas', href: '/admin/financeiro/titulos', icon: Landmark },
 ]
 
-function Navigation({ isCollapsed = false, onNavigate }) {
+function Navigation({ isCollapsed = false, onNavigate, hasProfessionalAccess = false }) {
   return (
     <nav className="flex-1 space-y-6 overflow-y-auto p-4" aria-label="Navegação administrativa">
       {navItems.map((group) => (
@@ -85,7 +87,7 @@ function Navigation({ isCollapsed = false, onNavigate }) {
             {isCollapsed ? group.group.slice(0, 1) : group.group}
           </h2>
           <ul className="space-y-2">
-            {group.items.map((item) => {
+            {group.items.filter((item) => !item.professionalOnly || hasProfessionalAccess).map((item) => {
               const Icon = item.icon
               return (
                 <li key={item.href}>
@@ -115,7 +117,7 @@ function Navigation({ isCollapsed = false, onNavigate }) {
   )
 }
 
-function DesktopSidebar({ isCollapsed }) {
+function DesktopSidebar({ isCollapsed, hasProfessionalAccess }) {
   return (
     <aside
       className={`hidden shrink-0 flex-col border-r border-line bg-surface-1 transition-all duration-200 ease-brand lg:flex ${
@@ -126,12 +128,12 @@ function DesktopSidebar({ isCollapsed }) {
         <img src={garagemSymbol} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
         {!isCollapsed && <span className="text-h3 text-gold-aged">GARAGEM</span>}
       </div>
-      <Navigation isCollapsed={isCollapsed} />
+      <Navigation isCollapsed={isCollapsed} hasProfessionalAccess={hasProfessionalAccess} />
     </aside>
   )
 }
 
-function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
+function MobileDrawer({ open, onClose, onSignOut, signingOut, userName, hasProfessionalAccess }) {
   if (!open) return null
 
   return (
@@ -160,7 +162,7 @@ function MobileDrawer({ open, onClose, onSignOut, signingOut, userName }) {
             <X size={22} aria-hidden="true" />
           </button>
         </div>
-        <Navigation onNavigate={onClose} />
+        <Navigation onNavigate={onClose} hasProfessionalAccess={hasProfessionalAccess} />
         <div className="shrink-0 space-y-3 border-t border-line p-4">
           <ThemeToggle showLabel />
           <button
@@ -213,6 +215,7 @@ export default function AdminLayout() {
   const [isCollapsed, setCollapsed] = useState(false)
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [appointmentNotice, setAppointmentNotice] = useState('')
+  const [hasProfessionalAccess, setHasProfessionalAccess] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
 
@@ -245,6 +248,25 @@ export default function AdminLayout() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
+  }, [access])
+
+  useEffect(() => {
+    if (access !== 'allowed') return undefined
+    let active = true
+
+    async function checkProfessionalAccess() {
+      const { data, error } = await supabase.rpc('get_my_profissional_id')
+      if (active) setHasProfessionalAccess(!error && Boolean(data))
+    }
+
+    checkProfessionalAccess()
+    window.addEventListener('focus', checkProfessionalAccess)
+    window.addEventListener('garagem:professional-access-changed', checkProfessionalAccess)
+    return () => {
+      active = false
+      window.removeEventListener('focus', checkProfessionalAccess)
+      window.removeEventListener('garagem:professional-access-changed', checkProfessionalAccess)
+    }
   }, [access])
 
   if (access === 'loading') {
@@ -283,7 +305,7 @@ export default function AdminLayout() {
 
   return (
     <div className="flex h-[100dvh] min-w-0 max-w-full overflow-hidden bg-surface-0 text-warm-white">
-      <DesktopSidebar isCollapsed={isCollapsed} />
+      <DesktopSidebar isCollapsed={isCollapsed} hasProfessionalAccess={hasProfessionalAccess} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="sticky top-0 z-20 flex min-h-[calc(4rem+env(safe-area-inset-top))] shrink-0 items-center justify-between border-b border-line bg-surface-1/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-sm lg:min-h-16 lg:px-6 lg:pt-0">
@@ -344,6 +366,7 @@ export default function AdminLayout() {
         onSignOut={handleSignOut}
         signingOut={signingOut}
         userName={userName}
+        hasProfessionalAccess={hasProfessionalAccess}
       />
       {signOutError && (
         <div role="alert" className="fixed left-4 right-4 top-20 z-[60] rounded-md border border-danger/50 bg-surface-2 p-4 text-body-sm text-danger shadow-overlay sm:left-auto sm:right-6 sm:max-w-md">
