@@ -9,6 +9,7 @@ const connectionString = process.env.SUPABASE_LOCAL_DB_URL || 'postgresql://post
 test('CLT fica sob gestão e freelancer edita a própria disponibilidade sem cancelar clientes', async () => {
   const db = new Client({ connectionString })
   const tenantId = crypto.randomUUID()
+  const adminUserId = crypto.randomUUID()
   const cltUserId = crypto.randomUUID()
   const freelancerUserId = crypto.randomUUID()
   const cltProfessionalId = crypto.randomUUID()
@@ -20,9 +21,9 @@ test('CLT fica sob gestão e freelancer edita a própria disponibilidade sem can
   try {
     const target = (await db.query("SELECT to_char(current_date+1,'YYYY-MM-DD') data,extract(dow FROM current_date+1)::smallint dow")).rows[0]
     await db.query("INSERT INTO public.barbearias(id,nome,slug,fuso_horario) VALUES($1,'Vínculos',$2,'UTC')", [tenantId, `vinculos-${tenantId}`])
-    await db.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now()),($3,'authenticated','authenticated',$4,now(),now())", [cltUserId, `clt-${cltUserId}@test.local`, freelancerUserId, `freela-${freelancerUserId}@test.local`])
-    await db.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email,ativo) VALUES($1,$2,'barbeiro','CLT',$3,true),($4,$2,'barbeiro','Freelancer',$5,true)", [cltUserId, tenantId, `clt-${cltUserId}@test.local`, freelancerUserId, `freela-${freelancerUserId}@test.local`])
-    await db.query("INSERT INTO public.profissionais(id,barbearia_id,user_id,nome,ativo,tipo_vinculo,responsavel_disponibilidade) VALUES($1,$2,$3,'CLT',true,'clt','gestao'),($4,$2,$5,'Freelancer',true,'freelancer','profissional')", [cltProfessionalId, tenantId, cltUserId, freelancerProfessionalId, freelancerUserId])
+    await db.query("INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES($1,'authenticated','authenticated',$2,now(),now()),($3,'authenticated','authenticated',$4,now(),now()),($5,'authenticated','authenticated',$6,now(),now())", [adminUserId, `admin-${adminUserId}@test.local`, cltUserId, `clt-${cltUserId}@test.local`, freelancerUserId, `freela-${freelancerUserId}@test.local`])
+    await db.query("INSERT INTO public.profiles(id,barbearia_id,role,nome,email,ativo) VALUES($1,$2,'admin','Gestor',$3,true),($4,$2,'barbeiro','CLT',$5,true),($6,$2,'barbeiro','Freelancer',$7,true)", [adminUserId, tenantId, `admin-${adminUserId}@test.local`, cltUserId, `clt-${cltUserId}@test.local`, freelancerUserId, `freela-${freelancerUserId}@test.local`])
+    await db.query("INSERT INTO public.profissionais(id,barbearia_id,user_id,nome,ativo,tipo_vinculo,responsavel_disponibilidade) VALUES($1,$2,$3,'CLT',true,'clt','gestao'),($4,$2,$5,'Freelancer',true,'clt','gestao')", [cltProfessionalId, tenantId, cltUserId, freelancerProfessionalId, freelancerUserId])
     await db.query("INSERT INTO public.clientes(id,barbearia_id,nome) VALUES($1,$2,'Cliente preservado')", [clientId, tenantId])
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos,ativo) VALUES($1,$2,'Corte',50,30,true)", [serviceId, tenantId])
     await db.query("INSERT INTO public.profissionais_jornadas(barbearia_id,profissional_id,dia_semana,ativo,hora_inicio,hora_fim) VALUES($1,$2,$3,true,'09:00','18:00')", [tenantId, freelancerProfessionalId, target.dow])
@@ -35,6 +36,15 @@ test('CLT fica sob gestão e freelancer edita a própria disponibilidade sem can
     assert.equal(cltContext.tipo_vinculo, 'clt')
     assert.equal(cltContext.pode_editar, false)
     await assert.rejects(db.query('SELECT public.barbeiro_jornadas_salvar($1,false)', [JSON.stringify(closedWeek)]), /DISPONIBILIDADE_GESTAO_RESPONSAVEL/)
+
+    await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [adminUserId])
+    const freelancerUpdatedAt = (await db.query('SELECT updated_at::text FROM public.profissionais WHERE id=$1', [freelancerProfessionalId])).rows[0].updated_at
+    const updatedFreelancer = (await db.query(
+      'SELECT public.barbeiros_atualizar($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) result',
+      [freelancerProfessionalId, 'Freelancer', null, null, null, null, null, 'freelancer', 'profissional', true, freelancerUpdatedAt],
+    )).rows[0].result
+    assert.equal(updatedFreelancer.tipo_vinculo, 'freelancer')
+    assert.equal(updatedFreelancer.responsavel_disponibilidade, 'profissional')
 
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [freelancerUserId])
     const freelancerContext = (await db.query('SELECT public.barbeiro_disponibilidade_contexto() result')).rows[0].result
@@ -64,7 +74,7 @@ test('CLT fica sob gestão e freelancer edita a própria disponibilidade sem can
     await db.query('DELETE FROM public.clientes WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.servicos WHERE barbearia_id=$1', [tenantId]).catch(() => {})
     await db.query('DELETE FROM public.profissionais WHERE barbearia_id=$1', [tenantId]).catch(() => {})
-    await db.query('DELETE FROM auth.users WHERE id = ANY($1)', [[cltUserId, freelancerUserId]]).catch(() => {})
+    await db.query('DELETE FROM auth.users WHERE id = ANY($1)', [[adminUserId, cltUserId, freelancerUserId]]).catch(() => {})
     await db.query('DELETE FROM public.barbearias WHERE id=$1', [tenantId]).catch(() => {})
     await db.end()
   }

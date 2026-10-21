@@ -89,8 +89,8 @@ export default function BarberAvailability() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [conflict, setConflict] = useState(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true)
     setError('')
     try {
       const [currentContext, days, blockRows] = await Promise.all([
@@ -102,11 +102,27 @@ export default function BarberAvailability() {
     } catch (requestError) {
       setError(mensagemErroDisponibilidade(requestError))
     } finally {
-      setLoading(false)
+      if (!quiet) setLoading(false)
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+
+    const refreshPermission = () => load({ quiet: true })
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshPermission()
+    }
+
+    window.addEventListener('focus', refreshPermission)
+    window.addEventListener('pageshow', refreshPermission)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.removeEventListener('focus', refreshPermission)
+      window.removeEventListener('pageshow', refreshPermission)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [load])
 
   const summary = useMemo(() => ({
     workDays: week.filter((day) => day.ativo).length,
@@ -184,7 +200,7 @@ export default function BarberAvailability() {
       {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="secondary" onClick={load}><RefreshCw size={15} /> Tentar novamente</Button></div>}
       {loading ? <Card className="flex min-h-48 items-center justify-center gap-3 text-steel"><Spinner size={22} /> Carregando disponibilidade</Card> : <>
         <Card className={`p-4 ${context?.pode_editar ? 'border-info/30 bg-info/5' : 'border-warning/30 bg-warning/5'}`}>
-          <div className="flex flex-wrap items-center gap-2"><Badge variant="neutral">{linkLabel(context?.tipo_vinculo)}</Badge><Badge variant={context?.pode_editar ? 'info' : 'warning'}>{context?.pode_editar ? 'Você administra seus horários' : 'Administrada pela barbearia'}</Badge></div>
+          <div className="flex items-start justify-between gap-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="neutral">{linkLabel(context?.tipo_vinculo)}</Badge><Badge variant={context?.pode_editar ? 'info' : 'warning'}>{context?.pode_editar ? 'Você administra seus horários' : 'Administrada pela barbearia'}</Badge></div><Button size="sm" variant="ghost" className="shrink-0 px-2" aria-label="Atualizar permissão de disponibilidade" onClick={() => load({ quiet: true })}><RefreshCw size={15} /> <span className="hidden sm:inline">Atualizar</span></Button></div>
           <p className="mt-3 text-body-sm text-steel">{context?.pode_editar ? 'As mudanças passam a valer para novos agendamentos. Clientes já marcados nunca são cancelados automaticamente.' : 'Você pode consultar tudo aqui. Para alterar jornada, folga ou bloqueio, fale com a gestão.'}</p>
         </Card>
         <section className="grid grid-cols-3 gap-2" aria-label="Resumo da disponibilidade"><Metric icon={CalendarClock} label="Dias ativos" value={summary.workDays} /><Metric icon={Coffee} label="Intervalos" value={summary.breaks} /><Metric icon={Ban} label="Bloqueios" value={summary.blocks} /></section>
