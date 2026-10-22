@@ -41,6 +41,11 @@ export function salvarCliente(input) {
   })
 }
 
+export function unirClientes({ origemId, destinoId }) {
+  if (!origemId || !destinoId || origemId === destinoId) throw new TypeError('Selecione duas fichas diferentes.')
+  return rpc('clientes_unir', { p_origem_id: origemId, p_destino_id: destinoId })
+}
+
 const ERRORS = {
   CLIENTES_NAO_AUTORIZADO: 'Seu usuário não pode acessar a central de clientes.',
   CLIENTES_LIMITE_INVALIDO: 'A busca solicitada é muito ampla.',
@@ -52,6 +57,9 @@ const ERRORS = {
   CLIENTE_CPF_INVALIDO: 'O CPF informado não é válido.',
   CLIENTE_CPF_DUPLICADO: 'Este CPF já está vinculado a outro cliente desta barbearia.',
   CLIENTE_CONFLITO_VERSAO: 'A ficha foi alterada em outro dispositivo. Recarregue antes de salvar.',
+  CLIENTE_UNIAO_INVALIDA: 'Selecione a ficha duplicada e a ficha que será mantida.',
+  CLIENTE_UNIAO_CPFS_DIFERENTES: 'As duas fichas possuem CPFs diferentes. Revise os clientes antes de unir.',
+  CLIENTE_UNIAO_CONFLITO_REGISTROS: 'As fichas possuem registros ativos incompatíveis. Regularize-os antes de unir.',
 }
 
 export function mensagemErroCliente(error) {

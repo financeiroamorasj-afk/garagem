@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarDays, Camera, ContactRound, History, LayoutGrid, List, Pencil, Phone, Plus, Scissors, Search, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
+import { CalendarDays, Camera, ContactRound, History, LayoutGrid, List, Merge, Pencil, Phone, Plus, Scissors, Search, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -10,7 +10,7 @@ import Spinner from '../components/ui/Spinner'
 import LastCutSummary from '../components/LastCutSummary'
 import CutPhotoViewer from '../components/CutPhotoViewer'
 import { listarBarbeiros } from '../lib/barbeiros/api'
-import { carregarFichaCliente, listarClientes, mensagemErroCliente, salvarCliente } from '../lib/clientes/api'
+import { carregarFichaCliente, listarClientes, mensagemErroCliente, salvarCliente, unirClientes } from '../lib/clientes/api'
 import { obterUrlFotoCorte } from '../lib/clientes/cortes-api'
 import { statusAgenda } from '../lib/agenda/ui'
 
@@ -109,6 +109,10 @@ export default function AdminClients() {
   const [detailTarget, setDetailTarget] = useState(null)
   const [detail, setDetail] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [mergeSource, setMergeSource] = useState(null)
+  const [mergeTargetId, setMergeTargetId] = useState('')
+  const [mergeError, setMergeError] = useState('')
+  const [merging, setMerging] = useState(false)
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('garagem-clientes-view') === 'list' ? 'list' : 'cards')
 
   const load = useCallback(async (search = '') => {
@@ -132,7 +136,7 @@ export default function AdminClients() {
 
   useEffect(() => { localStorage.setItem('garagem-clientes-view', viewMode) }, [viewMode])
 
-  const stats = useMemo(() => ({ total: clients.length, identified: clients.filter((item) => item.cpf_cadastrado).length, history: clients.filter((item) => item.ultimo_corte).length }), [clients])
+  const stats = useMemo(() => ({ total: clients.length, contacted: clients.filter((item) => item.telefone).length, history: clients.filter((item) => item.ultimo_corte).length }), [clients])
 
   function openForm(row = null) { setForm(initialForm(row)); setFormError(''); setNotice(''); setFormOpen(true) }
 
@@ -153,6 +157,26 @@ export default function AdminClients() {
     finally { setDetailLoading(false) }
   }
 
+  function openMerge(row) {
+    setMergeSource(row)
+    setMergeTargetId('')
+    setMergeError('')
+    setDetailTarget(null)
+  }
+
+  async function submitMerge(event) {
+    event.preventDefault()
+    setMerging(true); setMergeError('')
+    try {
+      const target = clients.find((client) => client.id === mergeTargetId)
+      await unirClientes({ origemId: mergeSource.id, destinoId: mergeTargetId })
+      setMergeSource(null)
+      setNotice(`Cadastro duplicado unido à ficha de ${target?.nome || 'cliente selecionado'}.`)
+      await load(query)
+    } catch (requestError) { setMergeError(mensagemErroCliente(requestError).message) }
+    finally { setMerging(false) }
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 lg:space-y-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><span className="mb-2 block text-label text-copper">RELACIONAMENTO</span><h1 className="text-h1 text-warm-white sm:text-display">Clientes</h1><p className="mt-2 max-w-2xl text-body-sm text-steel sm:text-body">Preferências, último corte e histórico em uma ficha única.</p></div><Button size="lg" className="w-full sm:w-auto" onClick={() => openForm()}><Plus size={18} /> Novo cliente</Button></header>
@@ -160,7 +184,7 @@ export default function AdminClients() {
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-4 text-body-sm text-success">{notice}</div>}
       {error && <div role="alert" className="rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger">{error}</div>}
 
-      <section className="grid grid-cols-3 gap-2 sm:gap-4" aria-label="Resumo dos clientes">{[[<UsersRound key="clients" size={18} className="mb-2 text-copper" />,'Clientes',stats.total],[<ShieldCheck key="cpf" size={18} className="mb-2 text-info" />,'Com CPF',stats.identified],[<Scissors key="memory" size={18} className="mb-2 text-success" />,'Com memória',stats.history]].map(([icon,label,value]) => <Card key={label} className="min-w-0 p-3 sm:p-5">{icon}<span className="block text-data-lg text-warm-white">{value}</span><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-steel sm:text-label">{label}</span></Card>)}</section>
+      <section className="grid grid-cols-3 gap-2 sm:gap-4" aria-label="Resumo dos clientes">{[[<UsersRound key="clients" size={18} className="mb-2 text-copper" />,'Clientes',stats.total],[<Phone key="phone" size={18} className="mb-2 text-info" />,'Com telefone',stats.contacted],[<Scissors key="memory" size={18} className="mb-2 text-success" />,'Com memória',stats.history]].map(([icon,label,value]) => <Card key={label} className="min-w-0 p-3 sm:p-5">{icon}<span className="block text-data-lg text-warm-white">{value}</span><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-steel sm:text-label">{label}</span></Card>)}</section>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div className="w-full max-w-xl"><Input label="Buscar cliente" icon={Search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nome, telefone ou CPF" /></div><div className="grid grid-cols-2 gap-1 rounded-md border border-line bg-surface-1 p-1" role="group" aria-label="Modo de visualização"><Button size="sm" variant={viewMode === 'cards' ? 'secondary' : 'ghost'} aria-pressed={viewMode === 'cards'} onClick={() => setViewMode('cards')}><LayoutGrid size={15} /> Cards</Button><Button size="sm" variant={viewMode === 'list' ? 'secondary' : 'ghost'} aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}><List size={15} /> Lista</Button></div></div>
 
@@ -171,10 +195,19 @@ export default function AdminClients() {
       )}
 
       <Modal open={formOpen} onClose={() => !saving && setFormOpen(false)} title={form.id ? 'Editar cliente' : 'Novo cliente'} className="sm:max-w-2xl" footer={<><Button variant="secondary" disabled={saving} onClick={() => setFormOpen(false)}>Cancelar</Button><Button type="submit" form="client-form" loading={saving}>Salvar ficha</Button></>}>
-        <form id="client-form" className="space-y-4" onSubmit={save}>{formError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{formError}</p>}<Input label="Nome" required maxLength={120} value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} /><Input label="Telefone" type="tel" maxLength={30} value={form.telefone} onChange={(event) => setForm({ ...form, telefone: event.target.value })} /><Input label={form.cpf_cadastrado ? `Novo CPF (atual termina em ${form.cpf_final})` : 'CPF'} inputMode="numeric" value={form.cpf} onChange={(event) => setForm({ ...form, cpf: event.target.value, removerCpf: false })} helpText={form.cpf_cadastrado ? 'Deixe em branco para manter. O número completo não é armazenado nem exibido.' : 'Será validado e transformado em uma identificação protegida; o número completo não será armazenado.'} />{form.cpf_cadastrado && <label className="flex min-h-10 items-center gap-3 text-body-sm text-steel"><input type="checkbox" checked={form.removerCpf} onChange={(event) => setForm({ ...form, removerCpf: event.target.checked, cpf: '' })} className="h-5 w-5 accent-copper" /> Remover CPF protegido desta ficha</label>}<label className="block text-label text-steel"><span className="mb-2 block">Barbeiro favorito</span><select value={form.barbeiro_favorito_id} onChange={(event) => setForm({ ...form, barbeiro_favorito_id: event.target.value })} className="h-10 w-full rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper"><option value="">Sem preferência</option>{barbers.map((barber) => <option key={barber.id} value={barber.id}>{barber.apelido || barber.nome}</option>)}</select></label><label className="block text-label text-steel"><span className="mb-2 block">Preferências e observações</span><textarea rows={5} maxLength={1000} value={form.notas_preferencias} onChange={(event) => setForm({ ...form, notas_preferencias: event.target.value })} placeholder="Preferências de corte, atendimento e observações importantes" className="w-full resize-y rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper" /></label></form>
+        <form id="client-form" className="space-y-4" onSubmit={save}>{formError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{formError}</p>}<Input label="Nome" required maxLength={120} value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} /><Input label="Telefone" type="tel" maxLength={30} value={form.telefone} onChange={(event) => setForm({ ...form, telefone: event.target.value })} /><Input label={form.cpf_cadastrado ? `Novo CPF opcional (atual termina em ${form.cpf_final})` : 'CPF (opcional)'} inputMode="numeric" value={form.cpf} onChange={(event) => setForm({ ...form, cpf: event.target.value, removerCpf: false })} helpText={form.cpf_cadastrado ? 'Deixe em branco para manter. O número completo não é armazenado nem exibido.' : 'Informe somente quando houver necessidade. O atendimento não depende deste dado.'} />{form.cpf_cadastrado && <label className="flex min-h-10 items-center gap-3 text-body-sm text-steel"><input type="checkbox" checked={form.removerCpf} onChange={(event) => setForm({ ...form, removerCpf: event.target.checked, cpf: '' })} className="h-5 w-5 accent-copper" /> Remover CPF protegido desta ficha</label>}<label className="block text-label text-steel"><span className="mb-2 block">Barbeiro favorito</span><select value={form.barbeiro_favorito_id} onChange={(event) => setForm({ ...form, barbeiro_favorito_id: event.target.value })} className="h-10 w-full rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper"><option value="">Sem preferência</option>{barbers.map((barber) => <option key={barber.id} value={barber.id}>{barber.apelido || barber.nome}</option>)}</select></label><label className="block text-label text-steel"><span className="mb-2 block">Preferências e observações</span><textarea rows={5} maxLength={1000} value={form.notas_preferencias} onChange={(event) => setForm({ ...form, notas_preferencias: event.target.value })} placeholder="Preferências de corte, atendimento e observações importantes" className="w-full resize-y rounded-sm border border-line-strong bg-surface-2 px-3 py-3 text-body text-warm-white outline-none focus:border-copper" /></label></form>
       </Modal>
 
-      <Modal open={Boolean(detailTarget)} onClose={() => setDetailTarget(null)} title={detailTarget?.nome || 'Ficha do cliente'} className="sm:max-w-4xl" footer={<><Button variant="secondary" onClick={() => setDetailTarget(null)}>Fechar</Button><Button onClick={() => { const row = detail?.cliente || detailTarget; setDetailTarget(null); openForm(row) }} disabled={!detail}>Editar ficha</Button></>}>{detailLoading ? <div className="flex min-h-64 items-center justify-center gap-3 text-body text-steel"><Spinner size={22} /> Carregando ficha</div> : detail && <ClientDetail data={detail} />}</Modal>
+      <Modal open={Boolean(detailTarget)} onClose={() => setDetailTarget(null)} title={detailTarget?.nome || 'Ficha do cliente'} className="sm:max-w-4xl" footer={<><Button variant="ghost" onClick={() => openMerge(detail?.cliente || detailTarget)} disabled={!detail}><Merge size={16} /> Unir duplicado</Button><Button variant="secondary" onClick={() => setDetailTarget(null)}>Fechar</Button><Button onClick={() => { const row = detail?.cliente || detailTarget; setDetailTarget(null); openForm(row) }} disabled={!detail}>Editar ficha</Button></>}>{detailLoading ? <div className="flex min-h-64 items-center justify-center gap-3 text-body text-steel"><Spinner size={22} /> Carregando ficha</div> : detail && <ClientDetail data={detail} />}</Modal>
+
+      <Modal open={Boolean(mergeSource)} onClose={() => !merging && setMergeSource(null)} title="Unir cadastro duplicado" className="sm:max-w-xl" footer={<><Button variant="secondary" disabled={merging} onClick={() => setMergeSource(null)}>Cancelar</Button><Button type="submit" form="merge-client-form" loading={merging} disabled={!mergeTargetId}><Merge size={16} /> Unir cadastros</Button></>}>
+        <form id="merge-client-form" className="space-y-4" onSubmit={submitMerge}>
+          {mergeError && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{mergeError}</p>}
+          <div className="rounded-sm border border-warning/30 bg-warning/10 p-3 text-body-sm text-warning">A ficha de <strong>{mergeSource?.nome}</strong> será removida. Atendimentos, cortes, vendas e demais vínculos serão transferidos para a ficha escolhida abaixo. As sessões do portal serão encerradas.</div>
+          <label className="block text-label text-steel"><span className="mb-2 block">Ficha que será mantida</span><select required value={mergeTargetId} onChange={(event) => setMergeTargetId(event.target.value)} className="h-11 w-full rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper"><option value="">Selecione o cliente correto</option>{clients.filter((client) => client.id !== mergeSource?.id).map((client) => <option key={client.id} value={client.id}>{client.nome} · {client.telefone || 'sem telefone'} · {client.total_atendimentos} visitas</option>)}</select></label>
+          <p className="text-xs text-steel">A operação é registrada para auditoria. Se as fichas tiverem CPFs diferentes ou registros ativos incompatíveis, a união será bloqueada.</p>
+        </form>
+      </Modal>
     </div>
   )
 }

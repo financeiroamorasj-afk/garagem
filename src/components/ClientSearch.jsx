@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 
+function digits(value) {
+    return String(value ?? '').replace(/\D/g, '');
+}
+
+function clientContext(client) {
+    const details = [client.telefone || 'Sem telefone'];
+    if (client.total_atendimentos > 0) details.push(`${client.total_atendimentos} ${client.total_atendimentos === 1 ? 'atendimento' : 'atendimentos'}`);
+    if (client.ultima_visita) details.push(`última visita ${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(client.ultima_visita))}`);
+    if (client.barbeiro_favorito_nome) details.push(`prefere ${client.barbeiro_favorito_nome}`);
+    return details.join(' · ');
+}
+
 /**
  * ClientSearch Component:
  * - Rounded design (token rounded-sm)
@@ -19,11 +31,13 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
         }
     }, []);
 
+    const queryDigits = digits(query);
     const filteredClients = query.trim() === ''
         ? []
-        : clients.filter((client) =>
-            client.nome.toLowerCase().includes(query.toLowerCase())
-        );
+        : clients.filter((client) => (
+            client.nome.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))
+            || (queryDigits.length >= 4 && digits(client.telefone).includes(queryDigits))
+        ));
 
     return (
         <div className="relative w-full">
@@ -48,8 +62,7 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
 
             {isOpen && query.length > 0 && (
                 <div className="absolute z-50 w-full mt-2 bg-surface-1 border border-line rounded-md shadow-overlay max-h-60 overflow-y-auto overflow-x-hidden">
-                    {filteredClients.length > 0 ? (
-                        filteredClients.map((client) => (
+                    {filteredClients.length > 0 && filteredClients.map((client) => (
                             <button
                                 type="button"
                                 key={client.id}
@@ -61,10 +74,9 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
                                 className="w-full text-left px-5 py-3 text-warm-white hover:bg-surface-0 hover:text-copper transition-colors duration-100 ease-brand border-b border-line last:border-0"
                             >
                                 <div className="font-medium">{client.nome}</div>
-                                <div className="text-body-sm text-steel">{client.telefone || 'Sem telefone'}</div>
+                                <div className="text-body-sm text-steel">{clientContext(client)}</div>
                             </button>
-                        ))
-                    ) : (
+                        ))}
                         <button
                             type="button"
                             onClick={() => {
@@ -74,9 +86,8 @@ const ClientSearch = ({ onSelect, clients = [] }) => {
                             className="w-full text-left px-5 py-4 text-copper hover:bg-surface-0 transition-colors duration-100 ease-brand flex items-center space-x-2"
                         >
                             <span className="text-xl">+</span>
-                            <span>Cadastrar novo: <strong>{query}</strong></span>
+                            <span>{filteredClients.length > 0 ? 'Cadastrar outro cliente:' : 'Cadastrar novo:'} <strong>{query}</strong></span>
                         </button>
-                    )}
                 </div>
             )}
         </div>
