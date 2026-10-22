@@ -12,7 +12,7 @@ import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
 import CutPhotoViewer from '../components/CutPhotoViewer'
 import {
-  acessarPortal, atualizarPerfilPortal, cancelarAgendamentoPortal, carregarBarbeariaPortal,
+  acessarPortal, agendarSemCpf, atualizarPerfilPortal, cancelarAgendamentoPortal, carregarBarbeariaPortal,
   carregarDadosPortal, cadastrarNoPortal, criarAgendamentoPortal, encerrarPortal, erroPortal,
   listarHorariosPortal, obterFotoCortePortal, portalSessionKey,
 } from '../lib/portal/api'
@@ -105,7 +105,7 @@ function PortalCutPhoto({ token, cut, size = 'h-12 w-12' }) {
 }
 
 function AccessScreen({ shop, slug, onAuthenticated }) {
-  const [mode, setMode] = useState('access')
+  const [mode, setMode] = useState('booking')
   const [cpf, setCpf] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -116,16 +116,21 @@ function AccessScreen({ shop, slug, onAuthenticated }) {
     event.preventDefault(); setBusy(true); setError('')
     try {
       const result = await acessarPortal(slug, cpf)
-      if (result.status === 'cadastro') setMode('register')
+      if (result.status === 'cadastro') {
+        setMode('booking')
+        setError('Ainda não há cadastro com esse CPF. Complete nome e WhatsApp para continuar.')
+      }
       else onAuthenticated(result.token)
     } catch (requestError) { setError(erroPortal(requestError).message) }
     finally { setBusy(false) }
   }
 
-  async function register(event) {
+  async function startBooking(event) {
     event.preventDefault(); setBusy(true); setError('')
     try {
-      const result = await cadastrarNoPortal({ slug, cpf, nome: name, telefone: phone })
+      const result = cpf
+        ? await cadastrarNoPortal({ slug, cpf, nome: name, telefone: phone })
+        : await agendarSemCpf({ slug, nome: name, telefone: phone })
       onAuthenticated(result.token)
     } catch (requestError) { setError(erroPortal(requestError).message) }
     finally { setBusy(false) }
@@ -147,24 +152,25 @@ function AccessScreen({ shop, slug, onAuthenticated }) {
         </section>
 
         <Card className="relative p-5 shadow-overlay sm:p-8">
-          {mode === 'register' && <button type="button" className="mb-5 inline-flex min-h-10 items-center gap-2 text-body-sm text-steel hover:text-copper" onClick={() => { setMode('access'); setError('') }}><ArrowLeft size={16} /> Voltar</button>}
-          <p className="text-label text-copper">{mode === 'access' ? 'ENTRAR OU CRIAR CONTA' : 'PRIMEIRO ACESSO'}</p>
-          <h2 className="mt-2 text-h1 text-warm-white">{mode === 'access' ? 'Que bom ter você aqui.' : 'Complete seu cadastro.'}</h2>
-          <p className="mt-2 text-body-sm text-steel">{mode === 'access' ? 'Digite seu CPF. Se você ainda não tiver cadastro, poderá criá-lo agora.' : 'Não encontramos esse CPF. Leva menos de um minuto.'}</p>
+          {mode === 'cpf' && <button type="button" className="mb-5 inline-flex min-h-10 items-center gap-2 text-body-sm text-steel hover:text-copper" onClick={() => { setMode('booking'); setError('') }}><ArrowLeft size={16} /> Agendar sem CPF</button>}
+          <p className="text-label text-copper">{mode === 'cpf' ? 'ACESSAR MEU HISTÓRICO' : 'AGENDAR SEM CPF'}</p>
+          <h2 className="mt-2 text-h1 text-warm-white">{mode === 'cpf' ? 'Que bom ter você aqui.' : 'Vamos marcar seu horário.'}</h2>
+          <p className="mt-2 text-body-sm text-steel">{mode === 'cpf' ? 'O CPF libera seu histórico e preferências com segurança.' : 'Informe nome e WhatsApp. O CPF é opcional e não impede o agendamento.'}</p>
           <Feedback>{error}</Feedback>
-          {mode === 'access' ? (
+          {mode === 'cpf' ? (
             <form className="mt-6 space-y-5" onSubmit={access}>
               <Input label="CPF" inputMode="numeric" autoComplete="off" value={maskCpf(cpf)} onChange={(event) => setCpf(onlyDigits(event.target.value, 11))} placeholder="000.000.000-00" helpText="Use um CPF válido. Ele identifica seu cadastro com segurança nesta barbearia." />
               <Button type="submit" size="lg" loading={busy} disabled={cpf.length !== 11} className="w-full">Continuar <ChevronRight size={18} /></Button>
-              <p className="text-center text-xs leading-relaxed text-steel">Primeiro acesso? É por aqui mesmo — o cadastro abre automaticamente.</p>
+              <button type="button" className="min-h-10 w-full text-center text-xs font-semibold text-copper" onClick={() => { setMode('booking'); setError('') }}>Prefiro agendar sem CPF</button>
             </form>
           ) : (
-            <form className="mt-6 space-y-4" onSubmit={register}>
-              <Input label="CPF" value={maskCpf(cpf)} disabled />
+            <form className="mt-6 space-y-4" onSubmit={startBooking}>
               <Input label="Nome completo" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Como podemos chamar você?" />
               <Input label="WhatsApp" type="tel" inputMode="tel" autoComplete="tel" value={maskPhone(phone)} onChange={(event) => setPhone(onlyDigits(event.target.value, 11))} placeholder="(00) 00000-0000" />
-              <Button type="submit" size="lg" loading={busy} disabled={name.trim().length < 2 || phone.length < 10} className="w-full">Criar acesso <Check size={18} /></Button>
-              <p className="text-center text-xs leading-relaxed text-steel">Ao continuar, seus dados ficam disponíveis somente para esta barbearia.</p>
+              <Input label="CPF (opcional)" inputMode="numeric" autoComplete="off" value={maskCpf(cpf)} onChange={(event) => setCpf(onlyDigits(event.target.value, 11))} placeholder="Pode deixar em branco" helpText="Informe somente se quiser acessar também histórico e preferências." />
+              <Button type="submit" size="lg" loading={busy} disabled={name.trim().length < 2 || phone.length < 10 || (cpf.length > 0 && cpf.length !== 11)} className="w-full">Escolher horário <Check size={18} /></Button>
+              <button type="button" className="min-h-10 w-full text-center text-xs font-semibold text-copper" onClick={() => { setMode('cpf'); setError('') }}>Já tenho cadastro e quero ver meu histórico</button>
+              <p className="text-center text-xs leading-relaxed text-steel">Sem CPF, o acesso mostra somente os horários criados neste dispositivo.</p>
             </form>
           )}
         </Card>
@@ -279,13 +285,15 @@ function ProfileView({ data, token, onUpdated, onLogout }) {
 
 function PortalApp({ token, initialData, onLogout }) {
   const [data, setData] = useState(initialData)
-  const [tab, setTab] = useState('inicio')
+  const [tab, setTab] = useState(initialData.acesso_tipo === 'agendamento' ? 'agendar' : 'inicio')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const dataRef = useRef(initialData)
   const refreshPromiseRef = useRef(null)
+  const limitedAccess = data.acesso_tipo === 'agendamento'
+  const tabs = limitedAccess ? TABS.filter(({ id }) => ['inicio', 'agendar', 'equipe'].includes(id)) : TABS
   const refresh = useCallback(async () => {
     if (refreshPromiseRef.current) return refreshPromiseRef.current
     setRefreshing(true)
@@ -332,7 +340,21 @@ function PortalApp({ token, initialData, onLogout }) {
   async function cancel(appointment) { if (!window.confirm(`Cancelar ${appointment.servico_nome} em ${shortDate(appointment.data_hora)} às ${time(appointment.data_hora)}?`)) return; setCancelling(appointment.id); setError(''); try { await cancelarAgendamentoPortal(token, appointment.id); await refresh(); setNotice('Agendamento cancelado.') } catch (requestError) { setError(erroPortal(requestError).message) } finally { setCancelling('') } }
   async function booked() { await refresh(); setNotice('Agendamento confirmado. Seu horário já está reservado na agenda da barbearia.'); setTab('inicio'); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   function navigate(next) { setTab(next); setNotice(''); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0"><header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6"><div className="mx-auto flex max-w-4xl items-center justify-between gap-3"><Brand compact shop={data.barbearia} /><div className="flex items-center gap-1"><button type="button" aria-label="Atualizar atendimentos" disabled={refreshing} className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper disabled:opacity-60" onClick={() => { setError(''); refresh().catch((requestError) => setError(erroPortal(requestError).message)) }}><RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} /></button><button type="button" aria-label="Sair" className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper" onClick={onLogout}><LogOut size={18} /></button></div></div></header><main className="min-h-0 flex-1 overscroll-contain overflow-y-auto overflow-x-hidden"><div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8"><Feedback>{error}</Feedback><Feedback type="success">{notice}</Feedback><div className={(error || notice) ? 'mt-5' : ''}>{tab === 'inicio' && <HomeView data={data} token={token} onNavigate={navigate} onCancel={cancel} cancelling={cancelling} />}{tab === 'agendar' && <BookingView data={data} token={token} onBooked={booked} />}{tab === 'historico' && <HistoryView history={data.historico} token={token} />}{tab === 'equipe' && <TeamView team={data.equipe} favoriteId={data.cliente.barbeiro_favorito_id} />}{tab === 'perfil' && <ProfileView data={data} token={token} onUpdated={refresh} onLogout={onLogout} />}</div></div></main><nav className="z-40 shrink-0 border-t border-line bg-surface-1 px-2 pb-[max(0.375rem,calc(env(safe-area-inset-bottom)-1rem))] pt-1" aria-label="Navegação do portal"><div className="mx-auto grid max-w-xl grid-cols-5">{TABS.map(({ id, label, icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-sm px-1 text-[10px] font-semibold ${tab === id ? 'bg-copper/10 text-copper' : 'text-steel hover:text-warm-white'}`}>{icon}<span className="max-w-full truncate">{label}</span></button>)}</div></nav></div>
+  return (
+    <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0">
+      <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 py-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3"><Brand compact shop={data.barbearia} /><div className="flex items-center gap-1"><button type="button" aria-label="Atualizar atendimentos" disabled={refreshing} className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper disabled:opacity-60" onClick={() => { setError(''); refresh().catch((requestError) => setError(erroPortal(requestError).message)) }}><RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} /></button><button type="button" aria-label="Sair" className="flex h-10 w-10 items-center justify-center rounded-full text-steel hover:bg-surface-2 hover:text-copper" onClick={onLogout}><LogOut size={18} /></button></div></div>
+      </header>
+      <main className="min-h-0 flex-1 overscroll-contain overflow-y-auto overflow-x-hidden">
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+          {limitedAccess && <div className="mb-5 flex gap-3 rounded-md border border-copper/30 bg-copper/10 p-3 text-body-sm text-warm-white"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-copper" /><p>CPF não é necessário para agendar. Para proteger seus dados, este acesso mostra apenas os horários criados nele.</p></div>}
+          <Feedback>{error}</Feedback><Feedback type="success">{notice}</Feedback>
+          <div className={(error || notice) ? 'mt-5' : ''}>{tab === 'inicio' && <HomeView data={data} token={token} onNavigate={navigate} onCancel={cancel} cancelling={cancelling} />}{tab === 'agendar' && <BookingView data={data} token={token} onBooked={booked} />}{tab === 'historico' && <HistoryView history={data.historico} token={token} />}{tab === 'equipe' && <TeamView team={data.equipe} favoriteId={data.cliente.barbeiro_favorito_id} />}{tab === 'perfil' && <ProfileView data={data} token={token} onUpdated={refresh} onLogout={onLogout} />}</div>
+        </div>
+      </main>
+      <nav className="z-40 shrink-0 border-t border-line bg-surface-1 px-2 pb-[max(0.375rem,calc(env(safe-area-inset-bottom)-1rem))] pt-1" aria-label="Navegação do portal"><div className={`mx-auto grid max-w-xl ${limitedAccess ? 'grid-cols-3' : 'grid-cols-5'}`}>{tabs.map(({ id, label, icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)} className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-sm px-1 text-[10px] font-semibold ${tab === id ? 'bg-copper/10 text-copper' : 'text-steel hover:text-warm-white'}`}>{icon}<span className="max-w-full truncate">{label}</span></button>)}</div></nav>
+    </div>
+  )
 }
 
 export default function ClientPortal() {

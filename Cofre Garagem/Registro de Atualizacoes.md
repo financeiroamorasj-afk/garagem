@@ -420,3 +420,12 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - A PR 77 foi incorporada à `main` no commit `c042c9cd012148cc7e30751b211bc3d74927c32a`; os deploys de produção dos projetos `garagem-app` e `garagem-adm` terminaram com sucesso.
 - Os domínios `https://app.garagemsystem.com.br/login` e `https://adm.garagemsystem.com.br` responderam com HTTP 200, e o bundle oficial foi conferido com as novas funcionalidades.
 - O relatório detalhado da entrega e da operação de publicação está em `Entrega 22-10-2026 - Clientes e atendimento.md`.
+
+# 22/10/2026 — CPF opcional também no Portal do Cliente
+
+- O fluxo principal do Portal passou a solicitar nome e WhatsApp; o CPF aparece como campo opcional e não bloqueia mais o agendamento.
+- Clientes que informam CPF continuam podendo abrir o histórico, as fotos e as preferências já registradas.
+- Sem CPF, o Portal cria um acesso limitado que mostra somente os agendamentos feitos naquela sessão. Histórico, fotos e edição das preferências anteriores não são liberados por nome ou telefone.
+- Nome e telefone iguais podem reutilizar a ficha operacional sem expor dados privados, reduzindo duplicidade sem transformar o telefone em autenticação.
+- A equipe recebe o comunicado interno **Portal agora agenda sem CPF** nos aplicativos da gestão e do barbeiro.
+- A entrega não usa SMS, OTP ou provedor externo. O relatório detalhado está em `Entrega 22-10-2026 - Portal sem CPF.md`.
