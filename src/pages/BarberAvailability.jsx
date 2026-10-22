@@ -93,13 +93,20 @@ export default function BarberAvailability() {
     if (!quiet) setLoading(true)
     setError('')
     try {
-      const [currentContext, days, blockRows] = await Promise.all([
-        obterContextoMinhaDisponibilidade(), listarMinhasJornadas(), listarMeusBloqueios(),
-      ])
+      const currentContext = await obterContextoMinhaDisponibilidade()
       setContext(currentContext)
-      setWeek(mergeWeek(days ?? []))
-      setBlocks(blockRows ?? [])
+      const [daysResult, blocksResult] = await Promise.allSettled([
+        listarMinhasJornadas(currentContext.profissional_id),
+        listarMeusBloqueios({ profissionalId: currentContext.profissional_id }),
+      ])
+      if (daysResult.status === 'fulfilled') setWeek(mergeWeek(daysResult.value ?? []))
+      if (blocksResult.status === 'fulfilled') setBlocks(blocksResult.value ?? [])
+      if (daysResult.status === 'rejected' || blocksResult.status === 'rejected') {
+        const failed = daysResult.status === 'rejected' ? 'a jornada semanal' : 'os bloqueios'
+        setError(`Seu vínculo foi carregado, mas não foi possível consultar ${failed}. Tente novamente.`)
+      }
     } catch (requestError) {
+      setContext(null)
       setError(mensagemErroDisponibilidade(requestError))
     } finally {
       if (!quiet) setLoading(false)
@@ -198,7 +205,7 @@ export default function BarberAvailability() {
       <div><span className="text-label text-copper">MEU ESPAÇO</span><h1 className="mt-1 text-h1 text-warm-white">Minha disponibilidade</h1><p className="mt-2 text-body-sm text-steel">Expediente, intervalos, folgas e bloqueios usados pela agenda.</p></div>
       {status && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-4 text-body-sm text-success">{status}</div>}
       {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="secondary" onClick={load}><RefreshCw size={15} /> Tentar novamente</Button></div>}
-      {loading ? <Card className="flex min-h-48 items-center justify-center gap-3 text-steel"><Spinner size={22} /> Carregando disponibilidade</Card> : <>
+      {loading ? <Card className="flex min-h-48 items-center justify-center gap-3 text-steel"><Spinner size={22} /> Carregando disponibilidade</Card> : !context ? <Card className="border-danger/40 bg-danger/10 p-5"><h2 className="text-h3 text-danger">Disponibilidade indisponível</h2><p className="mt-2 text-body-sm text-steel">Não foi possível identificar com segurança quem controla estes horários. Tente novamente ou retorne à agenda.</p></Card> : <>
         <Card className={`p-4 ${context?.pode_editar ? 'border-info/30 bg-info/5' : 'border-warning/30 bg-warning/5'}`}>
           <div className="flex items-start justify-between gap-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="neutral">{linkLabel(context?.tipo_vinculo)}</Badge><Badge variant={context?.pode_editar ? 'info' : 'warning'}>{context?.pode_editar ? 'Você administra seus horários' : 'Administrada pela barbearia'}</Badge></div><Button size="sm" variant="ghost" className="shrink-0 px-2" aria-label="Atualizar permissão de disponibilidade" onClick={() => load({ quiet: true })}><RefreshCw size={15} /> <span className="hidden sm:inline">Atualizar</span></Button></div>
           <p className="mt-3 text-body-sm text-steel">{context?.pode_editar ? 'As mudanças passam a valer para novos agendamentos. Clientes já marcados nunca são cancelados automaticamente.' : 'Você pode consultar tudo aqui. Para alterar jornada, folga ou bloqueio, fale com a gestão.'}</p>
