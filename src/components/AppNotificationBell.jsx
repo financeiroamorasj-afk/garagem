@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell, BellRing, CheckCheck, ChevronRight, RefreshCw, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -20,6 +21,7 @@ function formatarData(value) {
 
 export default function AppNotificationBell({ contexto }) {
   const navigate = useNavigate()
+  const triggerRef = useRef(null)
   const panelRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
@@ -54,7 +56,7 @@ export default function AppNotificationBell({ contexto }) {
   useEffect(() => {
     if (!open) return undefined
     function handlePointer(event) {
-      if (!panelRef.current?.contains(event.target)) setOpen(false)
+      if (!triggerRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) setOpen(false)
     }
     function handleKey(event) {
       if (event.key === 'Escape') setOpen(false)
@@ -102,7 +104,7 @@ export default function AppNotificationBell({ contexto }) {
   }
 
   return (
-    <div ref={panelRef} className="relative">
+    <div ref={triggerRef} className="relative">
       <button
         type="button"
         aria-label={unread ? `Atualizações: ${unread} não ${unread === 1 ? 'lida' : 'lidas'}` : 'Atualizações'}
@@ -114,8 +116,8 @@ export default function AppNotificationBell({ contexto }) {
         {unread > 0 && <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface-1 bg-danger px-1 text-[10px] font-bold leading-none text-white">{unread > 9 ? '9+' : unread}</span>}
       </button>
 
-      {open && (
-        <section className="fixed inset-x-3 top-[calc(4.5rem+env(safe-area-inset-top))] z-[80] flex max-h-[min(34rem,calc(100dvh-6rem-env(safe-area-inset-top)))] w-auto flex-col overflow-hidden rounded-md border border-line-strong bg-surface-1 shadow-overlay sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+.5rem)] sm:w-[23rem]" aria-label="Central de atualizações">
+      {open && createPortal(
+        <section ref={panelRef} className="fixed inset-x-3 top-[calc(4.5rem+env(safe-area-inset-top))] z-[80] mx-auto flex max-h-[min(34rem,calc(100dvh-6rem-env(safe-area-inset-top)))] w-auto max-w-[23rem] flex-col overflow-hidden rounded-md border border-line-strong bg-surface-1 shadow-overlay sm:left-auto sm:right-6 sm:mx-0 sm:w-[23rem]" aria-label="Central de atualizações">
           <header className="flex items-center justify-between gap-3 border-b border-line p-4">
             <div><span className="text-label text-copper">NOVIDADES</span><h2 className="mt-1 text-h3 text-warm-white">Atualizações e avisos</h2></div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fechar atualizações" className="flex h-10 w-10 items-center justify-center rounded-sm text-steel hover:bg-surface-2 hover:text-warm-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"><X size={19} /></button>
@@ -138,7 +140,8 @@ export default function AppNotificationBell({ contexto }) {
           </div>
 
           {unread > 0 && <footer className="border-t border-line p-3"><button type="button" disabled={busy} onClick={markAll} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-sm text-body-sm font-semibold text-copper hover:bg-copper/10 disabled:cursor-wait disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"><CheckCheck size={16} /> Marcar todas como lidas</button></footer>}
-        </section>
+        </section>,
+        document.body,
       )}
     </div>
   )
