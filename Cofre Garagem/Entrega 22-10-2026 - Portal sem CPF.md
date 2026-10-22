@@ -38,5 +38,23 @@ O CPF permanece opcional para quem quiser acessar histórico de cortes, fotos e 
 - Testes direcionados de interface: 3 aprovados de 3.
 - Testes de integração local do Portal: 2 aprovados de 2, incluindo isolamento entre duas sessões com o mesmo nome e telefone.
 - Suíte completa: 176 aprovados de 180. As quatro falhas restantes já existiam antes desta alteração: uma asserção antiga de disponibilidade e três testes da recepção que dependem da tabela ausente `recepcao_barbeiros_acesso` no banco local.
-- Publicação em produção: pendente nesta etapa. Preencher com PR, migration remota, deploy e smoke test após a conclusão.
+
+## Estado da publicação
+
+Publicação concluída em 22/10/2026.
+
+- PR: `#79 — Portal: permitir agendamento sem CPF`.
+- Commit da entrega: `34c13e2`.
+- Commit de merge na `main`: `a4b0e7378e310fba70e385a35d80ea258d2c1749`.
+- Merge concluído às 18:14, no horário de Brasília.
+- Migration aplicada no Supabase de produção: `20261022180000_portal_cpf_opcional.sql`.
+- Validação pós-aplicação no banco:
+  - Coluna `acesso_tipo` ativa em `portal_sessoes`;
+  - Coluna `portal_sessao_id` ativa em `agendamentos`;
+  - Função RPC `portal_agendar_sem_cpf` criada e liberada para perfil `anon`;
+  - Teste de chamada REST na RPC em produção validado;
+  - Versão `20261022180000` registrada em `supabase_migrations.schema_migrations`;
+  - Comunicado interno `2026-10-portal-agendamento-sem-cpf` cadastrado em `app_comunicados` com público para ambos os aplicativos (gestão e barbeiro).
+- Deploys de produção da Vercel disparados para os projetos `garagem-app` e `garagem-adm`.
+- Domínios oficiais em produção ativos com HTTP 200.
 
