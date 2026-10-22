@@ -407,3 +407,16 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - No agendamento do **Portal do Cliente**, a escolha de barbeiro deixou de depender de rolagem lateral. “Primeiro disponível” e todos os profissionais são exibidos em uma grade responsiva, com duas colunas no celular e três ou quatro em telas maiores.
 - Fotos, indicação de barbeiro favorito, estado selecionado e avanço guiado entre serviço, profissional e data foram preservados.
 - Foram adicionados testes para o destino contextual do mapa, a abertura da agenda administrativa e a ausência do carrossel horizontal na equipe do portal.
+
+# 22/10/2026 — Clientes sem CPF e atendimento sem atrito
+
+- O CPF passou a ser opcional no cadastro administrativo. Nome igual deixou de depender desse documento: telefone, histórico de atendimentos, última visita e barbeiro favorito ajudam a equipe a diferenciar homônimos.
+- O sistema alerta sobre possível duplicidade antes de criar uma ficha e a gestão pode unir cadastros duplicados com trilha de auditoria e bloqueio para CPFs diferentes.
+- O barbeiro ganhou o registro de encaixe já iniciado no mesmo dia. O atendimento recebe marca permanente de retroativo, horário real informado e autoria do lançamento.
+- Enquanto existe atendimento em andamento, o aplicativo solicita ao aparelho que mantenha a tela ativa e informa quando o recurso não é suportado.
+- Foram publicados avisos segmentados nos aplicativos da gestão e do barbeiro explicando as mudanças.
+- O Portal do Cliente permaneceu no método atual; nenhuma contratação ou configuração de SMS fez parte desta publicação.
+- As migrations `20261022100000`, `20261022110000`, `20261022130000` e `20261022150000` foram aplicadas e verificadas no Supabase de produção.
+- A PR 77 foi incorporada à `main` no commit `c042c9cd012148cc7e30751b211bc3d74927c32a`; os deploys de produção dos projetos `garagem-app` e `garagem-adm` terminaram com sucesso.
+- Os domínios `https://app.garagemsystem.com.br/login` e `https://adm.garagemsystem.com.br` responderam com HTTP 200, e o bundle oficial foi conferido com as novas funcionalidades.
+- O relatório detalhado da entrega e da operação de publicação está em `Entrega 22-10-2026 - Clientes e atendimento.md`.
