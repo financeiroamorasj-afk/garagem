@@ -15,7 +15,9 @@ import {
   listarBloqueios,
   listarJornadas,
   mensagemErroDisponibilidade,
+  obterGradeAgenda,
   obterIntervaloAtendimentos,
+  salvarGradeAgenda,
   salvarIntervaloAtendimentos,
   salvarJornadas,
 } from '../lib/disponibilidade/api'
@@ -83,6 +85,9 @@ export default function AdminAvailability() {
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [scheduleGridMinutes, setScheduleGridMinutes] = useState('30')
+  const [scheduleGridLoading, setScheduleGridLoading] = useState(true)
+  const [scheduleGridSaving, setScheduleGridSaving] = useState(false)
   const [intervalMinutes, setIntervalMinutes] = useState('5')
   const [intervalLoading, setIntervalLoading] = useState(true)
   const [intervalSaving, setIntervalSaving] = useState(false)
@@ -130,6 +135,20 @@ export default function AdminAvailability() {
   }, [professionalId])
 
   useEffect(() => { loadAvailability() }, [loadAvailability])
+
+  const loadScheduleGrid = useCallback(async () => {
+    setScheduleGridLoading(true)
+    try {
+      const value = await obterGradeAgenda()
+      setScheduleGridMinutes(String(value ?? 30))
+    } catch (requestError) {
+      setError(mensagemErroDisponibilidade(requestError))
+    } finally {
+      setScheduleGridLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadScheduleGrid() }, [loadScheduleGrid])
 
   const loadInterval = useCallback(async () => {
     setIntervalLoading(true)
@@ -197,6 +216,22 @@ export default function AdminAvailability() {
     }
   }
 
+  async function saveScheduleGrid(event) {
+    event.preventDefault()
+    setScheduleGridSaving(true)
+    setError('')
+    setStatus('')
+    try {
+      const value = await salvarGradeAgenda(scheduleGridMinutes)
+      setScheduleGridMinutes(String(value))
+      setStatus(`Grade da agenda alterada para horários de ${value} em ${value} minutos.`)
+    } catch (requestError) {
+      setError(mensagemErroDisponibilidade(requestError))
+    } finally {
+      setScheduleGridSaving(false)
+    }
+  }
+
   async function saveBlock(event) {
     event.preventDefault()
     setSaving(true)
@@ -248,7 +283,31 @@ export default function AdminAvailability() {
       </header>
 
       {status && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-4 text-body-sm text-success">{status}</div>}
-      {error && <div role="alert" className="flex flex-col gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => { loadInterval(); loadAvailability() }}><RefreshCw size={15} /> Tentar novamente</Button></div>}
+      {error && <div role="alert" className="flex flex-col gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-body-sm text-danger sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => { loadScheduleGrid(); loadInterval(); loadAvailability() }}><RefreshCw size={15} /> Tentar novamente</Button></div>}
+
+      <section aria-labelledby="schedule-grid-title">
+        <Card className="p-5 sm:p-6">
+          <form className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between" onSubmit={saveScheduleGrid}>
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-copper/30 bg-copper/10 text-copper"><CalendarClock size={20} /></span>
+                <div><h2 id="schedule-grid-title" className="text-h2 text-warm-white">Grade da agenda</h2><p className="mt-1 text-body-sm text-steel">Define de quanto em quanto tempo um novo atendimento pode começar.</p></div>
+              </div>
+              <p className="mt-4 text-body-sm text-steel">A duração de cada serviço não muda. A grade vale para a agenda da equipe, encaixes e horários oferecidos no portal do cliente.</p>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end lg:max-w-md">
+              <label className="min-w-0 flex-1 text-label text-steel">
+                <span className="mb-2 block">Intervalo dos horários</span>
+                <select className={FIELD_CLASS} value={scheduleGridMinutes} onChange={(event) => { setScheduleGridMinutes(event.target.value); setStatus('') }} disabled={scheduleGridLoading || scheduleGridSaving}>
+                  <option value="30">De 30 em 30 minutos</option>
+                  <option value="15">De 15 em 15 minutos</option>
+                </select>
+              </label>
+              <Button type="submit" loading={scheduleGridSaving} disabled={scheduleGridLoading}><Save size={16} /> Salvar grade</Button>
+            </div>
+          </form>
+        </Card>
+      </section>
 
       <section aria-labelledby="appointment-interval-title">
         <Card className="p-5 sm:p-6">
