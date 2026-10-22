@@ -115,7 +115,7 @@ export default function AppNotificationBell({ contexto }) {
       </button>
 
       {open && (
-        <section className="absolute right-0 top-[calc(100%+.5rem)] z-[80] flex max-h-[min(34rem,calc(100dvh-6rem))] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-md border border-line-strong bg-surface-1 shadow-overlay" aria-label="Central de atualizações">
+        <section className="fixed inset-x-3 top-[calc(4.5rem+env(safe-area-inset-top))] z-[80] flex max-h-[min(34rem,calc(100dvh-6rem-env(safe-area-inset-top)))] w-auto flex-col overflow-hidden rounded-md border border-line-strong bg-surface-1 shadow-overlay sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+.5rem)] sm:w-[23rem]" aria-label="Central de atualizações">
           <header className="flex items-center justify-between gap-3 border-b border-line p-4">
             <div><span className="text-label text-copper">NOVIDADES</span><h2 className="mt-1 text-h3 text-warm-white">Atualizações e avisos</h2></div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fechar atualizações" className="flex h-10 w-10 items-center justify-center rounded-sm text-steel hover:bg-surface-2 hover:text-warm-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"><X size={19} /></button>
