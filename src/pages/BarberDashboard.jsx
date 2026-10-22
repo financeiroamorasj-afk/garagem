@@ -18,6 +18,7 @@ import CutCompletionModal from '../components/CutCompletionModal'
 import PixPaymentPanel from '../components/PixPaymentPanel'
 import LastCutSummary from '../components/LastCutSummary'
 import PushNotificationPrompt from '../components/PushNotificationPrompt'
+import AppNotificationBell from '../components/AppNotificationBell'
 import {
   carregarAtendimentoAtivo, carregarContextoBarbeiro, carregarResumoBarbeiro, listarAgendaBarbeiro,
   listarAgendaBarbeiroPeriodo, mudarStatusAgendamento,
@@ -399,7 +400,7 @@ export default function BarberDashboard() {
   }
 
   return <div className="flex h-[100dvh] max-w-full flex-col overflow-hidden bg-surface-0 text-warm-white">
-    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1"><Button variant="secondary" size="sm" aria-label="Abrir menu do meu espaço" onClick={() => setMenuOpen(true)}><Menu size={18} /></Button>{canReturnToManagement && <Button variant="secondary" size="sm" aria-label="Voltar para gestão" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={17} /> <span className="hidden sm:inline">Gestão</span></Button>}<ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
+    <header className="z-30 shrink-0 border-b border-line bg-surface-0 px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))] sm:px-6"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><div className="min-w-0"><span className="block text-label text-copper">GARAGEM · MEU ESPAÇO</span><h1 className="mt-1 truncate text-h2 text-warm-white">Olá, {displayName}</h1></div><div className="flex items-center gap-1"><Button variant="secondary" size="sm" aria-label="Abrir menu do meu espaço" onClick={() => setMenuOpen(true)}><Menu size={18} /></Button>{canReturnToManagement && <Button variant="secondary" size="sm" aria-label="Voltar para gestão" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={17} /> <span className="hidden sm:inline">Gestão</span></Button>}<AppNotificationBell contexto="barbeiro" /><ThemeToggle /><Button variant="ghost" size="sm" onClick={logout} aria-label="Sair do aplicativo"><LogOut size={18} /> <span className="hidden sm:inline">Sair</span></Button></div></div></header>
     <SectionNavigation value={section} sections={sections} onChange={(value) => {
       changeSection(value)
     }} />

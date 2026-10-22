@@ -28,6 +28,7 @@ import EmptyState from '../ui/EmptyState'
 import Spinner from '../ui/Spinner'
 import ThemeToggle from '../ui/ThemeToggle'
 import PushNotificationPrompt from '../PushNotificationPrompt'
+import AppNotificationBell from '../AppNotificationBell'
 import useAdminProfile from '../../hooks/useAdminProfile'
 import { resolveAdminAccess } from '../../lib/auth/adminAccess'
 import { supabase } from '../../lib/supabase'
@@ -333,12 +334,14 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
+            <AppNotificationBell contexto="gestao" />
             <ThemeToggle />
             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-body-sm font-bold text-copper">
               {userName.charAt(0).toUpperCase()}
             </div>
           </div>
           <div className="hidden items-center gap-4 lg:flex">
+            <AppNotificationBell contexto="gestao" />
             <ThemeToggle />
             <span className="text-body-sm text-steel">{userName}</span>
             <button
