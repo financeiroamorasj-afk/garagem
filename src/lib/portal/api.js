@@ -30,6 +30,14 @@ export function acessarPortal(slug, cpf) {
   return rpc('portal_acessar', { p_slug: slug, p_cpf: cpf })
 }
 
+export function agendarSemCpf({ slug, nome, telefone }) {
+  return rpc('portal_agendar_sem_cpf', {
+    p_slug: slug,
+    p_nome: String(nome ?? '').trim(),
+    p_telefone: String(telefone ?? '').trim(),
+  })
+}
+
 export function cadastrarNoPortal({ slug, cpf, nome, telefone }) {
   return rpc('portal_cadastrar', {
     p_slug: slug,
@@ -93,7 +101,8 @@ export function encerrarPortal(token) {
 const MESSAGES = {
   PORTAL_BARBEARIA_NAO_ENCONTRADA: 'Este portal não está disponível.',
   CLIENTE_CPF_INVALIDO: 'Informe um CPF válido.',
-  PORTAL_SESSAO_INVALIDA: 'Sua sessão expirou. Entre novamente com seu CPF.',
+  PORTAL_SESSAO_INVALIDA: 'Sua sessão expirou. Informe seus dados novamente.',
+  PORTAL_ACESSO_LIMITADO: 'Este acesso permite apenas agendar e acompanhar os horários criados nele.',
   PORTAL_CLIENTE_NAO_ENCONTRADO: 'Não encontramos seu cadastro.',
   PORTAL_NOME_INVALIDO: 'Informe seu nome completo.',
   PORTAL_TELEFONE_INVALIDO: 'Informe um telefone com DDD.',
