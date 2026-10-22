@@ -96,12 +96,55 @@ function normalizarDias(dias) {
   }))
 }
 
-export function obterContextoMinhaDisponibilidade() {
-  return rpc('barbeiro_disponibilidade_contexto')
+async function contextoMinhaDisponibilidadeAlternativo() {
+  const [agenda, userResult] = await Promise.all([
+    rpc('barbeiro_agenda_contexto'),
+    supabase.auth.getUser(),
+  ])
+  const { data: profissional, error } = await supabase
+    .from('profissionais')
+    .select('id,nome,apelido,tipo_vinculo,responsavel_disponibilidade')
+    .eq('id', agenda.id)
+    .eq('ativo', true)
+    .single()
+  if (error) throw error
+  let role = null
+  const userId = userResult.data?.user?.id
+  if (userId) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle()
+    role = profile?.role ?? null
+  }
+  return {
+    profissional_id: profissional.id,
+    nome: profissional.nome,
+    apelido: profissional.apelido,
+    tipo_vinculo: profissional.tipo_vinculo,
+    responsavel_disponibilidade: profissional.responsavel_disponibilidade,
+    pode_editar: ['admin', 'master'].includes(role) || profissional.responsavel_disponibilidade === 'profissional',
+  }
 }
 
-export function listarMinhasJornadas() {
-  return rpc('barbeiro_jornadas_listar')
+export async function obterContextoMinhaDisponibilidade() {
+  try {
+    return await rpc('barbeiro_disponibilidade_contexto')
+  } catch {
+    return contextoMinhaDisponibilidadeAlternativo()
+  }
+}
+
+export async function listarMinhasJornadas(profissionalId) {
+  try {
+    return await rpc('barbeiro_jornadas_listar')
+  } catch (rpcError) {
+    if (!profissionalId) throw rpcError
+    const { data, error } = await supabase
+      .from('profissionais_jornadas')
+      .select('dia_semana,ativo,hora_inicio,hora_fim,intervalo_inicio,intervalo_fim,updated_at')
+      .eq('profissional_id', profissionalId)
+      .order('dia_semana')
+    if (error) throw rpcError
+    return data ?? []
+  }
 }
 
 export function analisarMinhaJornada(dias) {
@@ -115,8 +158,24 @@ export function salvarMinhasJornadas({ dias, confirmarConflitos = false }) {
   })
 }
 
-export function listarMeusBloqueios({ dataInicial = dataLocalKey(), dataFinal = dateAfterDays(366) } = {}) {
-  return rpc('barbeiro_bloqueios_listar', { p_data_inicial: dataInicial, p_data_final: dataFinal })
+export async function listarMeusBloqueios({ dataInicial = dataLocalKey(), dataFinal = dateAfterDays(366), profissionalId } = {}) {
+  try {
+    return await rpc('barbeiro_bloqueios_listar', { p_data_inicial: dataInicial, p_data_final: dataFinal })
+  } catch (rpcError) {
+    if (!profissionalId) throw rpcError
+    const start = new Date(`${dataInicial}T00:00:00`)
+    const end = new Date(`${dataFinal}T00:00:00`)
+    end.setDate(end.getDate() + 1)
+    const { data, error } = await supabase
+      .from('profissionais_bloqueios')
+      .select('id,inicio,fim,motivo,created_at')
+      .eq('profissional_id', profissionalId)
+      .lt('inicio', end.toISOString())
+      .gt('fim', start.toISOString())
+      .order('inicio')
+    if (error) throw rpcError
+    return data ?? []
+  }
 }
 
 function normalizarPeriodoBloqueio({ inicio, fim }) {
@@ -159,6 +218,8 @@ const ERRORS = {
   DISPONIBILIDADE_AUTOSSERVICO_NAO_AUTORIZADO: 'Seu acesso não está vinculado a um profissional ativo.',
   DISPONIBILIDADE_GESTAO_RESPONSAVEL: 'Sua disponibilidade é administrada pela gestão da barbearia.',
   DISPONIBILIDADE_CONFLITOS_CONFIRMAR: 'Esta alteração afeta clientes já agendados. Revise e confirme antes de salvar.',
+  AGENDA_BARBEIRO_NAO_AUTORIZADO: 'Este acesso não pertence ao aplicativo do barbeiro.',
+  AGENDA_BARBEIRO_INATIVO_OU_NAO_VINCULADO: 'Seu acesso não está vinculado a um barbeiro ativo. Fale com a gestão.',
 }
 
 export function mensagemErroDisponibilidade(error) {
