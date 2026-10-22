@@ -24,6 +24,18 @@ export function listarJornadas(profissionalId) {
   return rpc('admin_jornadas_listar', { p_profissional_id: profissionalId })
 }
 
+export function obterGradeAgenda() {
+  return rpc('admin_grade_agenda_obter')
+}
+
+export function salvarGradeAgenda(gradeMinutos) {
+  const value = Number(gradeMinutos)
+  if (![15, 30].includes(value)) {
+    throw new TypeError('Selecione uma grade de 15 ou 30 minutos.')
+  }
+  return rpc('admin_grade_agenda_salvar', { p_grade_minutos: value })
+}
+
 export function obterIntervaloAtendimentos() {
   return rpc('admin_intervalo_atendimentos_obter')
 }
@@ -215,6 +227,7 @@ const ERRORS = {
   DISPONIBILIDADE_BLOQUEIO_NAO_ENCONTRADO: 'Este bloqueio já foi removido.',
   DISPONIBILIDADE_VISUALIZACAO_NAO_AUTORIZADA: 'Seu usuário não pode consultar esta disponibilidade.',
   DISPONIBILIDADE_INTERVALO_INVALIDO: 'Informe um intervalo entre 0 e 60 minutos.',
+  DISPONIBILIDADE_GRADE_INVALIDA: 'Selecione uma grade de 15 ou 30 minutos.',
   DISPONIBILIDADE_AUTOSSERVICO_NAO_AUTORIZADO: 'Seu acesso não está vinculado a um profissional ativo.',
   DISPONIBILIDADE_GESTAO_RESPONSAVEL: 'Sua disponibilidade é administrada pela gestão da barbearia.',
   DISPONIBILIDADE_CONFLITOS_CONFIRMAR: 'Esta alteração afeta clientes já agendados. Revise e confirme antes de salvar.',
