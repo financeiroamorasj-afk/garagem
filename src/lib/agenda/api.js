@@ -52,9 +52,9 @@ async function incluirInicioAtendimento(rows) {
 }
 
 async function hidratarCamposAgendamento(rows) {
-  const ids = rows.filter((r) => r.status === 'em_atendimento' || !(Number(r.valor_final) > 0) || !r.servico_id).map((r) => r.id)
+  const ids = rows.map((r) => r.id)
   if (ids.length === 0) return rows
-  const { data: extras, error } = await supabase.from('agendamentos').select('id,iniciado_em,valor_final,servico_id,cliente_id,duracao_minutos_snapshot').in('id', ids)
+  const { data: extras, error } = await supabase.from('agendamentos').select('id,iniciado_em,valor_final,servico_id,cliente_id,duracao_minutos_snapshot,registro_retroativo,retroativo_registrado_em').in('id', ids)
   if (error) return rows
   const porId = new Map((extras ?? []).map((item) => [item.id, item]))
   return rows.map((row) => mesclarLinhaAgendamento(row, porId.get(row.id)))
@@ -69,6 +69,8 @@ function mesclarLinhaAgendamento(row, extra) {
     cliente_id: row.cliente_id ?? extra.cliente_id ?? null,
     duracao_minutos: row.duracao_minutos ?? extra.duracao_minutos_snapshot ?? 30,
     valor_final: Number(row.valor_final) > 0 ? row.valor_final : extra.valor_final,
+    registro_retroativo: Boolean(extra.registro_retroativo),
+    retroativo_registrado_em: extra.retroativo_registrado_em ?? null,
   }
 }
 

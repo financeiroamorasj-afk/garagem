@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3, BellRing, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  DollarSign, Headset, LayoutDashboard, LogOut, Menu, Minimize2, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
+  DollarSign, Headset, History, LayoutDashboard, LogOut, Menu, Minimize2, MonitorCheck, MonitorPlay, PackageSearch, Phone, Play, RefreshCw, Scissors,
   ShoppingBag, UserPlus, UserRound, UserX, X, XCircle,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
@@ -12,6 +12,7 @@ import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
 import ThemeToggle from '../components/ui/ThemeToggle'
 import WalkInModal from '../components/WalkInModal'
+import RetroactiveWalkInModal from '../components/RetroactiveWalkInModal'
 import AddAppointmentModal from '../components/AddAppointmentModal'
 import AvailabilityOverview from '../components/AvailabilityOverview'
 import CutCompletionModal from '../components/CutCompletionModal'
@@ -36,6 +37,7 @@ import { listarDisponibilidadeOperacional } from '../lib/disponibilidade/api'
 import TvControlPanel from '../components/tv/TvControlPanel'
 import { verificarPermissaoTv } from '../lib/tv/api'
 import { verificarAcessoOperadorRecepcao } from '../lib/recepcao/api'
+import useScreenWakeLock from '../hooks/useScreenWakeLock'
 
 const SECTIONS = [
   { value: 'today', label: 'Hoje', icon: Clock3 },
@@ -80,7 +82,7 @@ function AppointmentCard({ appointment, activeAppointmentId, isToday, busy, now,
     <div className="flex items-start gap-4 p-4">
       <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-sm border ${isActive ? 'border-copper bg-copper/10 text-copper' : 'border-line bg-surface-2 text-warm-white'}`}><Clock3 size={15} aria-hidden="true" /><time className="mt-1 text-data" dateTime={appointment.data_hora}>{formatarHorario(appointment.data_hora)}</time></div>
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-start justify-between gap-2"><h2 className="truncate text-h3 text-warm-white">{appointment.cliente_nome}</h2><Badge variant={status.variant} className="shrink-0">{status.label}</Badge></div>
+        <div className="flex min-w-0 items-start justify-between gap-2"><h2 className="truncate text-h3 text-warm-white">{appointment.cliente_nome}</h2><div className="flex shrink-0 flex-wrap justify-end gap-1">{appointment.registro_retroativo && <Badge variant="warning">Retroativo</Badge>}<Badge variant={status.variant}>{status.label}</Badge></div></div>
         <p className="mt-2 flex items-center gap-2 text-body-sm text-steel"><Scissors size={15} className="shrink-0 text-copper" aria-hidden="true" /><span className="truncate">{appointment.servico_nome}</span><span aria-hidden="true">·</span><span className="shrink-0">{appointment.duracao_minutos} min</span></p>
         {appointment.valor_final != null && <p className="mt-2 text-data text-gold-aged">{formatarBRL(appointment.valor_final)}</p>}
         {isActive && elapsed && <div className="mt-3 flex flex-wrap items-center gap-2 text-body-sm text-copper"><Clock3 size={16} aria-hidden="true" /><span>{showTimer ? `Em atendimento há ${elapsed}` : 'Atendimento em andamento'}</span><button type="button" onClick={() => setShowTimer((current) => !current)} className="underline underline-offset-4">{showTimer ? 'Ocultar tempo' : 'Mostrar tempo'}</button></div>}
@@ -156,7 +158,7 @@ function AnalogServiceClock({ startedAt, now, durationMinutes }) {
   )
 }
 
-function ActiveAppointmentExperience({ appointment, busy, businessName, onMinimize, onComplete }) {
+function ActiveAppointmentExperience({ appointment, busy, businessName, wakeLock, onMinimize, onComplete }) {
   const [timerNow, setTimerNow] = useState(() => new Date())
   useEffect(() => {
     const interval = window.setInterval(() => setTimerNow(new Date()), 1000)
@@ -172,6 +174,8 @@ function ActiveAppointmentExperience({ appointment, busy, businessName, onMinimi
         <div className="min-w-0">
           <p className="text-label text-copper">ATENDIMENTO EM ANDAMENTO</p>
           <p className="mt-1 truncate text-body-sm text-steel">{businessName || 'Garagem System'}</p>
+          <p className={`mt-1 flex items-center gap-1.5 text-xs ${wakeLock.active ? 'text-success' : 'text-steel'}`}><MonitorCheck size={13} aria-hidden="true" />{wakeLock.active ? 'Tela mantida ativa' : wakeLock.supported ? 'Ative a tela novamente se ela bloquear' : 'Este aparelho não permite manter a tela ativa'}</p>
+          {appointment.registro_retroativo && <p className="mt-1 flex items-center gap-1.5 text-xs text-warning"><History size={13} aria-hidden="true" /> Registro retroativo</p>}
         </div>
         <button type="button" onClick={onMinimize} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-line text-steel hover:border-copper hover:text-copper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper" aria-label="Minimizar atendimento" title="Minimizar atendimento">
           <Minimize2 size={20} aria-hidden="true" />
@@ -221,6 +225,7 @@ export default function BarberDashboard() {
   const [incomingNotice, setIncomingNotice] = useState('')
   const [cancelTarget, setCancelTarget] = useState(null)
   const [walkInOpen, setWalkInOpen] = useState(false)
+  const [retroactiveWalkInOpen, setRetroactiveWalkInOpen] = useState(false)
   const [newCutOpen, setNewCutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [completionTarget, setCompletionTarget] = useState(null)
@@ -233,6 +238,7 @@ export default function BarberDashboard() {
   const [canReturnToManagement, setCanReturnToManagement] = useState(false)
   const [activeAppointment, setActiveAppointment] = useState(null)
   const [activeViewMinimized, setActiveViewMinimized] = useState(false)
+  const wakeLock = useScreenWakeLock(Boolean(activeAppointment))
 
   useEffect(() => {
     let active = true
@@ -430,7 +436,7 @@ export default function BarberDashboard() {
       {notice && <div role="status" className="rounded-md border border-success/30 bg-success/10 p-3 text-body-sm text-success">{notice}</div>}
       {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger"><span>{error}</span><Button size="sm" variant="secondary" onClick={() => section === 'today' ? loadDay() : loadSection()}><RefreshCw size={15} /> Recarregar</Button></div>}
 
-      {section === 'today' && <TodaySection selectedDate={selectedDate} setSelectedDate={setSelectedDate} appointments={appointments} activeAppointmentId={activeAppointment?.id} availability={availability} loading={loading} error={error} actionError={actionError} summary={daySummary} isToday={isToday} busyId={busyId} now={now} onNewCut={() => setNewCutOpen(true)} onWalkIn={() => setWalkInOpen(true)} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={() => loadDay({ quiet: true })} />}
+      {section === 'today' && <TodaySection selectedDate={selectedDate} setSelectedDate={setSelectedDate} appointments={appointments} activeAppointmentId={activeAppointment?.id} availability={availability} loading={loading} error={error} actionError={actionError} summary={daySummary} isToday={isToday} busyId={busyId} now={now} onNewCut={() => setNewCutOpen(true)} onWalkIn={() => setWalkInOpen(true)} onRetroactiveWalkIn={() => setRetroactiveWalkInOpen(true)} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={() => loadDay({ quiet: true })} />}
       {section === 'week' && <WeekSection selectedDate={selectedDate} setSelectedDate={setSelectedDate} weekRange={weekRange} weekAppointments={weekAppointments} selectedAppointments={selectedWeekAppointments} activeAppointmentId={activeAppointment?.id} sectionLoading={sectionLoading} today={today} actionError={actionError} busyId={busyId} now={now} onAction={changeStatus} onCancel={setCancelTarget} onComplete={setCompletionTarget} onPhotoChanged={async () => { await loadDay({ quiet: true }); await loadSection() }} />}
       {section === 'summary' && <SummarySection selectedDate={selectedDate} summary={summary} loading={sectionLoading} />}
       {section === 'sales' && <SalesSection products={products} loading={sectionLoading} onSale={openSale} />}
@@ -439,19 +445,20 @@ export default function BarberDashboard() {
     </main>
     <MobileSectionNavigation value={section} sections={sections} onChange={changeSection} />
 
-    {activeAppointment && !activeViewMinimized && <ActiveAppointmentExperience appointment={activeAppointment} busy={busyId === activeAppointment.id} businessName={context?.barbearia_nome} onMinimize={() => setActiveViewMinimized(true)} onComplete={() => setCompletionTarget(activeAppointment)} />}
+    {activeAppointment && !activeViewMinimized && <ActiveAppointmentExperience appointment={activeAppointment} busy={busyId === activeAppointment.id} businessName={context?.barbearia_nome} wakeLock={wakeLock} onMinimize={() => setActiveViewMinimized(true)} onComplete={() => setCompletionTarget(activeAppointment)} />}
 
     {cancelTarget && <Modal open onClose={() => !busyId && setCancelTarget(null)} title="Cancelar horário" footer={<><Button variant="ghost" disabled={Boolean(busyId)} onClick={() => setCancelTarget(null)}>Voltar</Button><Button variant="danger" loading={busyId === cancelTarget.id} onClick={() => changeStatus(cancelTarget, 'cancelado')}>Cancelar horário</Button></>}><p className="text-body text-steel">Cancelar o horário de <strong className="text-warm-white">{cancelTarget.cliente_nome}</strong> às {formatarHorario(cancelTarget.data_hora)}? Esta ação ficará registrada na agenda.</p></Modal>}
     <Modal open={menuOpen} onClose={() => setMenuOpen(false)} title="Meu espaço"><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><Button variant="secondary" className="justify-start" onClick={() => { setMenuOpen(false); navigate('/barber/disponibilidade') }}><CalendarDays size={18} /> Minha disponibilidade</Button>{canAccessReception && <Button variant="secondary" className="justify-start" onClick={() => navigate('/reception/board')}><Headset size={18} /> Balcão</Button>}{canControlTv && <Button variant="secondary" className="justify-start" onClick={() => { setMenuOpen(false); changeSection('tv') }}><MonitorPlay size={18} /> Controle da TV</Button>}{canReturnToManagement && <Button variant="secondary" className="justify-start" onClick={() => navigate('/admin/dashboard')}><LayoutDashboard size={18} /> Gestão</Button>}<Button variant="ghost" className="justify-start sm:col-span-2" onClick={logout}><LogOut size={18} /> Sair</Button></div></Modal>
     <AddAppointmentModal isOpen={newCutOpen} onClose={() => setNewCutOpen(false)} professionalId={context?.id} initialDate={selectedDate < today ? today : selectedDate} mode="barber" onSuccess={async (result) => { const targetDate = dataHoraLocalKey(result.inicio); setSelectedDate(targetDate); setNotice(`Novo corte confirmado para ${formatarHorario(result.inicio)}.`); if (targetDate === selectedDate) await loadDay({ quiet: true }) }} />
     <WalkInModal open={walkInOpen} onClose={() => setWalkInOpen(false)} onSuccess={async (_result, slot) => { const professional = slot.profissional_apelido || slot.profissional_nome || 'barbeiro disponível'; setNotice(`Encaixe confirmado com ${professional} às ${formatarHorario(slot.inicio)}.`); if (slot.profissional_id === context?.id) setSelectedDate(dataLocalKey(new Date(slot.inicio))); await loadDay({ quiet: true }) }} />
+    <RetroactiveWalkInModal open={retroactiveWalkInOpen} onClose={() => setRetroactiveWalkInOpen(false)} onSuccess={async (appointment) => { setActiveAppointment(appointment); setActiveViewMinimized(false); setCompletionTarget(appointment); setNotice('Registro retroativo criado. Complete os dados do corte e o fechamento.'); await loadDay({ quiet: true }) }} />
     <CutCompletionModal open={Boolean(completionTarget)} appointment={completionTarget} onClose={() => !busyId && setCompletionTarget(null)} onSuccess={async (result) => { setCompletionTarget(null); setNotice(result?.modo === 'recepcao' ? 'Parte técnica concluída. Atendimento enviado para cobrança na recepção.' : 'Atendimento, pagamento e estoque atualizados com sucesso.'); await loadDay({ quiet: true }) }} />
     {saleProduct && <SaleModal product={saleProduct} appointments={appointments} form={saleForm} setForm={setSaleForm} error={saleError} busy={busyId === 'sale'} onClose={() => setSaleProduct(null)} onSubmit={submitSale} />}
   </div>
 }
 
-function TodaySection({ selectedDate, setSelectedDate, appointments, activeAppointmentId, availability, loading, error, actionError, summary, isToday, busyId, now, onNewCut, onWalkIn, onAction, onCancel, onComplete, onPhotoChanged }) {
-  return <><PeriodNavigator selectedDate={selectedDate} onChange={setSelectedDate} /><div className="grid grid-cols-2 gap-2"><Button size="lg" className="w-full" onClick={onNewCut}><Scissors size={18} /> Novo corte</Button><Button size="lg" variant="secondary" className="w-full" onClick={onWalkIn}><UserPlus size={18} /> Encaixe de hoje</Button></div><AvailabilityOverview rows={availability} loading={loading} compact title="Minha disponibilidade" />
+function TodaySection({ selectedDate, setSelectedDate, appointments, activeAppointmentId, availability, loading, error, actionError, summary, isToday, busyId, now, onNewCut, onWalkIn, onRetroactiveWalkIn, onAction, onCancel, onComplete, onPhotoChanged }) {
+  return <><PeriodNavigator selectedDate={selectedDate} onChange={setSelectedDate} /><div className="grid grid-cols-1 gap-2 sm:grid-cols-3"><Button size="lg" className="w-full" onClick={onNewCut}><Scissors size={18} /> Novo corte</Button><Button size="lg" variant="secondary" className="w-full" onClick={onWalkIn}><UserPlus size={18} /> Encaixe de hoje</Button><Button size="lg" variant="secondary" className="w-full" disabled={Boolean(activeAppointmentId)} onClick={onRetroactiveWalkIn}><History size={18} /> Registrar já iniciado</Button></div><AvailabilityOverview rows={availability} loading={loading} compact title="Minha disponibilidade" />
     <section className="grid grid-cols-3 gap-2" aria-label="Resumo do dia">{[['Horários', summary.total], ['Restantes', summary.restantes], ['Concluídos', summary.concluidos]].map(([label, value]) => <div key={label} className="min-w-0 rounded-md border border-line bg-surface-1 p-3 text-center"><span className="block text-data-lg text-warm-white">{value}</span><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-steel">{label}</span></div>)}</section>
     <section aria-label="Horários do dia" className="space-y-3">{loading ? <Loading label="Carregando sua agenda" /> : !error && appointments.length === 0 ? <EmptyState icon={isToday ? UserRound : CalendarDays} title={isToday ? 'Agenda livre hoje' : 'Nenhum horário neste dia'} description={isToday ? 'Quando um cliente for agendado para você, ele aparecerá aqui.' : 'Escolha outro dia para consultar seus atendimentos.'} /> : appointments.map((appointment) => <AppointmentCard key={appointment.id} appointment={appointment} activeAppointmentId={activeAppointmentId} isToday={isToday} busy={busyId === appointment.id} now={now} actionError={actionError?.id === appointment.id ? actionError.message : null} onAction={onAction} onCancel={onCancel} onComplete={onComplete} onPhotoChanged={onPhotoChanged} />)}</section>
   </>

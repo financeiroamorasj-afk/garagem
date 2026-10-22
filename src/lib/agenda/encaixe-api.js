@@ -58,6 +58,16 @@ export function criarAgendamentoBarbeiro({ clienteId, servicoId, inicio, valorFi
   })
 }
 
+export function criarEncaixeRetroativo({ clienteId, servicoId, inicio, valorFinal }) {
+  if (!clienteId || !servicoId || !inicio) throw new TypeError('Complete os dados do atendimento retroativo.')
+  return rpc('barbeiro_encaixe_retroativo_criar', {
+    p_cliente_id: clienteId,
+    p_servico_id: servicoId,
+    p_inicio: inicio,
+    p_valor_final: valorFinal == null ? null : Number(valorFinal),
+  })
+}
+
 const ERRORS = {
   AGENDA_ENCAIXE_NAO_AUTORIZADO: 'Seu usuário não pode criar encaixes.',
   AGENDA_DATA_INVALIDA: 'Escolha uma data e um horário disponíveis.',
@@ -72,6 +82,10 @@ const ERRORS = {
   AGENDA_HORARIO_INDISPONIVEL: 'Este horário acabou de ser ocupado. Escolha uma das opções atualizadas.',
   AGENDA_HORARIO_OCUPADO: 'Este horário acabou de ser ocupado. Escolha outra opção.',
   AGENDA_FORA_DISPONIBILIDADE: 'Este horário está dentro de uma pausa, folga ou bloqueio do barbeiro. Escolha outra opção.',
+  AGENDA_RETROATIVO_HORARIO_INVALIDO: 'Informe quando o atendimento começou.',
+  AGENDA_RETROATIVO_SOMENTE_HOJE: 'O barbeiro pode registrar retroativamente apenas atendimentos de hoje.',
+  AGENDA_RETROATIVO_CONFLITO_HORARIO: 'Já existe outro horário ocupando esse período. Revise a agenda antes de registrar.',
+  AGENDA_ATENDIMENTO_EM_ANDAMENTO: 'Conclua o atendimento em andamento antes de registrar outro.',
 }
 
 export function mensagemErroEncaixe(error) {

@@ -8,6 +8,7 @@ import Label from './ui/Label'
 import Modal from './ui/Modal'
 import Spinner from './ui/Spinner'
 import ClientSearch from './ClientSearch'
+import ClientDuplicateWarning from './ClientDuplicateWarning'
 import {
   carregarCatalogoEncaixe,
   criarClienteRapido,
@@ -183,7 +184,7 @@ export default function WalkInModal({ open, onClose, onSuccess }) {
               <Label>Cliente</Label>
               <ClientSearch clients={catalog.clientes} onSelect={setSelectedClient} />
               {selectedClient && <p className="text-body-sm text-steel">Selecionado: <strong className="text-warm-white">{selectedClient.nome}</strong>{selectedClient.id === 'new' ? ' · novo cadastro' : ''}</p>}
-              {selectedClient?.id === 'new' && <Input label="Telefone (opcional)" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="(00) 00000-0000" />}
+              {selectedClient?.id === 'new' && <><Input label="WhatsApp/telefone (recomendado)" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="(00) 00000-0000" /><ClientDuplicateWarning clients={catalog.clientes} nome={selectedClient.nome} telefone={phone} onSelect={(client) => { setSelectedClient(client); setPhone('') }} /></>}
             </section>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
