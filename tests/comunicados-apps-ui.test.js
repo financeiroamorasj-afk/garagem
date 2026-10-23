@@ -3,13 +3,14 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 test('sino segmenta avisos nos apps e leva à funcionalidade indicada', async () => {
-  const [bell, api, admin, barber, migration, releaseNotices] = await Promise.all([
+  const [bell, api, admin, barber, migration, releaseNotices, portalNotice] = await Promise.all([
     readFile(new URL('../src/components/AppNotificationBell.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/comunicados/api.js', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/layout/AdminLayout.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/BarberDashboard.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20261021220000_central_avisos_apps.sql', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20261022150000_comunicados_clientes_e_atendimento.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/migrations/20261023100000_portal_horario_reservado_comunicado.sql', import.meta.url), 'utf8'),
   ])
 
   assert.match(admin, /AppNotificationBell contexto="gestao"/)
@@ -33,4 +34,8 @@ test('sino segmenta avisos nos apps e leva à funcionalidade indicada', async ()
   assert.match(releaseNotices, /'2026-10-encaixe-retroativo-tela-ativa'/)
   assert.match(releaseNotices, /'barbeiros'/)
   assert.match(releaseNotices, /'\/barber\/dashboard'/)
+  assert.match(portalNotice, /'2026-10-portal-horario-reservado'/)
+  assert.match(portalNotice, /'ambos'/)
+  assert.match(portalNotice, /'\/admin\/configuracoes'/)
+  assert.match(portalNotice, /'\/barber\/dashboard'/)
 })
