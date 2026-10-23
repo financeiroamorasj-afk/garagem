@@ -429,3 +429,17 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Nome e telefone iguais podem reutilizar a ficha operacional sem expor dados privados, reduzindo duplicidade sem transformar o telefone em autenticação.
 - A equipe recebe o comunicado interno **Portal agora agenda sem CPF** nos aplicativos da gestão e do barbeiro.
 - A entrega não usa SMS, OTP ou provedor externo. O relatório detalhado está em `Entrega 22-10-2026 - Portal sem CPF.md`.
+
+# 23/10/2026 — Horário reservado explícito no Portal
+
+- O Portal deixou de exibir **Aguardando confirmação** depois do agendamento. Reservas nos estados `pendente` e `confirmado` agora aparecem como **Horário reservado** em estado visual positivo.
+- O cartão do atendimento reforça de forma permanente: **Este horário já está reservado para você.** O aviso temporário após salvar foi preservado.
+- A mudança é somente de comunicação e cobre registros legados; disponibilidade, proteção contra conflito e cancelamento não foram alterados.
+- A PR 81 foi incorporada à `main` no commit `dce8e5f1f23b8f0b441c1134ac50acc6db19bb93`, às 09:24 no horário de Brasília.
+- Os deployments de produção terminaram com sucesso na Vercel:
+  - `garagem-app`: `2f1SQXZW2X3LVtir3BF3Mf2c5ERw`;
+  - `garagem-adm`: `DRjAdAMn5HfnVRnjfYG6DJABH8Sc`.
+- O domínio `https://app.garagemsystem.com.br` respondeu com HTTP 200. O bundle oficial contém **Horário reservado** e **Este horário já está reservado para você**, sem a expressão **Aguardando confirmação**.
+- Depois da confirmação do frontend, a migration `20261023100000_portal_horario_reservado_comunicado.sql` foi aplicada pelo SQL Editor e registrada em `supabase_migrations.schema_migrations`.
+- O comunicado **Portal confirma o horário reservado** foi publicado às 09:28:32 para gestão e barbeiros, com destinos `/admin/configuracoes` e `/barber/dashboard`.
+- Validações concluídas: dois testes direcionados, ESLint, build de produção, checks dos dois projetos da Vercel, inspeção do bundle oficial e leitura posterior do comunicado e da migration no Supabase.
