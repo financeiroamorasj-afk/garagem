@@ -2,6 +2,8 @@
 -- dias anteriores, gravando início e término com status concluído, sem deixar
 -- o atendimento em andamento no painel nem bloquear a cadeira do profissional.
 
+DROP FUNCTION IF EXISTS public.barbeiro_encaixe_retroativo_criar(uuid,uuid,timestamptz,numeric);
+
 CREATE OR REPLACE FUNCTION public.barbeiro_encaixe_retroativo_criar(
   p_cliente_id uuid,
   p_servico_id uuid,
@@ -121,7 +123,7 @@ CREATE OR REPLACE FUNCTION public.barbeiro_encaixe_retroativo_criar(
   p_cliente_id uuid,
   p_servico_id uuid,
   p_inicio timestamptz,
-  p_valor_final numeric
+  p_valor_final numeric DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
