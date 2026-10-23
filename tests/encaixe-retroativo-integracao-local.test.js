@@ -6,7 +6,7 @@ import pg from 'pg'
 const { Client } = pg
 const connectionString = process.env.SUPABASE_LOCAL_DB_URL || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres'
 
-test('barbeiro registra início retroativo até dois dias atrás com autoria preservada', async () => {
+test('barbeiro registra início e fim retroativo até dois dias atrás com status concluído e autoria preservada', async () => {
   const db = new Client({ connectionString })
   const tenantId = crypto.randomUUID()
   const userId = crypto.randomUUID()
@@ -23,33 +23,47 @@ test('barbeiro registra início retroativo até dois dias atrás com autoria pre
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos) VALUES($1,$2,'Corte retroativo',55,30)", [serviceId, tenantId])
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [userId])
 
-    const result = (await db.query("SELECT public.barbeiro_encaixe_retroativo_criar($1,$2,clock_timestamp()-interval '30 seconds',NULL) result", [clientId, serviceId])).rows[0].result
-    assert.equal(result.status, 'em_atendimento')
+    const result = (await db.query(`
+      SELECT public.barbeiro_encaixe_retroativo_criar(
+        $1,$2,
+        clock_timestamp()-interval '45 minutes',
+        clock_timestamp()-interval '15 minutes',
+        NULL
+      ) result
+    `, [clientId, serviceId])).rows[0].result
+    assert.equal(result.status, 'concluido')
     assert.equal(result.registro_retroativo, true)
+    assert.ok(result.iniciado_em < result.concluido_em)
     const stored = (await db.query('SELECT * FROM public.agendamentos WHERE id=$1', [result.id])).rows[0]
+    assert.equal(stored.status, 'concluido')
     assert.equal(stored.registro_retroativo, true)
     assert.equal(stored.retroativo_registrado_por, userId)
     assert.equal(stored.valor_final, '55.00')
-    assert.ok(stored.iniciado_em < stored.retroativo_registrado_em)
+    assert.ok(stored.iniciado_em < stored.concluido_em)
+    assert.ok(stored.concluido_em <= stored.retroativo_registrado_em)
     await db.query('DELETE FROM public.agendamentos WHERE id=$1', [result.id])
 
     const previousDay = (await db.query(`
       SELECT public.barbeiro_encaixe_retroativo_criar(
         $1,$2,
-        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 1) + time '12:00') AT TIME ZONE 'America/Sao_Paulo',
+        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 1) + time '10:00') AT TIME ZONE 'America/Sao_Paulo',
+        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 1) + time '10:40') AT TIME ZONE 'America/Sao_Paulo',
         NULL
       ) result
     `, [clientId, serviceId])).rows[0].result
+    assert.equal(previousDay.status, 'concluido')
     assert.equal(previousDay.registro_retroativo, true)
     await db.query('DELETE FROM public.agendamentos WHERE id=$1', [previousDay.id])
 
     const twoDaysAgo = (await db.query(`
       SELECT public.barbeiro_encaixe_retroativo_criar(
         $1,$2,
-        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 2) + time '12:00') AT TIME ZONE 'America/Sao_Paulo',
+        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 2) + time '14:00') AT TIME ZONE 'America/Sao_Paulo',
+        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 2) + time '14:35') AT TIME ZONE 'America/Sao_Paulo',
         NULL
       ) result
     `, [clientId, serviceId])).rows[0].result
+    assert.equal(twoDaysAgo.status, 'concluido')
     assert.equal(twoDaysAgo.registro_retroativo, true)
     await db.query('DELETE FROM public.agendamentos WHERE id=$1', [twoDaysAgo.id])
 
@@ -57,7 +71,20 @@ test('barbeiro registra início retroativo até dois dias atrás com autoria pre
       db.query(`
         SELECT public.barbeiro_encaixe_retroativo_criar(
           $1,$2,
+          clock_timestamp()-interval '10 minutes',
+          clock_timestamp()-interval '20 minutes',
+          NULL
+        )
+      `, [clientId, serviceId]),
+      /AGENDA_RETROATIVO_TERMINO_INVALIDO/,
+    )
+
+    await assert.rejects(
+      db.query(`
+        SELECT public.barbeiro_encaixe_retroativo_criar(
+          $1,$2,
           (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 3) + time '12:00') AT TIME ZONE 'America/Sao_Paulo',
+          (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 3) + time '12:30') AT TIME ZONE 'America/Sao_Paulo',
           NULL
         )
       `, [clientId, serviceId]),
