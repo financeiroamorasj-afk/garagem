@@ -443,3 +443,18 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Depois da confirmação do frontend, a migration `20261023100000_portal_horario_reservado_comunicado.sql` foi aplicada pelo SQL Editor e registrada em `supabase_migrations.schema_migrations`.
 - O comunicado **Portal confirma o horário reservado** foi publicado às 09:28:32 para gestão e barbeiros, com destinos `/admin/configuracoes` e `/barber/dashboard`.
 - Validações concluídas: dois testes direcionados, ESLint, build de produção, checks dos dois projetos da Vercel, inspeção do bundle oficial e leitura posterior do comunicado e da migration no Supabase.
+
+# 23/10/2026 — Próxima disponibilidade explícita no Portal
+
+- Quando o cliente busca a partir de hoje e o barbeiro escolhido não possui horários no dia, o Portal agora informa isso antes da lista e apresenta por extenso a próxima data com agenda aberta.
+- A primeira data futura recebe o rótulo **PRÓXIMA DATA DISPONÍVEL**; datas com horários no dia corrente recebem **HOJE**.
+- O cliente ganhou o atalho **Ver outro barbeiro disponível hoje**.
+- A confirmação de qualquer horário futuro reforça **ESTE AGENDAMENTO NÃO É PARA HOJE** e repete data e horário no botão final.
+- A PR 84 foi incorporada à `main` no commit `a0c06d0f22eaf42d7bf1e8a2c9e46cfe6781b2f8`, às 09:58 no horário de Brasília.
+- Os deployments de produção terminaram com sucesso na Vercel:
+  - `garagem-app`: `Bp8FfaXMxetHNhquFBTT2DR2sGjG`;
+  - `garagem-adm`: `F4aHYmbzuTSnTkfwvozVaMPGvdCY`.
+- O domínio `https://app.garagemsystem.com.br` respondeu com HTTP 200, e o bundle oficial `index-BGhZF2m7.js` contém os três novos reforços de data.
+- Depois da confirmação do frontend, a migration `20261023130000_portal_proxima_disponibilidade_comunicado.sql` foi aplicada e registrada em `supabase_migrations.schema_migrations`.
+- O comunicado **Portal destaca a próxima data disponível** foi publicado às 10:02:01 para gestão e barbeiros, com destinos `/admin/configuracoes` e `/barber/dashboard`.
+- Validações concluídas: teste direcionado, ESLint, build de produção, checks dos dois projetos da Vercel, inspeção do bundle oficial e leitura posterior do comunicado e da migration no Supabase.
