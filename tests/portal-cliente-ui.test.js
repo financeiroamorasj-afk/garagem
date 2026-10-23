@@ -41,7 +41,7 @@ test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe
   assert.match(page, /aria-pressed=\{barberId === barber\.id\}/)
   assert.match(page, /Agendamento confirmado\. Seu horário já está reservado na agenda da barbearia\./)
   assert.match(page, /pendente: 'Horário reservado', confirmado: 'Horário reservado'/)
-  assert.match(page, /Este horário já está reservado para você\./)
+  assert.match(page, /Confirmado, este horário está reservado para você\./)
   assert.doesNotMatch(page, /Aguardando confirmação/)
   assert.doesNotMatch(page, /Acompanhe a confirmação por aqui/)
   assert.match(api, /persistSession: false/)
