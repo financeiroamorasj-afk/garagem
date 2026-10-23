@@ -23,6 +23,12 @@ function timeValue(date = new Date()) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
+function dateDaysAgo(days) {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  return localDateKey(date)
+}
+
 function minutesAgo(minutes) {
   const now = new Date()
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -36,6 +42,7 @@ export default function RetroactiveWalkInModal({ open, onClose, onSuccess }) {
   const [phone, setPhone] = useState('')
   const [serviceId, setServiceId] = useState('')
   const [price, setPrice] = useState(null)
+  const [startDate, setStartDate] = useState(localDateKey())
   const [startTime, setStartTime] = useState(() => minutesAgo(30))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -47,6 +54,7 @@ export default function RetroactiveWalkInModal({ open, onClose, onSuccess }) {
     let active = true
     setLoading(true)
     setError('')
+    setStartDate(localDateKey())
     setStartTime(minutesAgo(30))
     carregarCatalogoEncaixe()
       .then((data) => { if (active) setCatalog(data) })
@@ -71,13 +79,20 @@ export default function RetroactiveWalkInModal({ open, onClose, onSuccess }) {
     setPrice(service ? Number(service.preco) : null)
   }
 
+  function selectMinutesAgo(minutes) {
+    setStartDate(localDateKey())
+    setStartTime(minutesAgo(minutes))
+  }
+
   async function submit(event) {
     event.preventDefault()
     setError('')
     if (!selectedClient) { setError('Selecione ou cadastre o cliente.'); return }
     if (!serviceId) { setError('Selecione o serviço realizado.'); return }
-    const start = new Date(`${localDateKey()}T${startTime}:00`)
-    if (!startTime || Number.isNaN(start.getTime()) || start > new Date()) { setError('Informe um horário de início válido, anterior ao horário atual.'); return }
+    const today = localDateKey()
+    const earliestDate = dateDaysAgo(2)
+    const start = new Date(`${startDate}T${startTime}:00`)
+    if (!startDate || startDate < earliestDate || startDate > today || !startTime || Number.isNaN(start.getTime()) || start > new Date()) { setError('Informe uma data e um horário entre hoje e os dois dias anteriores.'); return }
 
     setSaving(true)
     try {
@@ -99,7 +114,7 @@ export default function RetroactiveWalkInModal({ open, onClose, onSuccess }) {
   return (
     <Modal open={open} onClose={() => !saving && onClose()} title="Registrar atendimento já iniciado" className="sm:max-w-2xl" footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Cancelar</Button><Button type="submit" form="retroactive-walk-in-form" loading={saving}>Continuar para o fechamento</Button></>}>
       <form id="retroactive-walk-in-form" className="space-y-5" onSubmit={submit}>
-        <div className="flex gap-3 rounded-sm border border-warning/30 bg-warning/10 p-3 text-body-sm text-warning"><History size={19} className="mt-0.5 shrink-0" /><p>Use quando o corte começou sem ter sido registrado. O atendimento ficará marcado permanentemente como retroativo.</p></div>
+        <div className="flex gap-3 rounded-sm border border-warning/30 bg-warning/10 p-3 text-body-sm text-warning"><History size={19} className="mt-0.5 shrink-0" /><p>Use quando o corte começou sem ter sido registrado, hoje ou nos dois dias anteriores. O atendimento ficará marcado permanentemente como retroativo.</p></div>
         {error && <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 p-3 text-body-sm text-danger">{error}</p>}
         {loading ? <div className="flex min-h-40 items-center justify-center gap-3 text-steel"><Spinner size={22} /> Preparando o registro</div> : <>
           <section className="space-y-2">
@@ -109,9 +124,10 @@ export default function RetroactiveWalkInModal({ open, onClose, onSuccess }) {
           </section>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block text-label text-steel"><span className="mb-2 flex items-center gap-2"><Scissors size={14} /> Serviço realizado</span><select value={serviceId} onChange={selectService} className={selectClass}><option value="">Selecione o serviço</option>{catalog.servicos.map((service) => <option key={service.id} value={service.id}>{service.nome} · {service.duracao_minutos} min</option>)}</select></label>
-            <Input label="Horário em que começou" type="time" max={timeValue()} value={startTime} onChange={(event) => setStartTime(event.target.value)} />
+            <Input label="Data em que começou" type="date" min={dateDaysAgo(2)} max={localDateKey()} value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+            <Input label="Horário em que começou" type="time" max={startDate === localDateKey() ? timeValue() : undefined} value={startTime} onChange={(event) => setStartTime(event.target.value)} />
             <CurrencyInput label="Valor do atendimento" value={price} onValueChange={setPrice} disabled={!selectedService} />
-            <div className="rounded-sm border border-line bg-surface-1 p-3"><span className="flex items-center gap-2 text-label text-steel"><Clock3 size={14} /> Atalhos</span><div className="mt-2 flex flex-wrap gap-2">{[15,30,45,60].map((minutes) => <Button key={minutes} type="button" size="sm" variant="secondary" onClick={() => setStartTime(minutesAgo(minutes))}>Há {minutes} min</Button>)}</div></div>
+            <div className="rounded-sm border border-line bg-surface-1 p-3 sm:col-span-2"><span className="flex items-center gap-2 text-label text-steel"><Clock3 size={14} /> Atalhos para hoje</span><div className="mt-2 flex flex-wrap gap-2">{[15,30,45,60].map((minutes) => <Button key={minutes} type="button" size="sm" variant="secondary" onClick={() => selectMinutesAgo(minutes)}>Há {minutes} min</Button>)}</div></div>
           </div>
         </>}
       </form>

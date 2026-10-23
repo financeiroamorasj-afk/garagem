@@ -83,7 +83,8 @@ const ERRORS = {
   AGENDA_HORARIO_OCUPADO: 'Este horário acabou de ser ocupado. Escolha outra opção.',
   AGENDA_FORA_DISPONIBILIDADE: 'Este horário está dentro de uma pausa, folga ou bloqueio do barbeiro. Escolha outra opção.',
   AGENDA_RETROATIVO_HORARIO_INVALIDO: 'Informe quando o atendimento começou.',
-  AGENDA_RETROATIVO_SOMENTE_HOJE: 'O barbeiro pode registrar retroativamente apenas atendimentos de hoje.',
+  AGENDA_RETROATIVO_SOMENTE_HOJE: 'O barbeiro pode registrar retroativamente atendimentos de hoje ou dos dois dias anteriores.',
+  AGENDA_RETROATIVO_FORA_JANELA: 'O barbeiro pode registrar retroativamente atendimentos de hoje ou dos dois dias anteriores.',
   AGENDA_RETROATIVO_CONFLITO_HORARIO: 'Já existe outro horário ocupando esse período. Revise a agenda antes de registrar.',
   AGENDA_ATENDIMENTO_EM_ANDAMENTO: 'Conclua o atendimento em andamento antes de registrar outro.',
 }

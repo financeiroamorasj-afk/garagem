@@ -6,7 +6,7 @@ import pg from 'pg'
 const { Client } = pg
 const connectionString = process.env.SUPABASE_LOCAL_DB_URL || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres'
 
-test('barbeiro registra início retroativo apenas hoje com autoria preservada', async () => {
+test('barbeiro registra início retroativo até dois dias atrás com autoria preservada', async () => {
   const db = new Client({ connectionString })
   const tenantId = crypto.randomUUID()
   const userId = crypto.randomUUID()
@@ -23,7 +23,7 @@ test('barbeiro registra início retroativo apenas hoje com autoria preservada', 
     await db.query("INSERT INTO public.servicos(id,barbearia_id,nome,preco,duracao_minutos) VALUES($1,$2,'Corte retroativo',55,30)", [serviceId, tenantId])
     await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)", [userId])
 
-    const result = (await db.query("SELECT public.barbeiro_encaixe_retroativo_criar($1,$2,now()-interval '30 minutes',NULL) result", [clientId, serviceId])).rows[0].result
+    const result = (await db.query("SELECT public.barbeiro_encaixe_retroativo_criar($1,$2,clock_timestamp()-interval '30 seconds',NULL) result", [clientId, serviceId])).rows[0].result
     assert.equal(result.status, 'em_atendimento')
     assert.equal(result.registro_retroativo, true)
     const stored = (await db.query('SELECT * FROM public.agendamentos WHERE id=$1', [result.id])).rows[0]
@@ -31,10 +31,37 @@ test('barbeiro registra início retroativo apenas hoje com autoria preservada', 
     assert.equal(stored.retroativo_registrado_por, userId)
     assert.equal(stored.valor_final, '55.00')
     assert.ok(stored.iniciado_em < stored.retroativo_registrado_em)
+    await db.query('DELETE FROM public.agendamentos WHERE id=$1', [result.id])
+
+    const previousDay = (await db.query(`
+      SELECT public.barbeiro_encaixe_retroativo_criar(
+        $1,$2,
+        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 1) + time '12:00') AT TIME ZONE 'America/Sao_Paulo',
+        NULL
+      ) result
+    `, [clientId, serviceId])).rows[0].result
+    assert.equal(previousDay.registro_retroativo, true)
+    await db.query('DELETE FROM public.agendamentos WHERE id=$1', [previousDay.id])
+
+    const twoDaysAgo = (await db.query(`
+      SELECT public.barbeiro_encaixe_retroativo_criar(
+        $1,$2,
+        (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 2) + time '12:00') AT TIME ZONE 'America/Sao_Paulo',
+        NULL
+      ) result
+    `, [clientId, serviceId])).rows[0].result
+    assert.equal(twoDaysAgo.registro_retroativo, true)
+    await db.query('DELETE FROM public.agendamentos WHERE id=$1', [twoDaysAgo.id])
 
     await assert.rejects(
-      db.query("SELECT public.barbeiro_encaixe_retroativo_criar($1,$2,now()-interval '1 day',NULL)", [clientId, serviceId]),
-      /AGENDA_RETROATIVO_SOMENTE_HOJE/,
+      db.query(`
+        SELECT public.barbeiro_encaixe_retroativo_criar(
+          $1,$2,
+          (((clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date - 3) + time '12:00') AT TIME ZONE 'America/Sao_Paulo',
+          NULL
+        )
+      `, [clientId, serviceId]),
+      /AGENDA_RETROATIVO_FORA_JANELA/,
     )
   } finally {
     await db.query('DELETE FROM auth.users WHERE id=$1', [userId]).catch(() => {})
