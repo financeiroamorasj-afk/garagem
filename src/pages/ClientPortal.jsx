@@ -59,6 +59,10 @@ function shortDate(value) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(value))
 }
 
+function numericDate(value) {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(value))
+}
+
 function time(value) {
   return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
@@ -228,14 +232,25 @@ function BookingView({ data, token, onBooked }) {
   const barberStepRef = useRef(null)
   const dateStepRef = useRef(null)
   const service = data.servicos.find((item) => item.id === serviceId)
+  const barber = data.equipe.find((item) => item.id === barberId)
+  const today = localDateKey()
   const grouped = useMemo(() => slots.reduce((result, slot) => { const key = localDateKey(new Date(slot.inicio)); (result[key] ||= []).push(slot); return result }, {}), [slots])
+  const groupedDates = useMemo(() => Object.keys(grouped).sort(), [grouped])
+  const firstAvailableDate = groupedDates[0] || ''
+  const searchedTodayWithoutTodaySlots = searched && startDate === today && firstAvailableDate > today
+  const selectedIsToday = selected ? localDateKey(new Date(selected.inicio)) === today : false
 
-  async function search() {
+  async function search(professionalId = barberId) {
     if (!serviceId) return
     setSearching(true); setSearched(false); setError(''); setSlots([]); setSelected(null)
-    try { setSlots(await listarHorariosPortal({ token, servicoId: serviceId, dataInicial: startDate, profissionalId: barberId || null, dias: 14 })) }
+    try { setSlots(await listarHorariosPortal({ token, servicoId: serviceId, dataInicial: startDate, profissionalId: professionalId || null, dias: 14 })) }
     catch (requestError) { setError(erroPortal(requestError).message) }
     finally { setSearching(false); setSearched(true) }
+  }
+
+  async function searchAnotherBarberToday() {
+    setBarberId('')
+    await search('')
   }
 
   async function confirm() {
@@ -247,12 +262,12 @@ function BookingView({ data, token, onBooked }) {
   }
 
   function chooseService(id) {
-    setServiceId(id); setSlots([]); setSelected(null)
+    setServiceId(id); setSlots([]); setSelected(null); setSearched(false)
     window.setTimeout(() => barberStepRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
   }
 
   function chooseBarber(id) {
-    setBarberId(id); setSlots([]); setSelected(null)
+    setBarberId(id); setSlots([]); setSelected(null); setSearched(false)
     window.setTimeout(() => dateStepRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
   }
 
@@ -260,10 +275,11 @@ function BookingView({ data, token, onBooked }) {
     <div className="space-y-6"><header><p className="text-label text-copper">NOVO AGENDAMENTO</p><h1 className="mt-2 text-h1 text-warm-white sm:text-display">Escolha seu momento</h1><p className="mt-2 text-body-sm text-steel">Serviço, profissional e horário — simples assim.</p></header><Feedback>{error}</Feedback>
       <section><p className="mb-3 text-label text-steel">1 · O QUE VAMOS FAZER?</p><div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{data.servicos.map((item) => <button key={item.id} type="button" onClick={() => chooseService(item.id)} className={`min-h-24 rounded-md border p-4 text-left transition ${serviceId === item.id ? 'border-copper bg-copper/10' : 'border-line bg-surface-1 hover:border-line-strong'}`}><div className="flex items-start justify-between gap-3"><div><strong className="text-body text-warm-white">{item.nome}</strong><p className="mt-1 line-clamp-2 text-body-sm text-steel">{item.descricao || 'Cuidado completo com a equipe.'}</p></div>{serviceId === item.id && <CheckCircle2 size={19} className="shrink-0 text-copper" />}</div><div className="mt-3 flex gap-4 text-xs font-mono text-steel"><span>{money(item.preco)}</span><span>{item.duracao_minutos} min</span></div></button>)}</div></section>
       <section ref={barberStepRef} className={`scroll-mt-6 transition-opacity ${serviceId ? 'opacity-100' : 'opacity-55'}`}><p className="mb-3 text-label text-steel">2 · COM QUEM?</p><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"><button type="button" disabled={!serviceId} aria-pressed={!barberId} onClick={() => chooseBarber('')} className={`col-span-full flex min-h-16 min-w-0 items-center justify-center rounded-md border px-3 text-center text-body-sm font-semibold ${!barberId ? 'border-copper bg-copper/10 text-copper' : 'border-line bg-surface-1 text-steel'} disabled:cursor-not-allowed`}><span className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface-2"><UsersRound size={20} /></span><span className="ml-3 leading-tight">Primeiro disponível</span></button>{data.equipe.map((barber) => <button key={barber.id} type="button" disabled={!serviceId} aria-pressed={barberId === barber.id} onClick={() => chooseBarber(barber.id)} className={`relative flex aspect-[4/5] min-w-0 items-center rounded-md border text-body-sm font-semibold ${barber.foto_url ? 'flex-col justify-end overflow-hidden p-0' : 'flex-col justify-center px-3 text-center'} ${barberId === barber.id ? 'border-copper bg-copper/10 text-copper' : 'border-line bg-surface-1 text-steel'} disabled:cursor-not-allowed`}>{barber.foto_url ? <><img src={barber.foto_url} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_28%]" /><span className="absolute inset-0 bg-gradient-to-t from-surface-0 via-surface-0/25 to-transparent" /><span className="relative z-10 w-full px-2 pb-2 text-left text-warm-white">{barber.apelido || barber.nome}{data.cliente.barbeiro_favorito_id === barber.id ? ' ★' : ''}</span></> : <><span className="flex h-11 w-11 items-center justify-center rounded-full border border-copper/30 bg-copper/10 font-display text-xl text-copper">{(barber.apelido || barber.nome).charAt(0)}</span><span className="mt-2 leading-tight">{barber.apelido || barber.nome}{data.cliente.barbeiro_favorito_id === barber.id ? ' ★' : ''}</span></>}</button>)}</div>{!serviceId && <p className="mt-2 text-body-sm text-steel">Escolha um serviço para liberar a equipe.</p>}</section>
-      <section ref={dateStepRef} className="scroll-mt-6 rounded-md border border-line bg-surface-1 p-4"><p className="mb-3 text-label text-steel">3 · A PARTIR DE QUANDO?</p><div className="flex flex-col gap-3 sm:flex-row"><input type="date" min={localDateKey()} value={startDate} onChange={(event) => { setStartDate(event.target.value); setSlots([]) }} className="h-12 flex-1 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper" /><Button size="lg" className="sm:min-w-48" loading={searching} disabled={!serviceId} onClick={search}><RefreshCw size={17} /> Ver horários</Button></div></section>
+      <section ref={dateStepRef} className="scroll-mt-6 rounded-md border border-line bg-surface-1 p-4"><p className="mb-3 text-label text-steel">3 · A PARTIR DE QUANDO?</p><div className="flex flex-col gap-3 sm:flex-row"><input type="date" min={localDateKey()} value={startDate} onChange={(event) => { setStartDate(event.target.value); setSlots([]); setSelected(null); setSearched(false) }} className="h-12 flex-1 rounded-sm border border-line-strong bg-surface-2 px-3 text-body text-warm-white outline-none focus:border-copper" /><Button size="lg" className="sm:min-w-48" loading={searching} disabled={!serviceId} onClick={() => search()}><RefreshCw size={17} /> Ver horários</Button></div></section>
       {serviceId && !searching && slots.length === 0 && <Card className="p-5 text-center"><Clock3 size={24} className="mx-auto text-steel" /><p className="mt-3 text-body font-semibold text-warm-white">{searched ? 'Nenhum horário encontrado' : 'Busque os horários disponíveis'}</p><p className="mt-1 text-body-sm text-steel">{searched ? 'Tente outra data ou selecione o primeiro profissional disponível.' : 'Mostraremos as opções reais dos próximos 14 dias.'}</p></Card>}
-      {Object.entries(grouped).map(([date, items]) => <section key={date}><p className="mb-3 capitalize text-body font-semibold text-warm-white">{fullDate(`${date}T12:00:00`)}</p><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{items.map((slot) => <button key={`${slot.profissional_id}-${slot.inicio}`} type="button" onClick={() => setSelected(slot)} className={`min-h-16 rounded-md border p-2 text-center ${selected?.inicio === slot.inicio && selected?.profissional_id === slot.profissional_id ? 'border-copper bg-copper/10' : 'border-line bg-surface-1 hover:border-line-strong'}`}><strong className="block font-mono text-base text-warm-white">{time(slot.inicio)}</strong><span className="mt-1 block truncate text-xs text-steel">{slot.profissional_apelido || slot.profissional_nome}</span></button>)}</div></section>)}
-      {selected && <section className="sticky bottom-20 z-20 rounded-md border border-copper bg-surface-2 p-4 shadow-overlay sm:bottom-6"><div className="flex items-start justify-between gap-3"><div><p className="text-label text-copper">CONFIRMAR HORÁRIO</p><h3 className="mt-1 text-h3 text-warm-white">{service?.nome} · {time(selected.inicio)}</h3><p className="mt-1 text-body-sm capitalize text-steel">{fullDate(selected.inicio)} com {selected.profissional_apelido || selected.profissional_nome}</p></div><strong className="shrink-0 font-mono text-warm-white">{money(service?.preco)}</strong></div><div className="mt-4 flex items-center gap-2 rounded-sm bg-surface-0 p-3 text-xs text-steel"><CreditCard size={16} className="shrink-0 text-copper" /> Pagamento antecipado será habilitado quando a barbearia conectar o provedor. Por enquanto, pague no local.</div><Button size="lg" className="mt-4 w-full" loading={saving} onClick={confirm}>Confirmar agendamento <Check size={18} /></Button></section>}
+      {searchedTodayWithoutTodaySlots && <section role="status" aria-live="polite" className="rounded-md border border-warning/40 bg-warning/10 p-4 sm:p-5"><div className="flex items-start gap-3"><Clock3 size={22} className="mt-0.5 shrink-0 text-warning" /><div className="min-w-0 flex-1"><p className="text-body font-semibold text-warm-white">{barber ? `${barber.apelido || barber.nome} não tem horários disponíveis hoje` : 'Nenhum profissional tem horário disponível hoje'}</p><p className="mt-1 text-body-sm text-steel">A próxima data com agenda aberta é <strong className="capitalize text-warm-white">{fullDate(`${firstAvailableDate}T12:00:00`)}</strong>.</p>{barber && <Button size="sm" variant="secondary" className="mt-4 w-full sm:w-auto" loading={searching} onClick={searchAnotherBarberToday}><UsersRound size={16} /> Ver outro barbeiro disponível hoje</Button>}</div></div></section>}
+      {groupedDates.map((date) => <section key={date}>{date === today ? <p className="mb-1 text-label text-success">HOJE</p> : searchedTodayWithoutTodaySlots && date === firstAvailableDate ? <p className="mb-1 text-label text-warning">PRÓXIMA DATA DISPONÍVEL</p> : null}<p className="mb-3 capitalize text-body font-semibold text-warm-white">{fullDate(`${date}T12:00:00`)}</p><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{grouped[date].map((slot) => <button key={`${slot.profissional_id}-${slot.inicio}`} type="button" onClick={() => setSelected(slot)} className={`min-h-16 rounded-md border p-2 text-center ${selected?.inicio === slot.inicio && selected?.profissional_id === slot.profissional_id ? 'border-copper bg-copper/10' : 'border-line bg-surface-1 hover:border-line-strong'}`}><strong className="block font-mono text-base text-warm-white">{time(slot.inicio)}</strong><span className="mt-1 block truncate text-xs text-steel">{slot.profissional_apelido || slot.profissional_nome}</span></button>)}</div></section>)}
+      {selected && <section className="sticky bottom-20 z-20 rounded-md border border-copper bg-surface-2 p-4 shadow-overlay sm:bottom-6"><div className="flex items-start justify-between gap-3"><div>{!selectedIsToday && <p className="mb-2 inline-flex rounded-full bg-warning/12 px-2 py-1 text-[10px] font-mono uppercase tracking-wide text-warning">ESTE AGENDAMENTO NÃO É PARA HOJE</p>}<p className="text-label text-copper">CONFIRMAR HORÁRIO</p><h3 className="mt-1 capitalize text-h3 text-warm-white">{fullDate(selected.inicio)} · {time(selected.inicio)}</h3><p className="mt-1 text-body-sm text-steel">{service?.nome} com {selected.profissional_apelido || selected.profissional_nome}</p></div><strong className="shrink-0 font-mono text-warm-white">{money(service?.preco)}</strong></div><div className="mt-4 flex items-center gap-2 rounded-sm bg-surface-0 p-3 text-xs text-steel"><CreditCard size={16} className="shrink-0 text-copper" /> Pagamento antecipado será habilitado quando a barbearia conectar o provedor. Por enquanto, pague no local.</div><Button size="lg" className="mt-4 w-full" loading={saving} onClick={confirm}>{selectedIsToday ? `Confirmar hoje às ${time(selected.inicio)}` : `Confirmar para ${numericDate(selected.inicio)} às ${time(selected.inicio)}`} <Check size={18} /></Button></section>}
     </div>
   )
 }
