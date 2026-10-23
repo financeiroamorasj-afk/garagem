@@ -1,4 +1,4 @@
-﻿# Registro de Atualizações - Sistema Garagem
+# Registro de Atualizações - Sistema Garagem
 
 Este documento registra as implementações, melhorias e novas funcionalidades integradas recentemente no ecossistema do Garagem System, refletindo os últimos avanços do projeto.
 
@@ -458,3 +458,13 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - Depois da confirmação do frontend, a migration `20261023130000_portal_proxima_disponibilidade_comunicado.sql` foi aplicada e registrada em `supabase_migrations.schema_migrations`.
 - O comunicado **Portal destaca a próxima data disponível** foi publicado às 10:02:01 para gestão e barbeiros, com destinos `/admin/configuracoes` e `/barber/dashboard`.
 - Validações concluídas: teste direcionado, ESLint, build de produção, checks dos dois projetos da Vercel, inspeção do bundle oficial e leitura posterior do comunicado e da migration no Supabase.
+
+
+# 23/10/2026 — Registro retroativo ampliado e concluído imediatamente
+
+- O modal de atendimento retroativo (**Registrar já iniciado**) passou a aceitar data entre hoje e os dois dias anteriores.
+- O barbeiro agora informa tanto o **início** quanto o **término** do corte, com sugestão automática de término a partir da duração do serviço e atalhos rápidos.
+- O agendamento é registrado diretamente como **concluído**, com horários de início e término preservados para o cálculo da duração real (`duracao_real_minutos`).
+- O registro não é mais inserido como `em_atendimento`, evitando sequestrar o painel com cronômetro decorrido, ativar bloqueio de tela desnecessário ou travar novos atendimentos em tempo real na cadeira do profissional.
+- A migration `20261023150000_encaixe_retroativo_dois_dias.sql` valida janela de 2 dias, coerência de início e término no mesmo dia, bloqueio de horários futuros e colisão de agenda com auditoria preservada.
+- A migration `20261023160000_registro_retroativo_comunicado.sql` publica o aviso **Registro retroativo com início e fim** no sino dos apps para gestão e barbeiros, com destinos para `/admin/agenda` e `/barber/dashboard`.
