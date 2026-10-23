@@ -467,3 +467,4 @@ O checklist original deste documento foi substituído pela **Ordem oficial de ex
 - O agendamento é registrado diretamente como **concluído**, com horários de início e término preservados para o cálculo da duração real (`duracao_real_minutos`).
 - O registro não é mais inserido como `em_atendimento`, evitando sequestrar o painel com cronômetro decorrido, ativar bloqueio de tela desnecessário ou travar novos atendimentos em tempo real na cadeira do profissional.
 - A migration `20261023150000_encaixe_retroativo_dois_dias.sql` valida janela de 2 dias, coerência de início e término no mesmo dia, bloqueio de horários futuros e colisão de agenda com auditoria preservada.
+- A migration `20261023160000_registro_retroativo_comunicado.sql` publica o aviso **Registro retroativo com início e fim** no sino dos apps para gestão e barbeiros, com destinos para `/admin/agenda` e `/barber/dashboard`.
