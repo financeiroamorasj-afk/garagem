@@ -12,11 +12,11 @@ INSERT INTO public.app_comunicados(
   publicado_em
 ) VALUES (
   '2026-10-registro-retroativo-concluido',
-  'Registro retroativo com início e fim',
-  'O barbeiro agora pode registrar atendimentos realizados hoje ou nos dois dias anteriores informando início e término, gravados diretamente como concluídos.',
+  'Cortes retroativos: data, início e fim',
+  'Os barbeiros agora podem registrar cortes realizados hoje ou nos dois dias anteriores informando horário de início e término. O corte nasce direto como concluído, sem travar o painel.',
   'ambos',
-  'informativo',
-  'Ver na agenda',
+  'importante',
+  'Ver painel',
   '/admin/agenda',
   '/barber/dashboard',
   clock_timestamp()
@@ -30,4 +30,5 @@ ON CONFLICT(chave) DO UPDATE SET
   rota_gestao=EXCLUDED.rota_gestao,
   rota_barbeiro=EXCLUDED.rota_barbeiro,
   ativo=true,
+  publicado_em=clock_timestamp(),
   atualizado_em=clock_timestamp();
