@@ -3,12 +3,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe e perfil', async () => {
-  const [app, page, api, migration, confirmationMigration] = await Promise.all([
+  const [app, page, api, migration, confirmationMigration, availabilityNoticeMigration] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/ClientPortal.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/portal/api.js', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20260923230000_portal_cliente.sql', import.meta.url), 'utf8'),
     readFile(new URL('../supabase/migrations/20261020160000_portal_agendamento_confirmado.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../supabase/migrations/20261023130000_portal_proxima_disponibilidade_comunicado.sql', import.meta.url), 'utf8'),
   ])
   assert.match(app, /path="\/portal\/:slug" element={<ClientPortal/)
   assert.match(page, /Portal do cliente/i)
@@ -42,6 +43,14 @@ test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe
   assert.match(page, /Agendamento confirmado\. Seu horário já está reservado na agenda da barbearia\./)
   assert.match(page, /pendente: 'Horário reservado', confirmado: 'Horário reservado'/)
   assert.match(page, /Confirmado, este horário está reservado para você\./)
+  assert.match(page, /não tem horários disponíveis hoje/)
+  assert.match(page, /Nenhum profissional tem horário disponível hoje/)
+  assert.match(page, /A próxima data com agenda aberta é/)
+  assert.match(page, /PRÓXIMA DATA DISPONÍVEL/)
+  assert.match(page, /Ver outro barbeiro disponível hoje/)
+  assert.match(page, /ESTE AGENDAMENTO NÃO É PARA HOJE/)
+  assert.match(page, /Confirmar para \$\{numericDate\(selected\.inicio\)\} às/)
+  assert.match(page, /role="status" aria-live="polite"/)
   assert.doesNotMatch(page, /Aguardando confirmação/)
   assert.doesNotMatch(page, /Acompanhe a confirmação por aqui/)
   assert.match(api, /persistSession: false/)
@@ -53,4 +62,6 @@ test('portal público é mobile-first e cobre acesso, agenda, histórico, equipe
   assert.match(confirmationMigration, /v_preco,'confirmado','portal_cliente'/)
   assert.match(confirmationMigration, /'status','confirmado'/)
   assert.match(confirmationMigration, /origem = 'portal_cliente'[\s\S]*status = 'pendente'[\s\S]*data_hora > now\(\)/)
+  assert.match(availabilityNoticeMigration, /Portal destaca a próxima data disponível/)
+  assert.match(availabilityNoticeMigration, /'ambos'/)
 })
